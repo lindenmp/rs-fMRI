@@ -88,7 +88,7 @@ numGroups = numel(unique(Group));
 % Generate parIDs var by group
 parIDs = cell(1,numGroups);
 for i = 1:numGroups
-	parIDs{i} = DarisIDs(Group == i);
+	parIDs{i} = ParticipantIDs(Group == i);
 end
 
 % ------------------------------------------------------------------------------
