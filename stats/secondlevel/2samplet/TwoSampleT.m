@@ -53,7 +53,7 @@ switch WhichProject
         datadir = [projdir,'data/'];
         preprostr = '/rfMRI/prepro/';
 		
-		firstdir = [preprostr,'/',removeNoise,'FirstLevel_L_',WhichSeed,'/'];
+		firstdir = [preprostr,'/',removeNoise,'/FirstLevel_L_',WhichSeed,'/'];
 		outdir = [projdir,'SecondLevelSPM/TwoSampleT/',removeNoise,'/',WhichSeed];
 end
 
