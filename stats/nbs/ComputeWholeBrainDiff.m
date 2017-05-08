@@ -1,9 +1,14 @@
-%% ComputeWholeBrainDiff: 
 function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,P)
+	% ------------------------------------------------------------------------------
+	% ComputeWholeBrainDiff.m
+	% ------------------------------------------------------------------------------
+	% This functon will run nbs contrasts the OCDPG or UCLA datasets.
+	% contrasts can be performed either 1) case-control or 2) high v low motion
+	% 
 	% ------------------------------------------------------------------------------
 	% Linden Parkes, Brain & Mental Health Laboratory, 2016
 	% ------------------------------------------------------------------------------
-	if nargin < 5
+	if nargin < 4
 		P = 0.05;
 	end
 

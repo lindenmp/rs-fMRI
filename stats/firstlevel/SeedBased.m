@@ -1,11 +1,10 @@
 % ------------------------------------------------------------------------------
-% run_seedbased.m
+% SeedBased.m
 % ------------------------------------------------------------------------------
-% Linden Parkes
-% Brain & Mental Health Laboratory 
-% Monash University
-
 % This script will run the first level analysis for the OCDPG dataset.
+% 
+% ------------------------------------------------------------------------------
+% Linden Parkes, Brain & Mental Health Laboratory, 2016
 % ------------------------------------------------------------------------------
 clear all; close all; clc
 
