@@ -10,9 +10,9 @@ clear all; close all; clc
 % Set string switches
 % ------------------------------------------------------------------------------
 Projects = {'OCDPG','UCLA','NYU_2','GoC'};
-WhichProject = Projects{3};
+WhichProject = Projects{1};
 
-WhichParc = 'Power'; % 'Gordon' 'Power'
+WhichParc = 'Gordon'; % 'Gordon' 'Power'
 
 if ismember('OCDPG',WhichProject,'rows') | ismember('UCLA',WhichProject,'rows')
 	WhichSplit = 'Diagnostic'; % 'Motion' 'Diagnostic'

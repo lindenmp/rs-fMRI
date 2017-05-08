@@ -13,9 +13,9 @@ function [] = run_prepro(WhichProject,WhichSessScan,subject,discard,slicetime,de
     % Add paths - edit this section
     % ------------------------------------------------------------------------------
         % where the prepro scripts are
-        cfg.scriptdir = '/gpfs/M2Home/projects/Monash076/Linden/scripts/rfMRI-PrePro/';
+        cfg.scriptdir = '/gpfs/M2Home/projects/Monash076/Linden/scripts/rs-fMRI/prepro/';
         addpath(cfg.scriptdir)
-        cfg.funcdir = '/gpfs/M2Home/projects/Monash076/Linden/scripts/rfMRI-Func/';
+        cfg.funcdir = '/gpfs/M2Home/projects/Monash076/Linden/scripts/rs-fMRI/func/';
         addpath(cfg.funcdir)
 
         % where spm is

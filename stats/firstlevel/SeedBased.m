@@ -26,7 +26,7 @@ removeNoise = 'sICA-AROMA+2P';
 
 WhichSeed = 'TriStri';
 
-fprintf(1, 'Running first level analysis using %s sphere ROIs\n',WhichSeed);
+fprintf(1, 'Running first level analysis using %s ROIs\n',WhichSeed);
 
 % ------------------------------------------------------------------------------
 % Set parcellation
@@ -101,26 +101,26 @@ for i = 1:numSubs
     % Estimate first level
     % ------------------------------------------------------------------------------
     for j = 1:length(firstDirs)
-        firstDir = firstDirs{j};
+        firstdir = firstDirs{j};
 
         % Setup output directory
-        if exist(firstDir) == 0
-            fprintf(1,'\t\tInitialising firstDir\n')
-            mkdir(firstDir)
-        elseif exist(firstDir) == 7
-            fprintf(1,'\t\tCleaning and re-initialising firstDir\n')
-            rmdir(firstDir,'s')
-            mkdir(firstDir)
+        if exist(firstdir) == 0
+            fprintf(1,'\t\tInitialising firstdir\n')
+            mkdir(firstdir)
+        elseif exist(firstdir) == 7
+            fprintf(1,'\t\tCleaning and re-initialising firstdir\n')
+            rmdir(firstdir,'s')
+            mkdir(firstdir)
         end
 
         R = roiTS(:,idx(1,j):idx(2,j));
         save spm_regs R
         clear R
-        movefile('spm_regs.mat',firstDir)
+        movefile('spm_regs.mat',firstdir)
 
-        FirstLevelGLM([workdir,firstDir],'scans',TR,[workdir,rsdata(1:end-3)],N,[workdir,firstDir,'spm_regs.mat'],[preprodir,brainMask(1:end-3)]);
+        FirstLevelGLM([workdir,firstdir],'scans',TR,[workdir,rsdata(1:end-3)],N,[workdir,firstdir,'spm_regs.mat'],[preprodir,brainMask(1:end-3)]);
         
-        FirstLevelContrasts(WhichSeed,[workdir,firstDir,'SPM.mat']);
+        FirstLevelContrasts(WhichSeed,[workdir,firstdir,'SPM.mat']);
     end
     fprintf(1, 'First level analysis done \n');
 
