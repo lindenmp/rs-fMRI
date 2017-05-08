@@ -77,7 +77,7 @@ numSubs = length(ParticipantIDs);
 % ------------------------------------------------------------------------------
 firstDirs = {['FirstLevel_L_',WhichSeed,'/'],['FirstLevel_R_',WhichSeed,'/']};
 
-for i = 1:1
+for i = 1:numSubs
     fprintf(1,'Processing subject %s\n',ParticipantIDs{i})
 
     preprodir = [datadir,ParticipantIDs{i},preprostr];
@@ -122,9 +122,10 @@ for i = 1:1
         
         FirstLevelContrasts(WhichSeed,[workdir,firstDir,'SPM.mat']);
     end
-    fprintf('First level analysis done \n');
+    fprintf(1, 'First level analysis done \n');
 
     % clean up
+    fprintf(1, 'Cleaning up\n');
     cd(workdir); gzip(rsdata(1:end-3)); delete(rsdata(1:end-3))
     cd(preprodir); gzip(brainMask(1:end-3)); delete(brainMask(1:end-3))
 end
