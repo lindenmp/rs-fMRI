@@ -32,7 +32,8 @@ function [] = getMoreTS(WhichProject,subject)
     noiseOptions = {'6P','6P+2P','6P+2P+GSR','24P','24P+8P','24P+8P+4GSR','24P+8P+SpikeReg','24P+8P+4GSR+SpikeReg','12P+aCC','24P+aCC','12P+aCC50','24P+aCC50','24P+aCC+4GSR','24P+aCC50+4GSR','24P+aCC+SpikeReg','24P+aCC+4GSR+SpikeReg','ICA-AROMA+2P','ICA-AROMA+2P+SpikeReg','ICA-AROMA+GSR','ICA-AROMA+2P+GSR','ICA-AROMA+8P','ICA-AROMA+4GSR','ICA-AROMA+8P+4GSR'};
 
     % Loop over noise correction options
-    for i = 1:length(noiseOptions)
+    % for i = 1:length(noiseOptions)
+    for i = 1:1
         removeNoise = noiseOptions{i};
 
         cd([cfg.datadir,subject,'/rfMRI/prepro/',removeNoise])
@@ -78,7 +79,7 @@ function [] = getMoreTS(WhichProject,subject)
         end
 
         % Save data
-        save('cfg.mat','cfg')
+        % save('cfg.mat','cfg')
     end
 
 end
