@@ -6,10 +6,12 @@ function [] = getMoreTS(WhichProject,subject)
     switch WhichProject
         case 'OCDPG'
             % Where the subjects' directories are
-            cfg.datadir = '/gpfs/M2Home/projects/Monash076/Linden/OCDPG/data/';
+            datadir = '/gpfs/M2Home/projects/Monash076/Linden/OCDPG/data/';
+             
+            rawdir = [datadir,subject,'/rfMRI/'];
 
             % where the processed epi 4d files will be output to from prepro_base
-            cfg.preprodir = [cfg.rawdir,'prepro/'];
+            preprodir = [rawdir,'prepro/'];
     end
 
     
@@ -21,7 +23,7 @@ function [] = getMoreTS(WhichProject,subject)
     for i = 1:1
         removeNoise = noiseOptions{i};
 
-        cd([cfg.datadir,subject,'/rfMRI/prepro/',removeNoise])
+        cd([preprodir,removeNoise])
 
         load('cfg.mat')
 
