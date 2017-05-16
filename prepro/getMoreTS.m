@@ -66,7 +66,7 @@ function [] = getMoreTS(WhichProject,subject)
         end
 
         % Save data
-        % save('cfg.mat','cfg')
+        save('cfg.mat','cfg')
     end
 
 end
