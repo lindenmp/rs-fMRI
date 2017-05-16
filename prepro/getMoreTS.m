@@ -18,7 +18,7 @@ function [] = getMoreTS(WhichProject,subject)
     % Set project settings and parameters
     % Use WhichProject if you're juggling multiple datasets
     % ------------------------------------------------------------------------------
-    switch cfg.WhichProject
+    switch WhichProject
         case 'OCDPG'
             % Where the subjects' directories are
             cfg.datadir = '/gpfs/M2Home/projects/Monash076/Linden/OCDPG/data/';
