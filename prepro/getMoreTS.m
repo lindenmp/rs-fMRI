@@ -11,12 +11,11 @@ ParticipantIDs = ParticipantIDs{1};
 numSubs = length(ParticipantIDs);
 
 % All pipelines
-% noiseOptions = {'6P','6P+2P','6P+2P+GSR','24P','24P+8P','24P+8P+4GSR','24P+8P+SpikeReg','24P+8P+4GSR+SpikeReg','12P+aCC','24P+aCC','12P+aCC50','24P+aCC50','24P+aCC+4GSR','24P+aCC50+4GSR','24P+aCC+SpikeReg','24P+aCC+4GSR+SpikeReg','sICA-AROMA+2P','sICA-AROMA+2P+SpikeReg','sICA-AROMA+GSR','sICA-AROMA+2P+GSR','sICA-AROMA+8P','sICA-AROMA+4GSR','sICA-AROMA+8P+4GSR'};
-noiseOptions = {'sICA-AROMA+2P','sICA-AROMA+2P+SpikeReg','sICA-AROMA+GSR','sICA-AROMA+2P+GSR','sICA-AROMA+8P','sICA-AROMA+4GSR','sICA-AROMA+8P+4GSR'};
+noiseOptions = {'6P','6P+2P','6P+2P+GSR','24P','24P+8P','24P+8P+4GSR','24P+8P+SpikeReg','24P+8P+4GSR+SpikeReg','12P+aCC','24P+aCC','12P+aCC50','24P+aCC50','24P+aCC+4GSR','24P+aCC50+4GSR','24P+aCC+SpikeReg','24P+aCC+4GSR+SpikeReg','sICA-AROMA+2P','sICA-AROMA+2P+SpikeReg','sICA-AROMA+GSR','sICA-AROMA+2P+GSR','sICA-AROMA+8P','sICA-AROMA+4GSR','sICA-AROMA+8P+4GSR'};
 numPrePro = length(noiseOptions);
 
 % Loop over noise correction options
-for i = 1:1
+for i = 1:numSubs
     subject = ParticipantIDs{i};
     preprodir = [datadir,subject,'/rfMRI/prepro/'];
 
@@ -44,7 +43,9 @@ for i = 1:1
         end
 
         cfg = rmfield(cfg,{'parcFile','weightGM','new_parcFiles','new_parcWeightGM'});
+    
+        % Save data
+        save('cfg.mat','cfg')
+        clear cfg
     end
-    % Save data
-    save('cfg.mat','cfg')
 end
