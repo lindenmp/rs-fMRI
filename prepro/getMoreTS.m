@@ -1,20 +1,5 @@
 function [] = getMoreTS(WhichProject,subject)
     % ------------------------------------------------------------------------------
-    % Add paths - edit this section
-    % ------------------------------------------------------------------------------
-        % where the prepro scripts are
-        cfg.scriptdir = '/gpfs/M2Home/projects/Monash076/Linden/scripts/rs-fMRI/prepro/';
-        addpath(cfg.scriptdir)
-        cfg.funcdir = '/gpfs/M2Home/projects/Monash076/Linden/scripts/rs-fMRI/func/';
-        addpath(cfg.funcdir)
-
-        % set FSL environments 
-        cfg.fsldir = '/usr/local/fsl/5.0.9/bin/';
-        setenv('FSLDIR',cfg.fsldir(1:end-4));
-        setenv('FSLOUTPUTTYPE','NIFTI');
-        setenv('LD_LIBRARY_PATH',[getenv('PATH'),getenv('LD_LIBRARY_PATH'),':/usr/lib/fsl/5.0'])
-
-    % ------------------------------------------------------------------------------
     % Set project settings and parameters
     % Use WhichProject if you're juggling multiple datasets
     % ------------------------------------------------------------------------------
