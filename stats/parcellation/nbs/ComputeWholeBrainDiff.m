@@ -30,6 +30,8 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,P)
 	% ------------------------------------------------------------------------------
 	funcdir = '/gpfs/M2Home/projects/Monash076/Linden/scripts/rs-fMRI/func/';
 	addpath(funcdir)
+	funcdir1 = '/gpfs/M2Home/projects/Monash076/Linden/scripts/Func/';
+	addpath(funcdir1)
 
 	addpath(genpath('/gpfs/M2Home/projects/Monash076/Linden/scripts/Software/NBS1.2'))
 
