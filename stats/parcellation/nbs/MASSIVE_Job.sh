@@ -20,6 +20,4 @@ P=$4
 # MASSIVE modules
 module load spm8/matlab2014a.r6685
 
-cd /gpfs/M2Home/projects/Monash076/Linden/scripts/rfMRI-WholeBrain/
-
 matlab -nodisplay -r "ComputeWholeBrainDiff('${WhichProject}','${WhichSplit}','${WhichParc}',${P}); exit"
