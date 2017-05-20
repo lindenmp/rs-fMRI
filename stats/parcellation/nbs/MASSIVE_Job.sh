@@ -16,8 +16,10 @@ WhichProject=$1
 WhichSplit=$2
 WhichParc=$3
 P=$4
+outDir=$5
+runCensor=$6
 
 # MASSIVE modules
 module load spm8/matlab2014a.r6685
 
-matlab -nodisplay -r "ComputeWholeBrainDiff('${WhichProject}','${WhichSplit}','${WhichParc}',${P}); exit"
+matlab -nodisplay -r "ComputeWholeBrainDiff('${WhichProject}','${WhichSplit}','${WhichParc}',${P},'${outDir}','${runCensor}'); exit"

@@ -1,4 +1,4 @@
-function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,P)
+function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,P,outDir,runCensor)
 	% ------------------------------------------------------------------------------
 	% ComputeWholeBrainDiff.m
 	% ------------------------------------------------------------------------------
@@ -10,6 +10,14 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,P)
 	% ------------------------------------------------------------------------------
 	if nargin < 4
 		P = 0.05;
+	end
+
+	if nargin < 5
+		outDir = 'NBS_Output';
+	end
+
+	if nargin < 6
+		runCensor = 'false';
 	end
 
 	% clear all; close all; clc
@@ -45,12 +53,14 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,P)
 			datadir = [projdir,'data/'];
 			
 			preprostr = '/rfMRI/prepro/';
+			TR = 2.5;
 		case 'UCLA'
 			sublist = '/gpfs/M2Home/projects/Monash076/Linden/Sublists/UCLA.csv';
 			projdir = '/gpfs/M2Home/projects/Monash076/Linden/UCLA/';
 			datadir = [projdir,'data/'];
 	        
 	        preprostr = '/rfMRI/prepro/';
+			TR = 2;
 	end
 
 	% ------------------------------------------------------------------------------
@@ -58,13 +68,13 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,P)
 	% ------------------------------------------------------------------------------
 	cd(projdir)
 
-	thedir = 'WholeBrain_Out_Cov-NEW'; 
-	if exist(thedir) == 0
-		fprintf(1,'Initialising thedir\n')
-		mkdir(thedir)
+	% outDir = 'WholeBrain_Out_SpikeReg'; 
+	if exist(outDir) == 0
+		fprintf(1,'Initialising outDir\n')
+		mkdir(outDir)
 	end
 
-	cd([projdir,thedir])
+	cd([projdir,outDir])
 
 	% ------------------------------------------------------------------------------
 	% Subject list
@@ -109,19 +119,75 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,P)
 	[exclude,~,fdJenk,fdJenk_m] = GetExcludeForSample(datadir,ParticipantIDs,preprostr);
 	fprintf(1, 'done\n');
 
+	% compute number of volumes using the length of fdJenk
+	% note, this is assumed to be same for all subjects!
+	numVols = length(fdJenk{1});
+
 	% ------------------------------------------------------------------------------
 	% Perform initial exclusion based on gross movement
 	% ------------------------------------------------------------------------------
 	ParticipantIDs(exclude(:,1)) = [];
 	Group_Diagnostic(exclude(:,1)) = [];
-
 	fdJenk_m(exclude(:,1)) = [];
 	fdJenk(exclude(:,1)) = [];
-
 	Cov(exclude(:,1),:) = [];
 
 	% compute numsubs
 	numSubs = length(ParticipantIDs);
+
+	% ------------------------------------------------------------------------------
+	% Power's scrubbing
+	% ------------------------------------------------------------------------------
+	if ismember('scrub',runCensor,'rows') == 1
+		fprintf(1, 'Loading scrubbing mask\n');
+		[ScrubMask,~,~,~] = GetScrubbingForSample(datadir,ParticipantIDs,preprostr);
+		fprintf(1, 'done\n');
+	end
+
+	% ------------------------------------------------------------------------------
+	% Create exclusion vector based on <4 minutes of post-scrub BOLD data
+	% Note, subjects not excluded yet. that is done during the preprocessing loop below
+	% ------------------------------------------------------------------------------
+	if ismember('false',runCensor,'rows') == 0
+		% exclusion vector
+		excludeCensor = zeros(numSubs,1);
+		% threshold for exclusion in minutes
+		thresh = 4;
+
+		% Loop over subjects and check if censoring would reduce data to <4 minutes
+		for i = 1:numSubs
+			% Find number of vols left after censoring
+			if ismember('scrub',runCensor,'rows') == 1
+				% number of volumes - number of scrubbed volumes
+				numCVols = numVols - sum(ScrubMask{i});
+			elseif ismember('spikeReg',runCensor,'rows') == 1
+				% Get spike regressors for subject i
+				spikereg = GetSpikeRegressors(fdJenk{i},0.25);
+				% number of volumes - number of spike regressors (columns)
+				numCVols = numVols - size(spikereg,2);
+			end	
+
+			% Compute length, in minutes, of time series data left after censoring
+			NTime = (numCVols * TR)/60;
+			% if less than threshold, mark for exclusion
+			if NTime < thresh
+				excludeCensor(i) = 1;
+			end
+		end
+		% convert to logical
+		excludeCensor = logical(excludeCensor);
+
+		ParticipantIDs(excludeCensor) = [];
+		Group_Diagnostic(excludeCensor) = [];
+		fdJenk_m(excludeCensor) = [];
+		fdJenk(excludeCensor) = [];
+		Cov(excludeCensor,:) = [];
+
+		% compute numsubs
+		numSubs = length(ParticipantIDs);
+
+		fprintf(1, '%u subjects excluded based on 4 minute censoring criteria \n', sum(excludeCensor));
+	end
 
 	% ------------------------------------------------------------------------------
 	% Split subject's
@@ -131,11 +197,10 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,P)
 		% 1) based on motion
 
 			% retain only one group (HCs assumed to be denoted by value 1)
-			g = 1;
-			ParticipantIDs = ParticipantIDs(Group_Diagnostic == g);
-			Cov = Cov(Group_Diagnostic == g,:);
-			fdJenk = fdJenk(Group_Diagnostic == g);
-			fdJenk_m = fdJenk_m(Group_Diagnostic == g);
+			ParticipantIDs = ParticipantIDs(Group_Diagnostic == 1);
+			Cov = Cov(Group_Diagnostic == 1,:);
+			fdJenk = fdJenk(Group_Diagnostic == 1);
+			fdJenk_m = fdJenk_m(Group_Diagnostic == 1);
 
 			% recompute numsubs
 			numSubs = length(ParticipantIDs);
@@ -169,26 +234,30 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,P)
 	% ------------------------------------------------------------------------------
 	% Preprocessing pipelines
 	% ------------------------------------------------------------------------------
-	noiseOptions = {'6P',...
-					'6P+2P',...
-					'6P+2P+GSR',...
-					'24P',...
-					'24P+8P',...
-					'24P+8P+4GSR',...
-					'24P+aCC',...
-					'24P+aCC+4GSR',...
-					'24P+aCC50',...
+	% noiseOptions = {'6P',...
+	% 				'6P+2P',...
+	% 				'6P+2P+GSR',...
+	% 				'24P',...
+	% 				'24P+8P',...
+	% 				'24P+8P+4GSR',...
+	% 				'24P+aCC',...
+	% 				'24P+aCC+4GSR',...
+	% 				'24P+aCC50',...
+	% 				'24P+aCC50+4GSR',...
+	% 				'12P+aCC',...
+	% 				'12P+aCC50',...
+	% 				'sICA-AROMA+2P',...
+	% 				'sICA-AROMA+2P+GSR',...
+	% 				'sICA-AROMA+8P',...
+	% 				'sICA-AROMA+8P+4GSR'};
+
+	noiseOptions = {'24P+aCC50',...
 					'24P+aCC50+4GSR',...
-					'12P+aCC',...
 					'12P+aCC50',...
 					'sICA-AROMA+2P',...
 					'sICA-AROMA+2P+GSR',...
 					'sICA-AROMA+8P',...
 					'sICA-AROMA+8P+4GSR'};
-
-	% noiseOptions = {'sICA-AROMA+2P+GSR',...
-	% 				'sICA-AROMA+8P',...
-	% 				'sICA-AROMA+8P+4GSR'};
 
 	numPrePro = length(noiseOptions);
 
@@ -219,7 +288,7 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,P)
 		for j = 1:numSubs
 			FC(:,:,j) = corr(cfg(j).roiTS{Parc});
 			% Perform fisher z transform
-			FC(:,:,j) = fisherz(FC(:,:,j));
+			FC(:,:,j) = atanh(FC(:,:,j));
 		end
 
 		% ------------------------------------------------------------------------------
@@ -254,6 +323,36 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,P)
 		% ------------------------------------------------------------------------------
 		Mat = cat(3,FC(:,:,Group == g1),FC(:,:,Group == g2));
 		save(matricesName,'Mat')
+
+		% ------------------------------------------------------------------------------
+		% Add tDOF as an additional covariate for ICA-AROMA pipeline
+		% ------------------------------------------------------------------------------
+        removeNoiseSplit = strsplit(removeNoise,'+');
+        
+        if any(strmatch('aCC50',removeNoiseSplit,'exact')) == 1 | ...
+        	any(strmatch('sICA-AROMA',removeNoiseSplit,'exact')) == 1
+			fprintf(1, 'Computing tDOF: %s\n',removeNoise);
+			
+			tDOF = zeros(numSubs,1);
+			for j = 1:numSubs
+				% Get noiseTS
+				x = dlmread([datadir,ParticipantIDs{j},preprostr,removeNoise,'/noiseTS.txt']);
+				tDOF(j) = size(x,2);
+					        		
+				% If ICA-AROMA, get that too.
+		        if any(strmatch('sICA-AROMA',removeNoiseSplit,'exact')) == 1
+					y = dlmread([datadir,ParticipantIDs{j},preprostr,removeNoise,'/classified_motion_ICs.txt']);
+					tDOF(j) = tDOF(j) + size(y,2);
+				end
+			end
+
+			% mean center
+			tDOF = tDOF - mean(tDOF);
+			% add to Cov
+			Cov = [Cov tDOF];
+			% update zero pad
+			zeroPad = [zeroPad,',0'];
+		end
 
 		% ------------------------------------------------------------------------------
 		% Generate design matrix
