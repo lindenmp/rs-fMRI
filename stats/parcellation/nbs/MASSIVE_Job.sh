@@ -4,7 +4,7 @@
 #SBATCH --account=monash076
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=2
-#SBATCH --time=3-00:00:00
+#SBATCH --time=1-00:00:00
 #SBATCH --mail-user=linden.parkes@monash.edu
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-type=END
@@ -15,11 +15,12 @@
 WhichProject=$1
 WhichSplit=$2
 WhichParc=$3
-P=$4
-outDir=$5
-runCensor=$6
+WhichNoise=$4
+P=$5
+outDir=$6
+runCensor=$7
 
 # MASSIVE modules
-module load spm8/matlab2014a.r6685
+module load matlab/r2014a
 
-matlab -nodisplay -r "ComputeWholeBrainDiff('${WhichProject}','${WhichSplit}','${WhichParc}',${P},'${outDir}','${runCensor}'); exit"
+matlab -nodisplay -r "ComputeWholeBrainDiff('${WhichProject}','${WhichSplit}','${WhichParc}','${WhichNoise}',${P},'${outDir}','${runCensor}'); exit"
