@@ -22,4 +22,4 @@ runCensor=$6
 # MASSIVE modules
 module load spm8/matlab2014a.r6685
 
-matlab -nodisplay -r "ComputeWholeBrainDiff2('${WhichProject}','${WhichSplit}','${WhichParc}',${P},'${outDir}','${runCensor}'); exit"
+matlab -nodisplay -r "ComputeWholeBrainDiff('${WhichProject}','${WhichSplit}','${WhichParc}',${P},'${outDir}','${runCensor}'); exit"

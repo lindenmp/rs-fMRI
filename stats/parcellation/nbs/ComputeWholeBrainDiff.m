@@ -13,19 +13,13 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,P,outDir,r
 	end
 
 	if nargin < 5
-		outDir = 'NBS_Output';
+		outDir = 'NBS';
 	end
 
 	if nargin < 6
 		runCensor = 'false';
 	end
 
-	% clear all; close all; clc
-	% WhichProject = 'UCLA' % 'OCDPG' 'UCLA'
-	% WhichSplit = 'Motion' % 'Motion' 'Diagnostic'
-	% P = 0.05;
-	
-	% WhichParc = 'Power' % 'Gordon' 'Power'
 	switch WhichParc
 		case 'Gordon'
 			Parc = 1;
@@ -68,7 +62,6 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,P,outDir,r
 	% ------------------------------------------------------------------------------
 	cd(projdir)
 
-	% outDir = 'WholeBrain_Out_SpikeReg'; 
 	if exist(outDir) == 0
 		fprintf(1,'Initialising outDir\n')
 		mkdir(outDir)
@@ -325,12 +318,12 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,P,outDir,r
 		save(matricesName,'Mat')
 
 		% ------------------------------------------------------------------------------
-		% Add tDOF as an additional covariate for ICA-AROMA pipeline
+		% Add tDOF as an additional covariate for ICA-AROMA or aCC50 pipeline
 		% ------------------------------------------------------------------------------
-        removeNoiseSplit = strsplit(removeNoise,'+');
-        
-        if any(strmatch('aCC50',removeNoiseSplit,'exact')) == 1 | ...
-        	any(strmatch('sICA-AROMA',removeNoiseSplit,'exact')) == 1
+		removeNoiseSplit = strsplit(removeNoise,'+');
+
+		if any(strmatch('aCC50',removeNoiseSplit,'exact')) == 1 | ...
+			any(strmatch('sICA-AROMA',removeNoiseSplit,'exact')) == 1
 			fprintf(1, 'Computing tDOF: %s\n',removeNoise);
 			
 			tDOF = zeros(numSubs,1);
