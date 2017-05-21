@@ -43,7 +43,7 @@ function [cfg,FC,FC_vec,VarCovar,Var,GCOR] = GetFCForSample(datadir,ParticipantI
 	    % ------------------------------------------------------------------------------
 		FC(:,:,i) = corr(cfg(i).roiTS{Parc});
 		% Perform fisher z transform
-		FC(:,:,i) = fisherz(FC(:,:,i));
+		FC(:,:,i) = atanh(FC(:,:,i));
 		% get GCOR
 		GCOR(i) = mean(LP_FlatMat(FC(:,:,i)));
 		% Store
