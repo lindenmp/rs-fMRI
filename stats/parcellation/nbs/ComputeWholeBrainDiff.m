@@ -20,6 +20,8 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 		runCensor = 'false';
 	end
 
+	fprintf(1, 'Dataset: %s\n Split: %s\n Parcellation: %s\n Noise correction: %s\n', WhichProject,WhichSplit,WhichParc,WhichNoise);
+
 	switch WhichParc
 		case 'Gordon'
 			Parc = 1;
