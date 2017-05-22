@@ -4,7 +4,7 @@
 #SBATCH --account=monash076
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=2
-#SBATCH --time=1-00:00:00
+#SBATCH --time=12:00:00
 #SBATCH --mail-user=linden.parkes@monash.edu
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-type=END

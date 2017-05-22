@@ -325,6 +325,9 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 	% ------------------------------------------------------------------------------
 	nbsOut = cell(1,2);
 	for j = 1:2
+		% for reproducibility of t-contrasts in isolationg
+		rng('default')
+
 		fprintf(1, 'Running NBS for contrast %u\n', j);
 		% ------------------------------------------------------------------------------
 		% Run NBS with default settings (based on SCZ example in manual)
@@ -334,7 +337,7 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 		UI.test.ui = 't-test';
 		UI.size.ui = 'Extent';
 		UI.thresh.ui = num2str(Tval);
-		UI.perms.ui = '5000';
+		UI.perms.ui = '10000';
 		UI.alpha.ui = '0.05';
 		if j == 1
 			% Group 1 > Group 2
