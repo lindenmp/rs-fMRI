@@ -193,18 +193,21 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 
 			% retain only one group (HCs assumed to be denoted by value 1)
 			ParticipantIDs = ParticipantIDs(Group_Diagnostic == 1);
-			Cov = Cov(Group_Diagnostic == 1,:);
 			fdJenk = fdJenk(Group_Diagnostic == 1);
 			fdJenk_m = fdJenk_m(Group_Diagnostic == 1);
+			Cov = Cov(Group_Diagnostic == 1,:);
+
+			% Sort movement
+			[~,idx] = sort(fdJenk_m,'ascend');
+
+			% rearrange variables according to motion
+			ParticipantIDs = ParticipantIDs(idx);
+			fdJenk = fdJenk(idx);
+			fdJenk_m = fdJenk_m(idx);
+			Cov = Cov(idx);
 
 			% recompute numsubs
 			numSubs = length(ParticipantIDs);
-			
-			% Sort movement
-			[fdJenk_m_srt,idx] = sort(fdJenk_m,'ascend');
-
-			% rearrange daris IDs
-			ParticipantIDs = ParticipantIDs(idx);
 
 			% create grouping variable
 			% this will ensure that group 1 and 3 are the same size
@@ -339,7 +342,7 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 		UI.test.ui = 't-test';
 		UI.size.ui = 'Extent';
 		UI.thresh.ui = num2str(Tval);
-		UI.perms.ui = '10000';
+		UI.perms.ui = '5000';
 		UI.alpha.ui = '0.05';
 		if j == 1
 			% Group 1 > Group 2
