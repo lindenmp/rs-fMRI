@@ -20,7 +20,7 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 		runCensor = 'false';
 	end
 
-	fprintf(1, 'Dataset: %s\n Split: %s\n Parcellation: %s\n Noise correction: %s\n', WhichProject,WhichSplit,WhichParc,WhichNoise);
+	fprintf(1, 'Dataset: %s\nSplit: %s\nParcellation: %s\nNoise correction: %s\nCensoring: %s\n', WhichProject,WhichSplit,WhichParc,WhichNoise,runCensor);
 
 	switch WhichParc
 		case 'Gordon'
@@ -186,15 +186,15 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 		fprintf(1, 'Computing tDOF: %s\n',WhichNoise);
 		
 		tDOF = zeros(numSubs,1);
-		for j = 1:numSubs
+		for i = 1:numSubs
 			% Get noiseTS
-			x = dlmread([datadir,data.ParticipantIDs{j},preprostr,WhichNoise,'/noiseTS.txt']);
-			tDOF(j) = size(x,2);
+			x = dlmread([datadir,data.ParticipantIDs{i},preprostr,WhichNoise,'/noiseTS.txt']);
+			tDOF(i) = size(x,2);
 				        		
 			% If ICA-AROMA, get that too.
 	        if any(strmatch('sICA-AROMA',WhichNoiseSplit,'exact')) == 1
-				y = dlmread([datadir,data.ParticipantIDs{j},preprostr,WhichNoise,'/classified_motion_ICs.txt']);
-				tDOF(j) = tDOF(j) + size(y,2);
+				y = dlmread([datadir,data.ParticipantIDs{i},preprostr,WhichNoise,'/classified_motion_ICs.txt']);
+				tDOF(i) = tDOF(i) + size(y,2);
 			end
 		end
 
@@ -261,8 +261,8 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 	% ------------------------------------------------------------------------------
 	fprintf(1, 'Loading time series data: %s\n',WhichNoise);
 	cfg = [];
-	for j = 1:numSubs
-	    tsdir = [datadir,data.ParticipantIDs{j},preprostr,WhichNoise,'/'];
+	for i = 1:numSubs
+	    tsdir = [datadir,data.ParticipantIDs{i},preprostr,WhichNoise,'/'];
 	    
 	    clear temp
 	    temp = load([tsdir,'cfg.mat']);
@@ -277,10 +277,10 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 	numROIs = size(cfg(1).roiTS{Parc},2);
 
 	FC = zeros(numROIs,numROIs,numSubs); 
-	for j = 1:numSubs
-		FC(:,:,j) = corr(cfg(j).roiTS{Parc});
+	for i = 1:numSubs
+		FC(:,:,i) = corr(cfg(i).roiTS{Parc});
 		% Perform fisher z transform
-		FC(:,:,j) = atanh(FC(:,:,j));
+		FC(:,:,i) = atanh(FC(:,:,i));
 	end
 
 	% ------------------------------------------------------------------------------
@@ -306,40 +306,28 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 	end
 
 	% ------------------------------------------------------------------------------
-	% String for file names
+	% Set up NBS temporary files
 	% ------------------------------------------------------------------------------
+	% String for file names
 	nameStr = [WhichSplit,'_',WhichParc,'_',WhichNoise];
 
-	% ------------------------------------------------------------------------------
 	% N per group
-	% ------------------------------------------------------------------------------
 	numG1 = sum(data.Group == g1);
 	numG2 = sum(data.Group == g2);
 
-	% ------------------------------------------------------------------------------
 	% Calculate primary threshold
-	% ------------------------------------------------------------------------------
 	df = numG1 + numG2 - 2;
 	Tval = tinv(1 - P,df);
-	% Tval = tinv(1 - 0.05,df);
-	% Tval = tinv(1 - 0.01,df);
-	% Tval = tinv(1 - 0.001,df);
 
-	% ------------------------------------------------------------------------------
 	% File names
-	% ------------------------------------------------------------------------------
 	matricesName = [nameStr,'_matrices_t',num2str(Tval),'.mat'];
 	designName = [nameStr,'_designMatrix_t',num2str(Tval),'.mat'];
 	outName = [nameStr,'_NBS_t',num2str(Tval),'.mat'];
 
-	% ------------------------------------------------------------------------------
 	% Generate 3D FC matrix for HC vs OCD
-	% ------------------------------------------------------------------------------
 	save(matricesName,'FC')
 
-	% ------------------------------------------------------------------------------
 	% Generate design matrix
-	% ------------------------------------------------------------------------------
 	designMatrix = [[ones(numG1,1); zeros(numG2,1)], [zeros(numG1,1); ones(numG2,1)], Cov];
 	save(designName,'designMatrix')
 
@@ -347,11 +335,11 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 	% Loop over NBS twice, once for each t contrast
 	% ------------------------------------------------------------------------------
 	nbsOut = cell(1,2);
-	for j = 2:2
+	for i = 1:2
 		% for reproducibility of t-contrasts in isolation
 		rng('default')
 
-		fprintf(1, 'Running NBS for contrast %u\n', j);
+		fprintf(1, 'Running NBS for contrast %u\n', i);
 		% ------------------------------------------------------------------------------
 		% Run NBS with default settings (based on SCZ example in manual)
 		% ------------------------------------------------------------------------------
@@ -360,12 +348,12 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 		UI.test.ui = 't-test';
 		UI.size.ui = 'Extent';
 		UI.thresh.ui = num2str(Tval);
-		UI.perms.ui = '10000';
+		UI.perms.ui = '5000';
 		UI.alpha.ui = '0.05';
-		if j == 1
+		if i == 1
 			% Group 1 > Group 2
 			UI.contrast.ui = ['[1,-1',zeroPad,']'];
-		elseif j == 2
+		elseif i == 2
 			% Group 1 < Group 2
 			UI.contrast.ui = ['[-1,1',zeroPad,']'];
 		end
@@ -376,10 +364,8 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 		switch WhichParc
 			case 'Gordon'
 				UI.node_coor.ui = '/gpfs/M2Home/projects/Monash076/Linden/ROIs/Gordon/Gordon_Centroids.txt';
-				% UI.node_coor.ui = '~/Dropbox/Work/ROIs/Gordon/Gordon_Centroids.txt';
 			case 'Power'
 				UI.node_coor.ui = '/gpfs/M2Home/projects/Monash076/Linden/ROIs/Power/Power2011_xyz_MNI.txt';
-				% UI.node_coor.ui = '~/Dropbox/Work/ROIs/Power/Power2011_xyz_MNI.txt';
 			end
 
 		S = [];
@@ -390,11 +376,10 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 		% ------------------------------------------------------------------------------
 		global nbs
 
-		nbsOut{j} = nbs;
+		nbsOut{i} = nbs;
 
 		clear nbs
 		clear global
-
 	end
 
 	% ------------------------------------------------------------------------------
