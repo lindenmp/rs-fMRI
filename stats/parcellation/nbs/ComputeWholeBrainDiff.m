@@ -113,6 +113,7 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 
 	data.fdJenk_m = fdJenk_m;
 	data.fdJenk = fdJenk;
+	clear fdJenk fdJenk_m
 
 	% compute number of volumes using the length of fdJenk
 	% note, this is assumed to be same for all subjects!
@@ -152,7 +153,7 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 				numCVols = numVols - sum(ScrubMask{i});
 			elseif ismember('spikeReg',runCensor,'rows') == 1
 				% Get spike regressors for subject i
-				spikereg = GetSpikeRegressors(fdJenk{i},0.25);
+				spikereg = GetSpikeRegressors(data.fdJenk{i},0.25);
 				% number of volumes - number of spike regressors (columns)
 				numCVols = numVols - size(spikereg,2);
 			end	
