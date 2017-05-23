@@ -200,6 +200,7 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 
 		% Add to data
 		data.tDOF = tDOF;
+		clear tDOF
 	end
 
 	% ------------------------------------------------------------------------------
@@ -229,7 +230,7 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 			% add Group var to data
 			data.Group = Group;
 
-			% Drop group 2
+			% Drop group 2 (medium motion group)
 			data = data(data.Group ~= 2,:);
 			% recompute numsubs
 			numSubs = length(data.ParticipantIDs);
@@ -359,7 +360,7 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 		UI.test.ui = 't-test';
 		UI.size.ui = 'Extent';
 		UI.thresh.ui = num2str(Tval);
-		UI.perms.ui = '5000';
+		UI.perms.ui = '10000';
 		UI.alpha.ui = '0.05';
 		if j == 1
 			% Group 1 > Group 2
