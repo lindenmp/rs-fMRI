@@ -80,70 +80,65 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 			metadata = textscan(fileID, '%s %u %u %s %s','HeaderLines',1, 'delimiter',',');
 			metadata{2} = double(metadata{2}); metadata{3} = double(metadata{3});
 
-			Cov = [];
+			data = table();
+			data.ParticipantIDs = metadata{1};
+			data.Group_Diagnostic = metadata{2};
 			% age
-			Cov(:,1) = metadata{3};
-			% mean center age
-			Cov(:,1) = Cov(:,1) - mean(Cov(:,1));
+			data.Age = metadata{3};
 			% gender
-			Cov(strmatch('F',metadata{4}),2) = 1; Cov(strmatch('M',metadata{4}),2) = 0;
-			zeroPad = ',0,0';
+			Gender = []; Gender(strmatch('F',metadata{4}),1) = 1; Gender(strmatch('M',metadata{4}),1) = 0;
+			data.Gender = Gender;
 		case 'UCLA'
 			metadata = textscan(fileID, '%s %u %u %s %s %u','HeaderLines',1, 'delimiter',',');
 			metadata{2} = double(metadata{2}); metadata{3} = double(metadata{3});
 			
-			Cov = [];
+			data = table();
+			data.ParticipantIDs = metadata{1};
+			data.Group_Diagnostic = metadata{2};
 			% age
-			Cov(:,1) = metadata{3};
-			% mean center age
-			Cov(:,1) = Cov(:,1) - mean(Cov(:,1));
+			data.Age = metadata{3};
 			% gender
-			Cov(strmatch('F',metadata{4}),2) = 1; Cov(strmatch('M',metadata{4}),2) = 0;
+			Gender = []; Gender(strmatch('F',metadata{4}),1) = 1; Gender(strmatch('M',metadata{4}),1) = 0;
+			data.Gender = Gender;
 			% scanner
-			Cov(:,3) = metadata{6};
-			zeroPad = ',0,0,0';
+			data.Scanner = metadata{6};
 	end
-
-	ParticipantIDs = metadata{1};
-	Group_Diagnostic = metadata{2};
 
 	% ------------------------------------------------------------------------------
 	% Jenkinson's mean FD
 	% ------------------------------------------------------------------------------
 	fprintf(1, 'Loading Jenkinson''s mean FD metric\n');
-	[exclude,~,fdJenk,fdJenk_m] = GetExcludeForSample(datadir,ParticipantIDs,preprostr);
+	[exclude,~,fdJenk,fdJenk_m] = GetExcludeForSample(datadir,data.ParticipantIDs,preprostr);
 	fprintf(1, 'done\n');
+
+	data.fdJenk_m = fdJenk_m;
+	data.fdJenk = fdJenk;
 
 	% compute number of volumes using the length of fdJenk
 	% note, this is assumed to be same for all subjects!
-	numVols = length(fdJenk{1});
+	numVols = length(data.fdJenk{1});
 
 	% ------------------------------------------------------------------------------
 	% Perform initial exclusion based on gross movement
 	% ------------------------------------------------------------------------------
-	ParticipantIDs(exclude(:,1)) = [];
-	Group_Diagnostic(exclude(:,1)) = [];
-	fdJenk_m(exclude(:,1)) = [];
-	fdJenk(exclude(:,1)) = [];
-	Cov(exclude(:,1),:) = [];
+	data(exclude(:,1),:) = [];
 
 	% compute numsubs
-	numSubs = length(ParticipantIDs);
-
-	% ------------------------------------------------------------------------------
-	% Power's scrubbing
-	% ------------------------------------------------------------------------------
-	if ismember('scrub',runCensor,'rows') == 1
-		fprintf(1, 'Loading scrubbing mask\n');
-		[ScrubMask,~,~,~] = GetScrubbingForSample(datadir,ParticipantIDs,preprostr);
-		fprintf(1, 'done\n');
-	end
+	numSubs = length(data.ParticipantIDs);
 
 	% ------------------------------------------------------------------------------
 	% Create exclusion vector based on <4 minutes of post-scrub BOLD data
 	% Note, subjects not excluded yet. that is done during the preprocessing loop below
 	% ------------------------------------------------------------------------------
 	if ismember('false',runCensor,'rows') == 0
+
+		% Power's scrubbing
+		if ismember('scrub',runCensor,'rows') == 1
+			fprintf(1, 'Loading scrubbing mask\n');
+			[ScrubMask,~,~,~] = GetScrubbingForSample(datadir,data.ParticipantIDs,preprostr);
+			fprintf(1, 'done\n');
+		end
+
 		% exclusion vector
 		excludeCensor = zeros(numSubs,1);
 		% threshold for exclusion in minutes
@@ -172,16 +167,38 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 		% convert to logical
 		excludeCensor = logical(excludeCensor);
 
-		ParticipantIDs(excludeCensor) = [];
-		Group_Diagnostic(excludeCensor) = [];
-		fdJenk_m(excludeCensor) = [];
-		fdJenk(excludeCensor) = [];
-		Cov(excludeCensor,:) = [];
-
-		% compute numsubs
-		numSubs = length(ParticipantIDs);
+		% remove subjects
+		data(excludeCensor,:) = [];
+		% recompute numsubs
+		numSubs = length(data.ParticipantIDs);
 
 		fprintf(1, '%u subjects excluded based on 4 minute censoring criteria \n', sum(excludeCensor));
+	end
+
+	% ------------------------------------------------------------------------------
+	% Add tDOF as an additional covariate for ICA-AROMA or aCC50 pipeline
+	% ------------------------------------------------------------------------------
+	WhichNoiseSplit = strsplit(WhichNoise,'+');
+
+	if any(strmatch('aCC50',WhichNoiseSplit,'exact')) == 1 | ...
+		any(strmatch('sICA-AROMA',WhichNoiseSplit,'exact')) == 1
+		fprintf(1, 'Computing tDOF: %s\n',WhichNoise);
+		
+		tDOF = zeros(numSubs,1);
+		for j = 1:numSubs
+			% Get noiseTS
+			x = dlmread([datadir,data.ParticipantIDs{j},preprostr,WhichNoise,'/noiseTS.txt']);
+			tDOF(j) = size(x,2);
+				        		
+			% If ICA-AROMA, get that too.
+	        if any(strmatch('sICA-AROMA',WhichNoiseSplit,'exact')) == 1
+				y = dlmread([datadir,data.ParticipantIDs{j},preprostr,WhichNoise,'/classified_motion_ICs.txt']);
+				tDOF(j) = tDOF(j) + size(y,2);
+			end
+		end
+
+		% Add to data
+		data.tDOF = tDOF;
 	end
 
 	% ------------------------------------------------------------------------------
@@ -192,22 +209,12 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 		% 1) based on motion
 
 			% retain only one group (HCs assumed to be denoted by value 1)
-			ParticipantIDs = ParticipantIDs(Group_Diagnostic == 1);
-			fdJenk = fdJenk(Group_Diagnostic == 1);
-			fdJenk_m = fdJenk_m(Group_Diagnostic == 1);
-			Cov = Cov(Group_Diagnostic == 1,:);
-
-			% Sort movement
-			[~,idx] = sort(fdJenk_m,'ascend');
-
-			% rearrange variables according to motion
-			ParticipantIDs = ParticipantIDs(idx);
-			fdJenk = fdJenk(idx);
-			fdJenk_m = fdJenk_m(idx);
-			Cov = Cov(idx);
-
+			data = data(data.Group_Diagnostic == 1,:);
 			% recompute numsubs
-			numSubs = length(ParticipantIDs);
+			numSubs = length(data.ParticipantIDs);
+
+			% Sort by average movement
+			data = sortrows(data,'fdJenk_m');
 
 			% create grouping variable
 			% this will ensure that group 1 and 3 are the same size
@@ -217,13 +224,31 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 			Group(1:thirdPoint) = 1;
 			Group(end-thirdPoint+1:end) = 3;
 			Group(Group == 0) = 2;
+			
+			% add Group var to data
+			data.Group = Group;
+
+			% Drop group 2
+			data = data(data.Group ~= 2,:);
+			% recompute numsubs
+			numSubs = length(data.ParticipantIDs);
 
 			% Select which groups to perform t-tests on
 			g1 = 1; % Low motion
 			g2 = 3; % High motion
 		case 'Diagnostic'
 		% 2) Case vs HCs
-			Group = Group_Diagnostic;
+			% Sort by diagnostic category
+			data = sortrows(data,'Group_Diagnostic');
+
+			% add Group var to data
+			data.Group = data.Group_Diagnostic;
+
+			% Drop any group that isnt group 1 or 2 (assumed 1 HC, patient = 2, other patients = >3)
+			data = data(data.Group == 1 | data.Group == 2,:);
+			% recompute numsubs
+			numSubs = length(data.ParticipantIDs);
+
 			% Select which groups to perform t-tests on
 			g1 = 1; % HCs
 			g2 = 2; % non-HCs
@@ -235,7 +260,7 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 	fprintf(1, 'Loading time series data: %s\n',WhichNoise);
 	cfg = [];
 	for j = 1:numSubs
-	    tsdir = [datadir,ParticipantIDs{j},preprostr,WhichNoise,'/'];
+	    tsdir = [datadir,data.ParticipantIDs{j},preprostr,WhichNoise,'/'];
 	    
 	    clear temp
 	    temp = load([tsdir,'cfg.mat']);
@@ -257,6 +282,22 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 	end
 
 	% ------------------------------------------------------------------------------
+	% Construct covariate matrix
+	% ------------------------------------------------------------------------------
+	% Mean center
+	data.Age = data.Age - mean(data.Age);
+	data.tDOF = data.tDOF - mean(data.tDOF);
+
+	switch WhichProject
+		case 'OCDPG'
+			Cov = [data.Age,double(data.Gender),data.tDOF];
+			zeroPad = ',0,0,0';
+		case 'UCLA'
+			Cov = [data.Age,double(data.Gender),double(data.Scanner),data.tDOF];
+			zeroPad = ',0,0,0,0';
+	end
+
+	% ------------------------------------------------------------------------------
 	% String for file names
 	% ------------------------------------------------------------------------------
 	nameStr = [WhichSplit,'_',WhichParc,'_',WhichNoise];
@@ -264,8 +305,8 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 	% ------------------------------------------------------------------------------
 	% N per group
 	% ------------------------------------------------------------------------------
-	numG1 = sum(Group == g1);
-	numG2 = sum(Group == g2);
+	numG1 = sum(data.Group == g1);
+	numG2 = sum(data.Group == g2);
 
 	% ------------------------------------------------------------------------------
 	% Calculate primary threshold
@@ -286,43 +327,12 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 	% ------------------------------------------------------------------------------
 	% Generate 3D FC matrix for HC vs OCD
 	% ------------------------------------------------------------------------------
-	Mat = cat(3,FC(:,:,Group == g1),FC(:,:,Group == g2));
-	save(matricesName,'Mat')
-
-	% ------------------------------------------------------------------------------
-	% Add tDOF as an additional covariate for ICA-AROMA or aCC50 pipeline
-	% ------------------------------------------------------------------------------
-	WhichNoiseSplit = strsplit(WhichNoise,'+');
-
-	if any(strmatch('aCC50',WhichNoiseSplit,'exact')) == 1 | ...
-		any(strmatch('sICA-AROMA',WhichNoiseSplit,'exact')) == 1
-		fprintf(1, 'Computing tDOF: %s\n',WhichNoise);
-		
-		tDOF = zeros(numSubs,1);
-		for j = 1:numSubs
-			% Get noiseTS
-			x = dlmread([datadir,ParticipantIDs{j},preprostr,WhichNoise,'/noiseTS.txt']);
-			tDOF(j) = size(x,2);
-				        		
-			% If ICA-AROMA, get that too.
-	        if any(strmatch('sICA-AROMA',WhichNoiseSplit,'exact')) == 1
-				y = dlmread([datadir,ParticipantIDs{j},preprostr,WhichNoise,'/classified_motion_ICs.txt']);
-				tDOF(j) = tDOF(j) + size(y,2);
-			end
-		end
-
-		% mean center
-		tDOF = tDOF - mean(tDOF);
-		% add to Cov
-		Cov = [Cov tDOF];
-		% update zero pad
-		zeroPad = [zeroPad,',0'];
-	end
+	save(matricesName,'FC')
 
 	% ------------------------------------------------------------------------------
 	% Generate design matrix
 	% ------------------------------------------------------------------------------
-	designMatrix = [[ones(numG1,1); zeros(numG2,1)], [zeros(numG1,1); ones(numG2,1)], [Cov(Group == g1,:); Cov(Group == g2,:)]];
+	designMatrix = [[ones(numG1,1); zeros(numG2,1)], [zeros(numG1,1); ones(numG2,1)], Cov];
 	save(designName,'designMatrix')
 
 	% ------------------------------------------------------------------------------
