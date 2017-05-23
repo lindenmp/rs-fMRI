@@ -3,7 +3,7 @@
 #SBATCH --job-name=fMRI-WholeBrain
 #SBATCH --account=monash076
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=2
+#SBATCH --cpus-per-task=1
 #SBATCH --time=12:00:00
 #SBATCH --mail-user=linden.parkes@monash.edu
 #SBATCH --mail-type=FAIL
