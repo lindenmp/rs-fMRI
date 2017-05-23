@@ -392,7 +392,7 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 	% ------------------------------------------------------------------------------
 	% Save
 	% ------------------------------------------------------------------------------
-	save(outName,'nbsOut','P','Tval','df','Mat','designMatrix')
+	save(outName,'nbsOut','P','Tval','df','FC','designMatrix')
 
 	% ------------------------------------------------------------------------------
 	% Clean up
