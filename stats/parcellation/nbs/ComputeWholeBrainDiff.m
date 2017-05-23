@@ -286,7 +286,6 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 	% ------------------------------------------------------------------------------
 	% Mean center
 	data.Age = data.Age - mean(data.Age);
-	data.tDOF = data.tDOF - mean(data.tDOF);
 
 	switch WhichProject
 		case 'OCDPG'
@@ -299,6 +298,7 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 
 	if any(strmatch('aCC50',WhichNoiseSplit,'exact')) == 1 | ...
 		any(strmatch('sICA-AROMA',WhichNoiseSplit,'exact')) == 1
+			data.tDOF = data.tDOF - mean(data.tDOF);
 			Cov = [Cov,data.tDOF];
 			zeroPad = [zeroPad,',0'];
 		end
