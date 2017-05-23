@@ -301,7 +301,6 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 			data.tDOF = data.tDOF - mean(data.tDOF);
 			Cov = [Cov,data.tDOF];
 			zeroPad = [zeroPad,',0'];
-		end
 	end
 
 	% ------------------------------------------------------------------------------
