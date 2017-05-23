@@ -290,11 +290,18 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 
 	switch WhichProject
 		case 'OCDPG'
-			Cov = [data.Age,double(data.Gender),data.tDOF];
-			zeroPad = ',0,0,0';
+			Cov = [data.Age,double(data.Gender)];
+			zeroPad = ',0,0';
 		case 'UCLA'
-			Cov = [data.Age,double(data.Gender),double(data.Scanner),data.tDOF];
-			zeroPad = ',0,0,0,0';
+			Cov = [data.Age,double(data.Gender),double(data.Scanner)];
+			zeroPad = ',0,0,0';
+	end
+
+	if any(strmatch('aCC50',WhichNoiseSplit,'exact')) == 1 | ...
+		any(strmatch('sICA-AROMA',WhichNoiseSplit,'exact')) == 1
+			Cov = [Cov,data.tDOF];
+			zeroPad = [zeroPad,',0'];
+		end
 	end
 
 	% ------------------------------------------------------------------------------
