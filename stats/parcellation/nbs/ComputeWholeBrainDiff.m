@@ -347,8 +347,8 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 	% Loop over NBS twice, once for each t contrast
 	% ------------------------------------------------------------------------------
 	nbsOut = cell(1,2);
-	for j = 1:2
-		% for reproducibility of t-contrasts in isolationg
+	for j = 2:2
+		% for reproducibility of t-contrasts in isolation
 		rng('default')
 
 		fprintf(1, 'Running NBS for contrast %u\n', j);
