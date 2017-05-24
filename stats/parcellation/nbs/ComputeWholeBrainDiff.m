@@ -179,29 +179,29 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 	% ------------------------------------------------------------------------------
 	% Add tDOF as an additional covariate for ICA-AROMA or aCC50 pipeline
 	% ------------------------------------------------------------------------------
-	% WhichNoiseSplit = strsplit(WhichNoise,'+');
+	WhichNoiseSplit = strsplit(WhichNoise,'+');
 
-	% if any(strmatch('aCC50',WhichNoiseSplit,'exact')) == 1 | ...
-	% 	any(strmatch('sICA-AROMA',WhichNoiseSplit,'exact')) == 1
-	% 	fprintf(1, 'Computing tDOF: %s\n',WhichNoise);
+	if any(strmatch('aCC50',WhichNoiseSplit,'exact')) == 1 | ...
+		any(strmatch('sICA-AROMA',WhichNoiseSplit,'exact')) == 1
+		fprintf(1, 'Computing tDOF: %s\n',WhichNoise);
 		
-	% 	tDOF = zeros(numSubs,1);
-	% 	for i = 1:numSubs
-	% 		% Get noiseTS
-	% 		x = dlmread([datadir,data.ParticipantIDs{i},preprostr,WhichNoise,'/noiseTS.txt']);
-	% 		tDOF(i) = size(x,2);
+		tDOF = zeros(numSubs,1);
+		for i = 1:numSubs
+			% Get noiseTS
+			x = dlmread([datadir,data.ParticipantIDs{i},preprostr,WhichNoise,'/noiseTS.txt']);
+			tDOF(i) = size(x,2);
 				        		
-	% 		% If ICA-AROMA, get that too.
-	%         if any(strmatch('sICA-AROMA',WhichNoiseSplit,'exact')) == 1
-	% 			y = dlmread([datadir,data.ParticipantIDs{i},preprostr,WhichNoise,'/classified_motion_ICs.txt']);
-	% 			tDOF(i) = tDOF(i) + size(y,2);
-	% 		end
-	% 	end
+			% If ICA-AROMA, get that too.
+	        if any(strmatch('sICA-AROMA',WhichNoiseSplit,'exact')) == 1
+				y = dlmread([datadir,data.ParticipantIDs{i},preprostr,WhichNoise,'/classified_motion_ICs.txt']);
+				tDOF(i) = tDOF(i) + size(y,2);
+			end
+		end
 
-	% 	% Add to data
-	% 	data.tDOF = tDOF;
-	% 	clear tDOF
-	% end
+		% Add to data
+		data.tDOF = tDOF;
+		clear tDOF
+	end
 
 	% ------------------------------------------------------------------------------
 	% Split subject's
@@ -298,12 +298,12 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 			zeroPad = ',0,0,0';
 	end
 
-	% if any(strmatch('aCC50',WhichNoiseSplit,'exact')) == 1 | ...
-	% 	any(strmatch('sICA-AROMA',WhichNoiseSplit,'exact')) == 1
-	% 		data.tDOF = data.tDOF - mean(data.tDOF);
-	% 		Cov = [Cov,data.tDOF];
-	% 		zeroPad = [zeroPad,',0'];
-	% end
+	if any(strmatch('aCC50',WhichNoiseSplit,'exact')) == 1 | ...
+		any(strmatch('sICA-AROMA',WhichNoiseSplit,'exact')) == 1
+			data.tDOF = data.tDOF - mean(data.tDOF);
+			Cov = [Cov,data.tDOF];
+			zeroPad = [zeroPad,',0'];
+	end
 
 	% ------------------------------------------------------------------------------
 	% Set up NBS temporary files
