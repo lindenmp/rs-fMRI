@@ -177,33 +177,6 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 	end
 
 	% ------------------------------------------------------------------------------
-	% Add tDOF as an additional covariate for ICA-AROMA or aCC50 pipeline
-	% ------------------------------------------------------------------------------
-	WhichNoiseSplit = strsplit(WhichNoise,'+');
-
-	if any(strmatch('aCC50',WhichNoiseSplit,'exact')) == 1 | ...
-		any(strmatch('sICA-AROMA',WhichNoiseSplit,'exact')) == 1
-		fprintf(1, 'Computing tDOF: %s\n',WhichNoise);
-		
-		tDOF = zeros(numSubs,1);
-		for i = 1:numSubs
-			% Get noiseTS
-			x = dlmread([datadir,data.ParticipantIDs{i},preprostr,WhichNoise,'/noiseTS.txt']);
-			tDOF(i) = size(x,2);
-				        		
-			% If ICA-AROMA, get that too.
-	        if any(strmatch('sICA-AROMA',WhichNoiseSplit,'exact')) == 1
-				y = dlmread([datadir,data.ParticipantIDs{i},preprostr,WhichNoise,'/classified_motion_ICs.txt']);
-				tDOF(i) = tDOF(i) + size(y,2);
-			end
-		end
-
-		% Add to data
-		data.tDOF = tDOF;
-		clear tDOF
-	end
-
-	% ------------------------------------------------------------------------------
 	% Split subject's
 	% ------------------------------------------------------------------------------
 	switch WhichSplit
@@ -254,6 +227,33 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 			% Select which groups to perform t-tests on
 			g1 = 1; % HCs
 			g2 = 2; % non-HCs
+	end
+
+	% ------------------------------------------------------------------------------
+	% Add tDOF as an additional covariate for ICA-AROMA or aCC50 pipeline
+	% ------------------------------------------------------------------------------
+	WhichNoiseSplit = strsplit(WhichNoise,'+');
+
+	if any(strmatch('aCC50',WhichNoiseSplit,'exact')) == 1 | ...
+		any(strmatch('sICA-AROMA',WhichNoiseSplit,'exact')) == 1
+		fprintf(1, 'Computing tDOF: %s\n',WhichNoise);
+		
+		tDOF = zeros(numSubs,1);
+		for i = 1:numSubs
+			% Get noiseTS
+			x = dlmread([datadir,data.ParticipantIDs{i},preprostr,WhichNoise,'/noiseTS.txt']);
+			tDOF(i) = size(x,2);
+				        		
+			% If ICA-AROMA, get that too.
+	        if any(strmatch('sICA-AROMA',WhichNoiseSplit,'exact')) == 1
+				y = dlmread([datadir,data.ParticipantIDs{i},preprostr,WhichNoise,'/classified_motion_ICs.txt']);
+				tDOF(i) = tDOF(i) + size(y,2);
+			end
+		end
+
+		% Add to data
+		data.tDOF = tDOF;
+		clear tDOF
 	end
 
 	% ------------------------------------------------------------------------------
