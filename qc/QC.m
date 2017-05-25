@@ -335,6 +335,10 @@ end
 		allData().NaNFilterMat = [];
 
 		allData().NBS_PropSig = [];
+		
+		allData().u05_PropSig = [];
+		allData().u001_PropSig = [];
+		allData().FDR_PropSig = [];
 	end
 
 	% Add test-retest variables if WhichProject == 'NYU_2'
@@ -620,18 +624,12 @@ for i = 1:numPrePro
 			% Threshold statMat for matrix plot
 			% ------------------------------------------------------------------------------
 			if ~isempty(nbs.NBS.con_mat)
-				fprintf(1, '\tNOTE: analysing network 1 of %u only... \n', length(nbs.NBS.con_mat));
-
 				% binary matrix denoting significant edges
 				allData(i).NBS_sigMat{j} = nbs.NBS.con_mat{1};
 				% get bottom triangle for accurate reordering of rows and columns (NBS only outputs upper triangle)
 				allData(i).NBS_sigMat{j} = [allData(i).NBS_sigMat{j} + allData(i).NBS_sigMat{j}'];
-				
 				% flatten upper triangle
 				allData(i).NBS_sigVec{j} = LP_FlatMat(allData(i).NBS_sigMat{j});
-			else
-				% if no sig connections, replace statMat{i,j} with zeros
-				allData(i).NBS_statMat{j} = zeros(size(allData(i).NBS_statMat{j}));
 			end
 
 			% ------------------------------------------------------------------------------
@@ -639,6 +637,33 @@ for i = 1:numPrePro
 			% ------------------------------------------------------------------------------
 		    allData(i).NBS_PropSig(j) = sum(allData(i).NBS_sigVec{j}(allData(i).NaNFilter)) / sum(allData(i).NaNFilter) * 100;
 		    % allData(i).NBS_PropSig(j) = sum(allData(i).NBS_sigVec{j}) / numConnections * 100;
+
+			% ------------------------------------------------------------------------------
+			% Calculate PropSig at different thresholds for comparison
+			% ------------------------------------------------------------------------------
+			% Get design matrix w/ Cov from NBS
+		    X = nbs.GLM.X;
+
+		    % number of subjects in NBS
+		    numSubsNBS = size(X,1);
+
+		    % Get NBS t stat
+			t_stat = LP_FlatMat(allData(i).NBS_statMat{j});
+			% Calculate p-value
+			pval = 1 - tcdf(t_stat,numSubsNBS - rank(X));
+
+			% 1) p < 0.05 unc
+			pval_thr = pval < 0.05;
+		    allData(i).u05_PropSig(j) = sum(pval_thr(allData(i).NaNFilter)) / sum(allData(i).NaNFilter) * 100;
+
+			% 2) p < 0.001 unc
+			pval_thr = pval < 0.001;
+		    allData(i).u001_PropSig(j) = sum(pval_thr(allData(i).NaNFilter)) / sum(allData(i).NaNFilter) * 100;
+
+			% 3) p < 0.05 FDR
+			pval_cor = mafdr(pval,'BHFDR','true');
+			pval_thr = pval_cor < 0.05;
+		    allData(i).FDR_PropSig(j) = sum(pval_thr(allData(i).NaNFilter)) / sum(allData(i).NaNFilter) * 100;
 		end
 		% convert PropSig to full double. (for some reason it comes sparse)
 		allData(i).NBS_PropSig = full(allData(i).NBS_PropSig);
