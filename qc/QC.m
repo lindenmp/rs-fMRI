@@ -468,7 +468,7 @@ for i = 1:numPrePro
 		for j = 1:numSubs
 			allData(i).FC_censored(:,:,j) = corr(allData(i).cfg(j).roiTS_censored{Parc});
 			% Perform fisher z transform
-			allData(i).FC_censored(:,:,j) = fisherz(allData(i).FC_censored(:,:,j));
+			allData(i).FC_censored(:,:,j) = atanh(allData(i).FC_censored(:,:,j));
 		end
 
 		% ------------------------------------------------------------------------------
