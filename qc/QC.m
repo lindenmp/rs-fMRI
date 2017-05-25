@@ -767,8 +767,7 @@ if runPlot
 	% ------------------------------------------------------------------------------
 	% Chart colors and line styles
 	% ------------------------------------------------------------------------------
-	% tempColors = num2cell(colormap('hot'),2);
-	tempColors = num2cell([254,204,92;253,141,60;240,59,32;189,0,38]./255,2); 
+	tempColors = num2cell([255,105,97;97,168,255;178,223,138;117,112,179]./255,2);  
 	for i = 1:numPrePro
 		strs = strsplit(allData(i).noiseOptions,'+');
         % colors
