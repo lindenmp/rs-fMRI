@@ -790,10 +790,10 @@ if runPlot
 	% QC-FC significant proportion
 	% ------------------------------------------------------------------------------
 	if ~runScrub & ~runSR
-		Fig_QCFC_Dist = figure('color','w', 'units', 'centimeters', 'pos', [0 0 21 9], 'name',['Fig_QCFC_Dist']); box('on'); movegui(Fig_QCFC_Dist,'center');
+		Fig_QCFC_Dist = figure('color','w', 'units', 'centimeters', 'pos', [0 0 16 9], 'name',['Fig_QCFC_Dist']); box('on'); movegui(Fig_QCFC_Dist,'center');
 		sp = subplot(1,3,1);
 		pos = get(sp,'Position');
-	    set(gca,'Position',[pos(1)*2.25, pos(2)*1.2, pos(3)*1.75, pos(4)*1]); % [left bottom width height]
+	    set(gca,'Position',[pos(1)*2.25, pos(2)*1.2, pos(3)*1.5, pos(4)*1]); % [left bottom width height]
 
 		% Create data
 		data = {[allData(:).QCFC_PropSig_corr]'};
@@ -806,9 +806,9 @@ if runPlot
 		% Create bar chart
 		clear extraParams
 		extraParams.xTickLabels = {allData(:).noiseOptionsNames};
-		extraParams.xLabel = 'Pipeline';
+		extraParams.xLabel = ''; % 'Pipeline'
 		extraParams.yLabel = 'QC-FC (%)';
-		extraParams.plotWidth = 15.75;
+		extraParams.plotWidth = 10.75;
 		extraParams.plotHeight = 10;
 	    extraParams.theColors = theColors;
 	    extraParams.theLines = theLines;
@@ -821,7 +821,7 @@ if runPlot
 		% ------------------------------------------------------------------------------
 		sp = subplot(1,3,3);
 		pos = get(sp,'Position');
-	    set(gca,'Position',[pos(1)*1, pos(2)*1.2, pos(3)*1.25, pos(4)*1]); % [left bottom width height]
+	    set(gca,'Position',[pos(1)*0.925, pos(2)*1.2, pos(3)*1.55, pos(4)*1]); % [left bottom width height]
 		clear extraParams
 		% extraParams.theLabels = {allData(:).noiseOptionsNames};
 		extraParams.customSpot = '';
