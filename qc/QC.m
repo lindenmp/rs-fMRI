@@ -951,52 +951,50 @@ if runPlot
 		% ------------------------------------------------------------------------------
 		% WRT ICC
 		% ------------------------------------------------------------------------------
-		% Create data
-		data = {[allData(:).ICCw_mean]'};
-		data_std = {[allData(:).ICCw_std]'};
-
-		% reorder by tDOF-loss
-		data{1} = data{1}(tDOF_idx);
-		data_std{1} = data_std{1}(tDOF_idx);
-
-		% Create table
+		Fig_ICCw = figure('color','w', 'units', 'centimeters', 'pos', [0 0 10.5 9], 'name',['Fig_ICCw']); box('on'); movegui(Fig_ICCw,'center');
+		data = {allData(:).ICCw}';
 		RowNames = {allData(:).noiseOptionsNames}';
-		T = table(data{1},'RowNames',RowNames(tDOF_idx),'VariableNames',{'WRT_ICC'})
 
-		% Create bar chart
-		extraParams.xTickLabels = RowNames(tDOF_idx);
-		extraParams.xLabel = 'Pipeline';
-		extraParams.yLabel = 'Within Session ICC';
-		extraParams.yLimits = [0 1];
-	    extraParams.theColors = theColors;
-    	extraParams.theLines = theLines;
+		clear extraParams
+		extraParams.customSpot = '';
+		extraParams.add0Line = true;
+		extraParams.theColors = theColors;
+		JitteredParallelScatter(data(tDOF_idx),1,1,0,extraParams)
+		ax = gca;
 
-		TheBarChart(data,data_std,true,extraParams)
+		% Set axis stuff
+		ax.FontSize = FSize;
+		ax.XTick = 1:numPrePro;
+		ax.XTickLabel = RowNames(tDOF_idx);
+		ax.XLim = ([0 numPrePro+1]);
+		ax.YLim = ([-0.8 1]);
+		xlabel('Pipeline')
+		ylabel('Within Session ICC')
+		view(90,90)
 
 		% ------------------------------------------------------------------------------
 		% BRT ICC
 		% ------------------------------------------------------------------------------
-		% Create data
-		data = {[allData(:).ICCb_mean]'};
-		data_std = {[allData(:).ICCb_std]'};
-		
-		% reorder by tDOF-loss
-		data{1} = data{1}(tDOF_idx);
-		data_std{1} = data_std{1}(tDOF_idx);
-
-		% Create table
+		Fig_ICCb = figure('color','w', 'units', 'centimeters', 'pos', [0 0 10.5 9], 'name',['Fig_ICCb']); box('on'); movegui(Fig_ICCb,'center');
+		data = {allData(:).ICCb}';
 		RowNames = {allData(:).noiseOptionsNames}';
-		T = table(data{1},'RowNames',RowNames(tDOF_idx),'VariableNames',{'BRT_ICC'})
 
-		% Create bar chart
-		extraParams.xTickLabels = RowNames(tDOF_idx);
-		extraParams.xLabel = 'Pipeline';
-		extraParams.yLabel = 'Between Session ICC';
-		extraParams.yLimits = [0 1];
-	    extraParams.theColors = theColors;
-    	extraParams.theLines = theLines;
+		clear extraParams
+		extraParams.customSpot = '';
+		extraParams.add0Line = true;
+		extraParams.theColors = theColors;
+		JitteredParallelScatter(data(tDOF_idx),1,1,0,extraParams)
+		ax = gca;
 
-		TheBarChart(data,data_std,true,extraParams)
+		% Set axis stuff
+		ax.FontSize = FSize;
+		ax.XTick = 1:numPrePro;
+		ax.XTickLabel = RowNames(tDOF_idx);
+		ax.XLim = ([0 numPrePro+1]);
+		ax.YLim = ([-0.8 1]);
+		xlabel('Pipeline')
+		ylabel('Between Session ICC')
+		view(90,90)
 
 		% ------------------------------------------------------------------------------
 		% ICC tstat
