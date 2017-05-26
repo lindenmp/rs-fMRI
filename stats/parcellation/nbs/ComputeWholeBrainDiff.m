@@ -229,6 +229,10 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 			g2 = 2; % non-HCs
 	end
 
+	% N per group
+	numG1 = sum(data.Group == g1);
+	numG2 = sum(data.Group == g2);
+
 	% ------------------------------------------------------------------------------
 	% Add tDOF as an additional covariate for ICA-AROMA or aCC50 pipeline
 	% ------------------------------------------------------------------------------
@@ -292,28 +296,24 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 	switch WhichProject
 		case 'OCDPG'
 			Cov = [data.Age,double(data.Gender)];
-			zeroPad = ',0,0';
 		case 'UCLA'
 			Cov = [data.Age,double(data.Gender),double(data.Scanner)];
-			zeroPad = ',0,0,0';
 	end
 
 	if any(strmatch('aCC50',WhichNoiseSplit,'exact')) == 1 | ...
 		any(strmatch('sICA-AROMA',WhichNoiseSplit,'exact')) == 1
 			data.tDOF = data.tDOF - mean(data.tDOF);
 			Cov = [Cov,data.tDOF];
-			zeroPad = [zeroPad,',0'];
 	end
+
+	% number of covariates
+	numCov = size(Cov,2);
 
 	% ------------------------------------------------------------------------------
 	% Set up NBS temporary files
 	% ------------------------------------------------------------------------------
 	% String for file names
 	nameStr = [WhichSplit,'_',WhichParc,'_',WhichNoise];
-
-	% N per group
-	numG1 = sum(data.Group == g1);
-	numG2 = sum(data.Group == g2);
 
 	% Calculate primary threshold
 	df = numG1 + numG2 - 2;
@@ -352,10 +352,10 @@ function [] = ComputeWholeBrainDiff(WhichProject,WhichSplit,WhichParc,WhichNoise
 		UI.alpha.ui = '0.05';
 		if i == 1
 			% Group 1 > Group 2
-			UI.contrast.ui = ['[1,-1',zeroPad,']'];
+			UI.contrast.ui = ['[1,-1',repmat(',0',1,numCov),']'];
 		elseif i == 2
 			% Group 1 < Group 2
-			UI.contrast.ui = ['[-1,1',zeroPad,']'];
+			UI.contrast.ui = ['[-1,1',repmat(',0',1,numCov),']'];
 		end
 		UI.matrices.ui = matricesName;
 		UI.design.ui = designName;
