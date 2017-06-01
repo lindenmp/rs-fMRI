@@ -335,7 +335,7 @@ function [] = run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject,discard
             % Desired voxel dimension (in mm) of analysis after spatial normalization
             cfg.voxdim = 2;
             % Number of slices in EPI volumes.
-            cfg.numSlices = 32;
+            cfg.numSlices = 33;
             % Vector defining acquisition order of EPI slices (necessary for slice-timing correction.
             % See help of slicetime_epis.m for guidance on how to define)
             % cfg.order = [1:1:cfg.numSlices]; % ascending
