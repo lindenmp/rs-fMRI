@@ -200,8 +200,19 @@ function [] = TheBarChart(data,data_std,makeFigure,extraParams)
 	ax.XTick = XTicks;
 	ax.XTickLabel = xTickLabels;
 	ax.XTickLabelRotation = XTickLabelRot;
-	ax.YTickLabelRotation = YTickLabelRot;
 	ax.XLim = (xLimits);
+	ax.YTickLabelRotation = YTickLabelRot;
+	if yLimits(2) <= 1
+		ax.YTick = ([yLimits(1):0.5:yLimits(2)]);
+	elseif yLimits(2) <= 20
+		ax.YTick = ([yLimits(1):10:yLimits(2)]);
+	elseif yLimits(2) == 25
+		ax.YTick = ([yLimits(1):5:yLimits(2)]);
+	elseif yLimits(2) <= 40
+		ax.YTick = ([yLimits(1):20:yLimits(2)]);
+	else
+		% ax.YTick = ([yLimits(1):yLimits(2)]);
+	end
 	ax.YLim = (yLimits);
 	ax.YDir = Yaxisdir;
 
