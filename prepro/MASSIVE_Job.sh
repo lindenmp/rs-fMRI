@@ -38,7 +38,7 @@ echo -e "\t\t\t ----- ${SLURM_ARRAY_TASK_ID} ${subject} ----- "
 echo -e "\t\t\t --------------------------- \n"
 
 # Run pipeline
-cd /gpfs/M2Home/projects/Monash076/Linden/scripts/rfMRI-PrePro/
+cd /gpfs/M2Home/projects/Monash076/Linden/scripts/rs-fMRI/prepro/
 
 discard=1
 slicetime=1
