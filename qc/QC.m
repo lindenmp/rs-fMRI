@@ -44,7 +44,7 @@ runGroupPlots = false; % can only be true if runBigPlots is also true
 if ~runBigPlots & runGroupPlots
 	runBigPlots = true
 end
-runPhiPlots = false;
+runOverlapPlots = false;
 
 fprintf(1, 'Running rfMRI QC.\n\tDataset: %s\n\tParcelation: %s\n',WhichProject,WhichParc);
 if ismember('OCDPG',WhichProject,'rows') | ismember('UCLA',WhichProject,'rows')
@@ -64,22 +64,23 @@ switch WhichParc
 		Parc = 1;
 		ROI_Coords = dlmread('~/Dropbox/Work/ROIs/Gordon/Gordon_Centroids.txt');
 		fileName = '~/Dropbox/Work/ROIs/Gordon/Community.txt';
-		fileID = fopen(fileName);
-		ROIStruct = textscan(fileID,'%s'); ROIStruct = ROIStruct{1};
-
-		% rearrange by community
-		[ROIStruct_com,ROI_idx] = sort(ROIStruct);
-		% ROI_Coords = ROI_Coords(ROI_idx,:);
 	case 'Power'
 		Parc = 2;
 		ROI_Coords = dlmread('~/Dropbox/Work/ROIs/Power/Power2011_xyz_MNI.txt');
 		fileName = '~/Dropbox/Work/ROIs/Power/Community.txt';
-		fileID = fopen(fileName);
-		ROIStruct = textscan(fileID,'%s'); ROIStruct = ROIStruct{1};
+end
 
-		% rearrange by community
-		[ROIStruct_com,ROI_idx] = sort(ROIStruct);
-		% ROI_Coords = ROI_Coords(ROI_idx);
+fileID = fopen(fileName);
+ROIStruct = textscan(fileID,'%s'); ROIStruct = ROIStruct{1};
+% rearrange by community
+[ROIStruct_com,ROI_idx] = sort(ROIStruct);
+
+% Convert text labels to unique integer values
+ROILabels = unique(ROIStruct);
+ROIStructID = zeros(size(ROIStruct));
+for i = 1:length(ROILabels)
+	x = find(strcmp(ROIStruct, ROILabels{i}));
+	ROIStructID(x) = i;
 end
 
 % ------------------------------------------------------------------------------
@@ -98,7 +99,7 @@ numROIs = size(ROIDist,1);
 numConnections = numROIs * (numROIs - 1) / 2;
 
 % ------------------------------------------------------------------------------
-% Preprocessing pipelines
+% 							Preprocessing pipelines
 % ------------------------------------------------------------------------------
 if ~runSR & ~runScrub
 	noiseOptions = {'6P',...
@@ -133,28 +134,6 @@ if ~runSR & ~runScrub
 						'ICA-AROMA+2Phys+GSR',...
 						'ICA-AROMA+8Phys',...
 						'ICA-AROMA+8Phys+4GSR'};
-
-	% noiseOptions = {'24P+aCC50',...
-	% 				'sICA-AROMA+2P'};
-	% noiseOptionsNames = {'24HMP+aCompCor50',...
-	% 					'ICA-AROMA+2Phys'};
-
-	% noiseOptions = {'6P+2P',...
-	% 				'6P+2P+GSR',...
-	% 				'24P+8P',...
-	% 				'24P+8P+4GSR',...
-	% 				'24P+aCC',...
-	% 				'24P+aCC+4GSR',...
-	% 				'sICA-AROMA+2P',...
-	% 				'sICA-AROMA+2P+GSR'};
-	% noiseOptionsNames = {'Mot+MeanPhys',...
-	% 					'Mot+MeanPhys+GSR',...
-	% 					'eMot+MeanPhys',...
-	% 					'eMot+MeanPhys+GSR',...
-	% 					'eMot+aCompCor',...
-	% 					'eMot+aCompCor+GSR',...
-	% 					'ICA+MeanPhys',...
-	% 					'ICA+MeanPhys+GSR'};
 elseif runScrub | runSR
 	% volume censoring
 	noiseOptions = {'24P+8P+4GSR',...
@@ -179,7 +158,7 @@ switch WhichProject
 
 		TR = 2.5;
 
-		nbsdir = '~/Dropbox/Work/ResProjects/rfMRI_denoise/OCDPG/WholeBrain_Out_Cov/';
+		nbsdir = '~/Dropbox/Work/ResProjects/rfMRI_denoise/OCDPG/NBS_tDOF/';
 	case 'UCLA'
 		projdir = '~/Dropbox/Work/ResProjects/rfMRI_denoise/UCLA/';
 		sublist = [projdir,'UCLA.csv'];
@@ -188,7 +167,9 @@ switch WhichProject
 
 		TR = 2;
 
-		nbsdir = '~/Dropbox/Work/ResProjects/rfMRI_denoise/UCLA/WholeBrain_Out_Cov/';
+		% nbsdir = '~/Dropbox/Work/ResProjects/rfMRI_denoise/UCLA/NBS_tDOF/';
+		% nbsdir = '~/Dropbox/Work/ResProjects/rfMRI_denoise/UCLA/NBS_tDOF_scrub/';
+		nbsdir = '~/Dropbox/Work/ResProjects/rfMRI_denoise/UCLA/NBS_tDOF_spikeReg/';
 	case 'NYU_2'
 		projdir = '~/Dropbox/Work/ResProjects/rfMRI_denoise/NYU_2/';
 		sublist = [projdir,'NYU_2.csv'];
@@ -241,6 +222,7 @@ numGroups = numel(unique(Group));
 % Jenkinson's mean FD
 % ------------------------------------------------------------------------------
 fprintf(1, 'Loading Jenkinson''s mean FD metric\n');
+% [exclude,~,fdJenk,fdJenk_m] = GetExcludeForSample(datadir,ParticipantIDs,[preprostr,'mot/']);
 [exclude,~,fdJenk,fdJenk_m] = GetExcludeForSample(datadir,ParticipantIDs,preprostr);
 fprintf(1, 'done\n');
 
@@ -406,7 +388,7 @@ if runScrub | runSR
 end
 
 % ------------------------------------------------------------------------------
-% Loop over preprocessing pipelines
+% 						Loop over preprocessing pipelines
 % ------------------------------------------------------------------------------
 for i = 1:numPrePro
     removeNoise = allData(i).noiseOptions;
@@ -821,7 +803,6 @@ if runPlot
 
 		% Create data
 		data = {[allData(:).QCFC_PropSig_corr]'};
-		% data = {[allData(:).QCFC_PropSig_unc]'};
 		data_std = cell(1,length(data)); [data_std{:}] = deal(zeros(size(data{1})));
 
 		% Create table
@@ -891,10 +872,37 @@ if runPlot
 	end
 
 	% ------------------------------------------------------------------------------
+	% QC-FC uncorrected
+	% ------------------------------------------------------------------------------
+	% Create data
+	data = {[allData(:).QCFC_PropSig_unc]'};
+	data_std = cell(1,length(data)); [data_std{:}] = deal(zeros(size(data{1})));
+
+	% Create table
+	T = table(data{1},'RowNames',{allData(:).noiseOptionsNames}','VariableNames',{'QCFC_PropSig'})
+
+	% Create bar chart
+	clear extraParams
+	extraParams.xTickLabels = {allData(:).noiseOptionsNames};
+	extraParams.xLabel = ''; % 'Pipeline'
+	extraParams.yLabel = 'QC-FC (%)';
+	extraParams.plotWidth = 10.5;
+	extraParams.plotHeight = 9;
+    extraParams.theColors = theColors;
+    extraParams.theLines = theLines;
+	extraParams.yLimits = [0 100];
+
+	TheBarChart(data,data_std,true,extraParams)
+
+	% ------------------------------------------------------------------------------
 	% QC-FC distance dependence
 	% ------------------------------------------------------------------------------
 	% Create data
-	data = {[allData(:).QCFC_DistDep]'};
+	if ~runScrub & ~runSR
+		data = {[allData(:).QCFC_DistDep]'};
+	elseif runScrub | runSR
+		data = {[allData(:).QCFC_DistDep;allData(:).preCensor_QCFC_DistDep;allData(:).postCensor_QCFC_DistDep]'};
+	end
 	data_std = cell(1,length(data)); [data_std{:}] = deal(zeros(size(data{1})));
 	
 	% Create table
@@ -930,16 +938,23 @@ if runPlot
 	extraParams.plotHeight = 9;
     extraParams.theColors = theColors;
     extraParams.theLines = theLines;
-	extraParams.yLimits = [0 155];
+	extraParams.yLimits = [0 165];
 
 	TheBarChart(data,data_std,true,extraParams)
 
+	% ------------------------------------------------------------------------------
+	% Size of significant NBS component
+	% ------------------------------------------------------------------------------
 	if ismember('OCDPG',WhichProject,'rows') | ismember('UCLA',WhichProject,'rows')
-		% ------------------------------------------------------------------------------
-		% Size of significant NBS component
-		% ------------------------------------------------------------------------------
 		% Create table
-		PropSig = vertcat(allData(:).NBS_PropSig);
+	    if ismember('Diagnostic',WhichSplit,'rows')
+			PropSig = vertcat(allData(:).NBS_PropSig);
+		elseif ismember('Motion',WhichSplit,'rows')
+			PropSig = vertcat(allData(:).u05_PropSig);
+			% PropSig = vertcat(allData(:).u001_PropSig);
+			% PropSig = vertcat(allData(:).FDR_PropSig);
+		end
+
 		data = {PropSig(:,1),PropSig(:,2)};
 		data_std = cell(1,length(data)); [data_std{:}] = deal(zeros(size(data{1})));
 		T = table([data{:}],'RowNames',{allData(:).noiseOptionsNames}','VariableNames',{'PropSig'})
@@ -954,18 +969,25 @@ if runPlot
 	    extraParams.theLines = theLines;
 	    extraParams.makeABS = true;
 	    if ismember('Diagnostic',WhichSplit,'rows')
-			extraParams.yLimits = [-40 40];
+			if ismember('OCDPG',WhichProject,'rows')
+				extraParams.yLimits = [-20 20];
+			elseif ismember('UCLA',WhichProject,'rows')
+				extraParams.yLimits = [-45 45];
+			end
 		elseif ismember('Motion',WhichSplit,'rows')
 			if ismember('OCDPG',WhichProject,'rows')
-				extraParams.yLimits = [-40 20];
+				extraParams.yLimits = [-20 20];
 			elseif ismember('UCLA',WhichProject,'rows')
-				extraParams.yLimits = [-80 40];
+				extraParams.yLimits = [-100 40];
 			end
 	    end
 
 		TheBarChart(data,data_std,true,extraParams)
 	end
 
+	% ------------------------------------------------------------------------------
+	% ICC
+	% ------------------------------------------------------------------------------
 	if ismember('NYU_2',WhichProject,'rows')
 		% ------------------------------------------------------------------------------
 		% Sort tDOF
@@ -991,7 +1013,7 @@ if runPlot
 		ax.XTick = 1:numPrePro;
 		ax.XTickLabel = RowNames(tDOF_idx);
 		ax.XLim = ([0 numPrePro+1]);
-		ax.YLim = ([-0.8 1]);
+		ax.YLim = ([-1 1]);
 		xlabel('Pipeline')
 		ylabel('Within Session ICC')
 		view(90,90)
@@ -1015,7 +1037,7 @@ if runPlot
 		ax.XTick = 1:numPrePro;
 		ax.XTickLabel = RowNames(tDOF_idx);
 		ax.XLim = ([0 numPrePro+1]);
-		ax.YLim = ([-0.8 1]);
+		ax.YLim = ([-1 1]);
 		xlabel('Pipeline')
 		ylabel('Between Session ICC')
 		view(90,90)
@@ -1036,6 +1058,8 @@ if runPlot
 		T = table(data{1},'RowNames',RowNames(tDOF_idx),'VariableNames',{'ICC_tstat'})
 
 		% Create bar chart
+		extraParams.plotWidth = 10.5;
+		extraParams.plotHeight = 9;
 		extraParams.xTickLabels = RowNames(tDOF_idx);
 		extraParams.xLabel = 'Pipeline';
 		extraParams.yLabel = 'ICC t-stat';
@@ -1071,7 +1095,7 @@ if runBigPlots
 		set(gca,'FontSize',FSize)
 
 		% Bin QCFC data by distance and generate means and stds for each
-		numThresholds = 10;
+		numThresholds = 11;
 		BF_PlotQuantiles(ROIDistVec(allData(i).NaNFilter),allData(i).QCFCVec,numThresholds)
 		hold on
 
@@ -1637,42 +1661,128 @@ end
 % ------------------------------------------------------------------------------
 % Overlap: sig edges across pipelines
 % ------------------------------------------------------------------------------
-if runPhiPlots
+if runOverlapPlots
 	% ------------------------------------------------------------------------------
-	% Pairwise correlations between significant networks
+	% 1) Pairwise overlap between significant networks
 	% ------------------------------------------------------------------------------
+	WhichOverlap = 'intersection'; % 'intersection' 'phi' 
+	f = figure('color','w', 'units', 'centimeters', 'pos', [0 0 23 12], 'name',['NBS Overlap']); box('on'); movegui(f,'center');
 	for i = 1:numContrasts
-		f = figure('color','w', 'units', 'centimeters', 'pos', [0 0 40 30], 'name',['']); box('on'); movegui(f,'center');
-		data = cellfun(@(x) x(i),{allData(:).NBS_sigVec}); data = cell2mat(data);
-		mat = corr(data,'type','Pearson');
-		x = [1:length(mat)];
+		if i == 1
+			data = cellfun(@(x) x(2),{allData(:).NBS_sigVec}); data = cell2mat(data);
+		elseif i == 2
+			data = cellfun(@(x) x(1),{allData(:).NBS_sigVec}); data = cell2mat(data);
+		end
 
+		% Retain only pipelines showing an effect
+		pipeFilter = any(data);
+		data = data(:,pipeFilter);
+		data = full(data);
+
+		% Filter NaNs
+		NaNFilter = [allData(1).NaNFilter];
+		data = data(NaNFilter,:); 
+
+		switch WhichOverlap
+			case 'intersection'
+				mat = [];
+				for j = 1:size(data,2)
+					for k = 1:size(data,2)
+						x = data(:,j);
+						y = data(:,k);
+						% Number of sig connections present in both pipelines
+						C = sum(x + y == 2);
+						% express C as a fraction of the smaller NBS network
+						if sum(x) < sum(y)
+							mat(j,k) = C/sum(x);
+						elseif sum(y) < sum(x)
+							mat(j,k) = C/sum(y);
+						elseif sum(x) == sum(y)
+							mat(j,k) = 1;
+						end
+					end
+				end
+			case 'phi'
+				mat = corr(data,'type','Pearson');
+		end
+
+		% ------------------------------------------------------------------------------
+		% Plot
+		% ------------------------------------------------------------------------------
+		subplot(1,2,i)
 		imagesc(mat)
-		colormap([flipud(BF_getcmap('blues',9,0));1,1,1;BF_getcmap('reds',9,0)])
-
-		textStrings = num2str(mat(:),'%0.2f');  % Create strings from the matrix values
-		textStrings = strtrim(cellstr(textStrings));  % Remove any space padding
-		[X,Y] = meshgrid(x);   % Create x and y coordinates for the strings
-		hStrings = text(X(:),Y(:),textStrings(:),...      % Plot the strings
-		                'HorizontalAlignment','center');
-		midValue = mean(get(gca,'CLim'));  % Get the middle value of the color range
-		textColors = repmat(mat(:) > midValue,1,3);  % Choose white or black for the
-		                                             %   text color of the strings so
-		                                             %   they can be easily seen over
-		                                             %   the background color
-		set(hStrings,{'Color'},num2cell(textColors,2));  % Change the text colors
-
-		caxis([-1 1])
+		axis square
+		axis tight
+		% colormap([flipud(BF_getcmap('blues',9,0));1,1,1;BF_getcmap('reds',9,0)])
+		colormap(BF_getcmap('reds',9,0))
+		caxis([0 1])
 		colorbar
 		ax = gca;
+		ax.FontSize = FSize;
+		x = [1:length(mat)];
 		ax.XTick = x; ax.YTick = x;
-		ax.XTickLabel = noiseOptionsNames; ax.YTickLabel = noiseOptionsNames;
+		% ax.XTickLabel = '';
+		ax.XTickLabel = noiseOptionsNames(:,pipeFilter);
 		ax.XTickLabelRotation = 45;
+		ax.YTickLabel = noiseOptionsNames(:,pipeFilter);
+    	ax.TickLength = [0,0];
 
-		if i == 1		
-			title('Phi coefficient across pipelines for group 1 > group 2')
+		% plot values in lower triangle of matrix
+		for i = 1:size(mat,1)
+			for j = i:size(mat,2)
+				if i ~= j
+					text(i,j,num2str(mat(i,j),'%0.1f'),'HorizontalAlignment','center',...
+						'Color','w','FontSize',FSize,'FontWeight','normal');
+				end
+			end
+		end
+
+		if i == 1
+			title('A) SCZ>HC','FontSize',FSize,'FontWeight','normal')
 		elseif i == 2
-			title('Phi coefficient across pipelines for group 1 < group 2')
+			title('B) HC>SCZ','FontSize',FSize,'FontWeight','normal')
 		end
 	end
+
+	% ------------------------------------------------------------------------------
+	% 2) wihin and between community edge plot
+	% ------------------------------------------------------------------------------
+    f = figure('color','w', 'units', 'centimeters', 'pos', [0 0 11.5 15], 'name',['24P+8P+4GSR']); box('on'); movegui(f,'center');
+    % subplot(1,2,1)
+	% 24P+8P+4GSR
+	SigMatrix = full(allData(2).NBS_sigMat{2});
+	[out,outPC,outNorm] = plotClassifiedEdges(SigMatrix,ROIStructID,2,ROILabels)
+
+    f = figure('color','w', 'units', 'centimeters', 'pos', [0 0 11.5 15], 'name',['ICA-AROMA+2P']); box('on'); movegui(f,'center');
+    % subplot(1,2,2)
+	% ICA-AROMA+2P
+	SigMatrix = full(allData(5).NBS_sigMat{1});
+	[out,outPC,outNorm] = plotClassifiedEdges(SigMatrix,ROIStructID,2,ROILabels)
+
+	% ------------------------------------------------------------------------------
+	% 3) Neuromarvl
+	% ------------------------------------------------------------------------------
+	cd('/Users/lindenmp/Dropbox/Work/Papers/PhD_Chapters/rfMRI_denoise/Figures/Fig10_Neuromarvl/neuromarvl')
+
+	% node coords
+	T = table(ROI_Coords(:,1),ROI_Coords(:,2),ROI_Coords(:,3),'VariableNames',{'x','y','z'});
+	writetable(T,'coordinates.txt')
+	clear T
+
+	% node attributes
+	T = table(ones(numROIs,1),ROIStructID,'VariableNames',{'dummy','ROIStructID'});
+	writetable(T,'attributes.txt')
+
+	ConMatrix = full(allData(2).NBS_statMat{2});
+	SigMatrix = full(allData(2).NBS_sigMat{2});
+	ConMatrix(SigMatrix == 0) = 0;
+	dlmwrite('24P+8P+4GSR_con2.txt',ConMatrix)
+
+	% connectivity matrix
+	ConMatrix = full(allData(5).NBS_statMat{1});
+	SigMatrix = full(allData(5).NBS_sigMat{1});
+	ConMatrix(SigMatrix == 0) = 0;
+	dlmwrite('ICA-AROMA+2P_con1.txt',ConMatrix)
 end
+
+clear pval* vec temp FC*
