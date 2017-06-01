@@ -53,7 +53,7 @@ function [] = SpatialNormalisationANTs(EPI,N,meanEPI,t1file,gm,wm,csf,mni_templa
 	output = 'epi2t1';
 	transform = 'r';
 
-	system([funcdir,ANTsCall,' -d 3 -m ',movImage,' -f ',refImage,' -t ',transform,' -o ',output])
+	system([funcdir,ANTsCall,' -d 3 -m ',movImage,' -f ',refImage,' -t ',transform,' -o ',output]);
 
 	delete('epi2t1.nii.gz')
 
@@ -65,7 +65,7 @@ function [] = SpatialNormalisationANTs(EPI,N,meanEPI,t1file,gm,wm,csf,mni_templa
 	output = 't12MNI';
 	transform = 's';
 
-	system([funcdir,ANTsCall,' -d 3 -m ',movImage,' -f ',refImage,' -t ',transform,' -o ',output])
+	system([funcdir,ANTsCall,' -d 3 -m ',movImage,' -f ',refImage,' -t ',transform,' -o ',output]);
 
 	% unzip normalised T1
 	gunzip([output,'.nii.gz'])
@@ -102,7 +102,7 @@ function [] = SpatialNormalisationANTs(EPI,N,meanEPI,t1file,gm,wm,csf,mni_templa
 		[fPath,fName,fExt] = fileparts(movImage);
 		output = ['w',fName,fExt];
 
-		system([antsdir,'antsApplyTransforms -d 3 -e 0 -i ',movImage,' -r ',refImage,' -o ',output,' -n Linear ',warps])
+		system([antsdir,'antsApplyTransforms -d 3 -e 0 -i ',movImage,' -r ',refImage,' -o ',output,' -n Linear ',warps]);
 
 	end
 
@@ -111,7 +111,7 @@ function [] = SpatialNormalisationANTs(EPI,N,meanEPI,t1file,gm,wm,csf,mni_templa
 	[fPath,fName,fExt] = fileparts(movImage);
 	output = ['w',fName,fExt];
 
-	system([antsdir,'antsApplyTransforms -d 3 -e 0 -i ',movImage,' -r ',refImage,' -o ',output,' -n Linear ',warps])
+	system([antsdir,'antsApplyTransforms -d 3 -e 0 -i ',movImage,' -r ',refImage,' -o ',output,' -n Linear ',warps]);
 
 	% redefine warps
 	% warps = '-t t12MNI_0GenericAffine.mat -t t12MNI_1Warp.nii.gz ';
@@ -122,20 +122,20 @@ function [] = SpatialNormalisationANTs(EPI,N,meanEPI,t1file,gm,wm,csf,mni_templa
 	[fPath,fName,fExt] = fileparts(movImage);
 	output = ['w',fName,fExt];
 
-	system([antsdir,'antsApplyTransforms -d 3 -e 0 -i ',movImage,' -r ',refImage,' -o ',output,' -n Linear ',warps])
+	system([antsdir,'antsApplyTransforms -d 3 -e 0 -i ',movImage,' -r ',refImage,' -o ',output,' -n Linear ',warps]);
 
 	% 4) WM
 	movImage = wm;
 	[fPath,fName,fExt] = fileparts(movImage);
 	output = ['w',fName,fExt];
 
-	system([antsdir,'antsApplyTransforms -d 3 -e 0 -i ',movImage,' -r ',refImage,' -o ',output,' -n Linear ',warps])
+	system([antsdir,'antsApplyTransforms -d 3 -e 0 -i ',movImage,' -r ',refImage,' -o ',output,' -n Linear ',warps]);
 
 	% 5) CSF
 	movImage = csf;
 	[fPath,fName,fExt] = fileparts(movImage);
 	output = ['w',fName,fExt];
 
-	system([antsdir,'antsApplyTransforms -d 3 -e 0 -i ',movImage,' -r ',refImage,' -o ',output,' -n Linear ',warps])
+	system([antsdir,'antsApplyTransforms -d 3 -e 0 -i ',movImage,' -r ',refImage,' -o ',output,' -n Linear ',warps]);
 
 end
