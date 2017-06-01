@@ -19,6 +19,7 @@ WhichSessScan=$3
 
 case $WhichProject in
 	M3_COBRE) SUBJECT_LIST="/home/lindenmp/kg98/Linden/ResProjects/SCZ_HCTSA/COBRE/COBRE_SubjectIDs.txt" ;;
+	M3_UCLA) SUBJECT_LIST="/home/lindenmp/kg98/Linden/ResProjects/SCZ_HCTSA/UCLA/UCLA_SubjectIDs.txt" ;;
 esac
 
 # MASSIVE modules
@@ -49,9 +50,10 @@ matlab -nodisplay -r "run_prepro('${WhichMASSIVE}','${WhichProject}','${WhichSes
 # ------------------------------------------------------------------------------
 echo -e "\t\t ----- Compressing outputs ----- \n"
 
-datadir=/home/lindenmp/kg98/Linden/ResProjects/SCZ_HCTSA/${WhichProject}/data/
+datadir=/home/lindenmp/kg98/Linden/ResProjects/SCZ_HCTSA/${WhichProject:3}/data/
 
 if [[ "$WhichProject" == "M3_COBRE" ]]; then t1str=/session_1/anat_1/; preprostr=/session_1/rest_1/prepro/; fi
+if [[ "$WhichProject" == "M3_UCLA" ]]; then t1str=/anat/; preprostr=/func/prepro/; fi
 
 # T1 dir
 cd ${datadir}${subject}${t1str}
