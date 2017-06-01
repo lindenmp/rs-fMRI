@@ -229,9 +229,7 @@ function [noiseTS,outdir] = prepro_noise(cfg)
             % set FSL output to nifti_gz because ICA-AROMA requires it!!!!
             setenv('FSLOUTPUTTYPE','NIFTI_GZ');
 
-            scriptdir_ICA = '/gpfs/M2Home/projects/Monash076/Linden/scripts/Software/ICA-AROMA-master/';
-
-            str = ['python2.7 ',scriptdir_ICA,'ICA_AROMA.py -in ',cfg.preprodir,cfg.CleanIn,' -out ',outdir,' -mc ',cfg.preprodir,'rp*.txt -m ',cfg.preprodir,cfg.BrainMask,' -tr ',num2str(cfg.TR)];
+            str = ['python2.7 ',cfg.scriptdir_ICA,'ICA_AROMA.py -in ',cfg.preprodir,cfg.CleanIn,' -out ',outdir,' -mc ',cfg.preprodir,'rp*.txt -m ',cfg.preprodir,cfg.BrainMask,' -tr ',num2str(cfg.TR)];
             system(str);
     
             % unzip

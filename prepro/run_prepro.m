@@ -1,5 +1,6 @@
 %% run_prepro: 
-function [] = run_prepro(WhichProject,WhichSessScan,subject,discard,slicetime,despike,smoothing)
+function [] = run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject,discard,slicetime,despike,smoothing)
+    cfg.WhichMASSIVE = WhichMASSIVE;
     cfg.WhichProject = WhichProject;
     cfg.WhichSessScan = WhichSessScan;
     cfg.subject = subject;
@@ -12,28 +13,53 @@ function [] = run_prepro(WhichProject,WhichSessScan,subject,discard,slicetime,de
     % ------------------------------------------------------------------------------
     % Add paths - edit this section
     % ------------------------------------------------------------------------------
-        % where the prepro scripts are
-        cfg.scriptdir = '/gpfs/M2Home/projects/Monash076/Linden/scripts/rs-fMRI/prepro/';
-        addpath(cfg.scriptdir)
-        cfg.funcdir = '/gpfs/M2Home/projects/Monash076/Linden/scripts/rs-fMRI/func/';
-        addpath(cfg.funcdir)
+    switch cfg.WhichMASSIVE
+        case 'M2'
+            % where the prepro scripts are
+            cfg.scriptdir = '/gpfs/M2Home/projects/Monash076/Linden/scripts/rs-fMRI/prepro/';
+            addpath(cfg.scriptdir)
+            cfg.funcdir = '/gpfs/M2Home/projects/Monash076/Linden/scripts/rs-fMRI/func/';
+            addpath(cfg.funcdir)
 
-        % where spm is
-        cfg.spmdir = '/usr/local/spm8/matlab2014a.r5236/';
-        addpath(cfg.spmdir)
+            % where spm is
+            cfg.spmdir = '/usr/local/spm8/matlab2014a.r5236/';
+            addpath(cfg.spmdir)
 
-        % set FSL environments 
-        cfg.fsldir = '/usr/local/fsl/5.0.9/bin/';
-        setenv('FSLDIR',cfg.fsldir(1:end-4));
-        setenv('FSLOUTPUTTYPE','NIFTI');
-        setenv('LD_LIBRARY_PATH',[getenv('PATH'),getenv('LD_LIBRARY_PATH'),':/usr/lib/fsl/5.0'])
+            % set FSL environments 
+            cfg.fsldir = '/usr/local/fsl/5.0.9/bin/';
+            setenv('FSLDIR',cfg.fsldir(1:end-4));
+            setenv('FSLOUTPUTTYPE','NIFTI');
+            setenv('LD_LIBRARY_PATH',[getenv('PATH'),getenv('LD_LIBRARY_PATH'),':/usr/lib/fsl/5.0'])
 
-        % ANTs
-        cfg.antsdir = '/usr/local/ants/1.9.v4/bin/';
-        setenv('ANTSPATH',cfg.antsdir);
+            % where ICA-AROMA scripts are
+            cfg.scriptdir_ICA = '/gpfs/M2Home/projects/Monash076/Linden/scripts/Software/ICA-AROMA-master/';
+        case 'M3'
+            % where the prepro scripts are
+            cfg.scriptdir = '/home/lindenmp/kg98/Linden/Scripts/rs-fMRI/prepro/';
+            addpath(cfg.scriptdir)
+            cfg.funcdir = '/home/lindenmp/kg98/Linden/Scripts/rs-fMRI/func/';
+            addpath(cfg.funcdir)
 
-        % Directory to AFNI functions
-        cfg.afnidir = '/usr/local/afni/16.2.16/';
+            % where spm is
+            cfg.spmdir = '/usr/local/spm8/matlab2015b.r6685/';
+            addpath(cfg.spmdir)
+
+            % set FSL environments 
+            cfg.fsldir = '/usr/local/fsl/5.0.9/fsl/bin/';
+            setenv('FSLDIR',cfg.fsldir(1:end-4));
+            setenv('FSLOUTPUTTYPE','NIFTI');
+            setenv('LD_LIBRARY_PATH',[getenv('PATH'),getenv('LD_LIBRARY_PATH'),':/usr/lib/fsl/5.0'])
+
+            % where ICA-AROMA scripts are
+            cfg.scriptdir_ICA = '/home/lindenmp/kg98/Linden/Scripts/Software/ICA-AROMA-master/';
+    end
+
+    % ANTs
+    cfg.antsdir = '/usr/local/ants/1.9.v4/bin/';
+    setenv('ANTSPATH',cfg.antsdir);
+
+    % Directory to AFNI functions
+    cfg.afnidir = '/usr/local/afni/16.2.16/';
 
     % ------------------------------------------------------------------------------
     % Set project settings and parameters
@@ -277,6 +303,61 @@ function [] = run_prepro(WhichProject,WhichSessScan,subject,discard,slicetime,de
                 % In which case, using the '3D' option will take your 4D file, split it up, do something, then concatenate back.
                 % If you've just got a fairly typical fMRI run, leave as '4D'
             cfg.WhichNii = '3D';
+        case 'M3_COBRE'
+            % Where the subjects' directories are
+            cfg.datadir = '/home/lindenmp/kg98/Linden/ResProjects/SCZ_HCTSA/COBRE/data/';
+
+            switch cfg.WhichSessScan
+                case 'Sess1_Scan1'
+                    % where the unprocessed EPI 4d file is
+                    cfg.rawdir = [cfg.datadir,cfg.subject,'/session_1/rest_1/'];
+                    % Directory where the t1 is
+                    cfg.t1dir = [cfg.datadir,cfg.subject,'/session_1/anat_1/']; 
+            end
+
+            % where the processed epi 4d files will be output to from prepro_base
+            cfg.preprodir = [cfg.rawdir,'prepro/']; 
+            
+            % file name of EPI 4d file
+            cfg.EPI = 'rest.nii.gz';
+            % name of t1 file.
+            cfg.t1name = 'mprage.nii.gz';
+
+            % the path and filename of the template in MNI space to which everything
+            % will be normalized
+            cfg.mni_template = [cfg.spmdir,'templates/T1.nii'];    
+
+            % preprocessing settings
+            % length of time series (no. vols)
+            cfg.N = 150; 
+            % Repetition time of acquistion in secs
+            cfg.TR = 2;
+            % Desired voxel dimension (in mm) of analysis after spatial normalization
+            cfg.voxdim = 2;
+            % Number of slices in EPI volumes.
+            cfg.numSlices = 32;
+            % Vector defining acquisition order of EPI slices (necessary for slice-timing correction.
+            % See help of slicetime_epis.m for guidance on how to define)
+            % cfg.order = [1:1:cfg.numSlices]; % ascending
+            % cfg.order = [cfg.numSlices:-1:1]; % descending
+            cfg.order = [1:2:cfg.numSlices,2:2:cfg.numSlices]; % interleaved
+            % Reference slice for slice timing acquisition. See SlicetimeEPI.m for guidance on how to define. 
+            % refSlice = round(numSlices/2)); % use for sequential order (e.g., ascending or descending)
+            cfg.refSlice = cfg.numSlices-1; % use for interleaved order
+            % Scalar value indicating spatial smoothing kernal size in mm. 
+            cfg.kernel = 8;
+            % Low-pass cut-off for bandpass filter in Hz (e.g., .08) 
+            cfg.LowPass = 0.08;
+            % Hi-pass cut-off for bandpass filter in Hz (e.g., .008)
+            cfg.HighPass = 0.008;
+            
+            % Select whether to run certain functions in 4D or 3D mode.
+                % Note that BOTH options assume the files are stored in 4D.
+                % I have found that SPM sometimes does not handle loading in 4D files 
+                % that consist of lots of volumes - e.g., in multiband cases or very long sequences (400+ volumes).
+                % In which case, using the '3D' option will take your 4D file, split it up, do something, then concatenate back.
+                % If you've just got a fairly typical fMRI run, leave as '4D'
+            cfg.WhichNii = '4D';            
     end
 
     % ------------------------------------------------------------------------------
@@ -313,7 +394,8 @@ function [] = run_prepro(WhichProject,WhichSessScan,subject,discard,slicetime,de
     % If you only want to run one then just use something like: noiseOptions = {'24P+aCC'};
     
     % All pipelines
-    noiseOptions = {'6P','6P+2P','6P+2P+GSR','24P','24P+8P','24P+8P+4GSR','24P+8P+SpikeReg','24P+8P+4GSR+SpikeReg','12P+aCC','24P+aCC','12P+aCC50','24P+aCC50','24P+aCC+4GSR','24P+aCC50+4GSR','24P+aCC+SpikeReg','24P+aCC+4GSR+SpikeReg','ICA-AROMA+2P','ICA-AROMA+2P+SpikeReg','ICA-AROMA+GSR','ICA-AROMA+2P+GSR','ICA-AROMA+8P','ICA-AROMA+4GSR','ICA-AROMA+8P+4GSR'};
+    % noiseOptions = {'6P','6P+2P','6P+2P+GSR','24P','24P+8P','24P+8P+4GSR','24P+8P+SpikeReg','24P+8P+4GSR+SpikeReg','12P+aCC','24P+aCC','12P+aCC50','24P+aCC50','24P+aCC+4GSR','24P+aCC50+4GSR','24P+aCC+SpikeReg','24P+aCC+4GSR+SpikeReg','ICA-AROMA+2P','ICA-AROMA+2P+SpikeReg','ICA-AROMA+GSR','ICA-AROMA+2P+GSR','ICA-AROMA+8P','ICA-AROMA+4GSR','ICA-AROMA+8P+4GSR'};
+    noiseOptions = {'ICA-AROMA+2P','ICA-AROMA+2P+GSR'};
 
     % Loop over noise correction options
     for i = 1:length(noiseOptions)
@@ -372,10 +454,16 @@ function [] = run_prepro(WhichProject,WhichSessScan,subject,discard,slicetime,de
             cd(cfg.outdir)
             
             % Parcellation file for time series extraction
-            cfg.parcFiles = {'/gpfs/M2Home/projects/Monash076/Linden/ROIs/Gordon/Parcels_MNI_222.nii',...
-                            '/gpfs/M2Home/projects/Monash076/Linden/ROIs/Power/Power.nii',...
-                            '/gpfs/M2Home/projects/Monash076/Linden/ROIs/TriStri/TriStri.nii',...
-                            '/gpfs/M2Home/projects/Monash076/Linden/ROIs/DiMartino/SphereParc02.nii'};
+            if ismember('M2',cfg.WhichMASSIVE,'rows')
+                str = '/gpfs/M2Home/projects/Monash076/Linden/';
+            elseif ismember('M3',cfg.WhichMASSIVE,'rows')
+                str = '/home/lindenmp/kg98/Linden/';
+            end
+            
+            cfg.parcFiles = {[str,'ROIs/Gordon/Parcels_MNI_222.nii'],...
+                            [str,'ROIs/Power/Power.nii'],...
+                            [str,'ROIs/TriStri/TriStri.nii'],...
+                            [str,'ROIs/DiMartino/SphereParc02.nii']};
 
             cfg.parcWeightGM = {'yes',...
                                 'yes',...
@@ -411,5 +499,4 @@ function [] = run_prepro(WhichProject,WhichSessScan,subject,discard,slicetime,de
         % Save data
         save('cfg.mat','cfg')
     end
-
 end

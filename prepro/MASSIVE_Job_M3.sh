@@ -1,7 +1,7 @@
 #!/bin/env bash
 
 #SBATCH --job-name=fMRI-PrePro
-#SBATCH --account=monash076
+#SBATCH --account=kg98
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --time=05:00:00
@@ -10,7 +10,7 @@
 #SBATCH --mail-type=END
 #SBATCH --export=ALL
 #SBATCH --mem-per-cpu=8G
-# SBATCH --array=1-100%50
+#SBATCH --array=1-2
 
 # Assign input args
 WhichMASSIVE=$1
@@ -18,19 +18,16 @@ WhichProject=$2
 WhichSessScan=$3
 
 case $WhichProject in
-	OCDPG) SUBJECT_LIST="/gpfs/M2Home/projects/Monash076/Linden/Sublists/OCDPG.txt" ;;
-	UCLA) SUBJECT_LIST="/gpfs/M2Home/projects/Monash076/Linden/Sublists/UCLA.txt" ;;
-	NYU_2) SUBJECT_LIST="/gpfs/M2Home/projects/Monash076/Linden/Sublists/NYU_2.txt" ;;
-	GoC) SUBJECT_LIST="/projects/kg98/kristina/code/sublists/GoC.txt" ;;
+	M3_COBRE) SUBJECT_LIST="/home/lindenmp/kg98/Linden/ResProjects/SCZ_HCTSA/COBRE/COBRE_SubjectIDs.txt" ;;
 esac
 
 # MASSIVE modules
-module load rest/1.8
-module load fsl/5.0.9
-module load python/2.7.11-gcc
-module load ants/1.9.v4
+module load rest/1.8 # works on M2 and M3
+module load fsl/5.0.9 # works on M2 and M3. FSLDIR is different though.
+module load python/2.7.11-gcc # works on M2 and M3.
+module load ants/1.9.v4 # works on M2 and M3
 module load afni/16.2.16
-module load spm8/matlab2014a.r5236
+module load spm8/matlab2015b.r6685 # M3
 
 subject=$(sed -n "${SLURM_ARRAY_TASK_ID}p" ${SUBJECT_LIST})
 echo -e "\t\t\t --------------------------- "
@@ -38,12 +35,12 @@ echo -e "\t\t\t ----- ${SLURM_ARRAY_TASK_ID} ${subject} ----- "
 echo -e "\t\t\t --------------------------- \n"
 
 # Run pipeline
-cd /gpfs/M2Home/projects/Monash076/Linden/scripts/rfMRI-PrePro/
+cd /home/lindenmp/kg98/Linden/scripts/rfMRI-PrePro/
 
 discard=1
 slicetime=1
 despike=1
-smoothing=after
+smoothing=before
 
 matlab -nodisplay -r "run_prepro('${WhichMASSIVE}','${WhichProject}','${WhichSessScan}','${subject}',$discard,$slicetime,$despike,'$smoothing'); exit"
 
@@ -52,10 +49,9 @@ matlab -nodisplay -r "run_prepro('${WhichMASSIVE}','${WhichProject}','${WhichSes
 # ------------------------------------------------------------------------------
 echo -e "\t\t ----- Compressing outputs ----- \n"
 
-datadir=/gpfs/M2Home/projects/Monash076/Linden/${WhichProject}/data/
+datadir=/home/lindenmp/kg98/Linden/ResProjects/SCZ_HCTSA/${WhichProject}/data/
 
-if [[ "$WhichProject" == "OCDPG" ]] || [[ "$WhichProject" == "UCLA" ]] || [[ "$WhichProject" == "GoC" ]] ; then t1str=/t1/; preprostr=/rfMRI/prepro/; fi
-if [[ "$WhichProject" == "NYU_2" ]]; then if [[ "$WhichSessScan" == "Sess1_Scan1" ]]; then t1str=/session_1/anat_1/; preprostr=/session_1/rest_1/prepro/; elif [[ "$WhichSessScan" == "Sess1_Scan2" ]]; then t1str=/session_1/anat_1/; preprostr=/session_1/rest_2/prepro/; elif [[ "$WhichSessScan" == "Sess2_Scan1" ]]; then t1str=/session_2/anat_1/; preprostr=/session_2/rest_1/prepro/; fi; fi
+if [[ "$WhichProject" == "M3_COBRE" ]]; then t1str=/session_1/anat_1/; preprostr=/session_1/rest_1/prepro/; fi
 
 # T1 dir
 cd ${datadir}${subject}${t1str}
