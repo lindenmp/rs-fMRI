@@ -113,55 +113,50 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
 	end
 
 	% ------------------------------------------------------------------------------
-	% FD Power
-	% ------------------------------------------------------------------------------
-	sp3 = subplot(6,2,5);
-    pos3 = get(sp3,'Position');
-	plot(fdPower)
-	hold on
-	title('fdPower','fontweight','bold')
-	ylabel('mm')
-	xlim([1 numVols])
-	ylim([0 max(fdPower)+(max(fdPower)*.10)])
-    set(sp3,'XTickLabel','');
-	set(gca,'FontSize',FSize)
-
-	% overlay threshold line
-	if max(fdPower) > fdPowerThr
-		line([0 numVols],[fdPowerThr fdPowerThr],'LineStyle','--','Color','k')
-	end
-
-	% ------------------------------------------------------------------------------
 	% FD Jenk
 	% ------------------------------------------------------------------------------
 	str = 'fdJenk. ';
-	% Compute cut offs for exclusions
-		fdJenk_m = mean(fdJenk);
-		fdJenkPerc = MyRound(sum(fdJenk > fdJenkThr)/numVols*100);
-		fdJenkThrPerc = MyRound(numVols * 0.20);
-		
-		if fdJenk_m > 0.2 | fdJenkPerc > fdJenkThrPerc
-			str1 = ['Mean: ',num2str(MyRound(fdJenk_m)),'mm, '];
-			str2 = ['Spikes: ',num2str(fdJenkPerc),'%'];
-		else
-			str1 = '';
-			str2 = '';
-		end		
 
-	sp4 = subplot(6,2,7);
-    pos4 = get(sp4,'Position');
+	fdJenk_m = mean(fdJenk);
+	fdJenkPerc = MyRound(sum(fdJenk > fdJenkThr)/numVols*100);
+	fdJenkThrPerc = MyRound(numVols * 0.20);
+	
+	str1 = ['Mean: ',num2str(MyRound(fdJenk_m)),'mm, '];
+	str2 = ['Spikes: ',num2str(fdJenkPerc),'%'];
+
+	sp3 = subplot(6,2,5);
+    pos3 = get(sp3,'Position');
 	plot(fdJenk)
 	hold on
 	title([str,str1,str2],'fontweight','bold')
 	ylabel('mm')
 	xlim([1 numVols])
 	ylim([0 max(fdJenk)+(max(fdJenk)*.10)])
-    set(sp4,'XTickLabel','');
+    set(sp3,'XTickLabel','');
 	set(gca,'FontSize',FSize)
 
 	% overlay threshold line
 	if max(fdJenk) > fdJenkThr
 		line([0 numVols],[fdJenkThr fdJenkThr],'LineStyle','--','Color','k')
+	end
+
+	% ------------------------------------------------------------------------------
+	% FD Power
+	% ------------------------------------------------------------------------------
+	sp4 = subplot(6,2,7);
+    pos4 = get(sp4,'Position');
+	plot(fdPower)
+	hold on
+	title('fdPower','fontweight','bold')
+	ylabel('mm')
+	xlim([1 numVols])
+	ylim([0 max(fdPower)+(max(fdPower)*.10)])
+    set(sp4,'XTickLabel','');
+	set(gca,'FontSize',FSize)
+
+	% overlay threshold line
+	if max(fdPower) > fdPowerThr
+		line([0 numVols],[fdPowerThr fdPowerThr],'LineStyle','--','Color','k')
 	end
 
 	% ------------------------------------------------------------------------------
@@ -208,5 +203,5 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
     set(sp5,'Position',[pos5(1)*.6, pos5(2)*1.125, pos5(3)*2.5, pos5(4)*1]);
     
     set(sp6,'Position',[pos6(1)*.6, pos6(2)*0.35, pos6(3)*2.5, pos6(4)*2]);
-    set(sp7,'Position',[pos7(1)*.085, pos7(2)*0.35, pos7(3)*.065, pos7(4)*2]);
+    set(sp7,'Position',[pos7(1)*.08, pos7(2)*0.35, pos7(3)*.07, pos7(4)*2]);
 end
