@@ -10,7 +10,7 @@
 #SBATCH --mail-type=END
 #SBATCH --export=ALL
 #SBATCH --mem-per-cpu=16G
-#SBATCH --array=1-2
+# SBATCH --array=1-2
 
 # Assign input args
 WhichMASSIVE=$1

@@ -319,9 +319,9 @@ function [] = run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject,discard
             cfg.preprodir = [cfg.rawdir,'prepro/']; 
             
             % file name of EPI 4d file
-            cfg.EPI = 'rest.nii.gz';
+            cfg.EPI = 'rest.nii';
             % name of t1 file.
-            cfg.t1name = 'mprage.nii.gz';
+            cfg.t1name = 'mprage.nii';
 
             % the path and filename of the template in MNI space to which everything
             % will be normalized
@@ -374,9 +374,9 @@ function [] = run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject,discard
             cfg.preprodir = [cfg.rawdir,'prepro/']; 
             
             % file name of EPI 4d file
-            cfg.EPI = [cfg.subject,'_task-rest_bold.nii.gz'];
+            cfg.EPI = [cfg.subject,'_task-rest_bold.nii'];
             % name of t1 file.
-            cfg.t1name = [cfg.subject,'_T1w.nii.gz'];
+            cfg.t1name = [cfg.subject,'_T1w.nii'];
 
             % the path and filename of the template in MNI space to which everything
             % will be normalized
