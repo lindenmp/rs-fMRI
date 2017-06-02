@@ -4,12 +4,12 @@
 #SBATCH --account=kg98
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
-#SBATCH --time=10:00:00
+#SBATCH --time=5:00:00
 #SBATCH --mail-user=linden.parkes@monash.edu
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-type=END
 #SBATCH --export=ALL
-#SBATCH --mem-per-cpu=8G
+#SBATCH --mem-per-cpu=16G
 #SBATCH --array=1-2
 
 # Assign input args
@@ -20,6 +20,7 @@ WhichSessScan=$3
 case $WhichProject in
 	M3_COBRE) SUBJECT_LIST="/home/lindenmp/kg98/Linden/ResProjects/SCZ_HCTSA/COBRE/COBRE_SubjectIDs.txt" ;;
 	M3_UCLA) SUBJECT_LIST="/home/lindenmp/kg98/Linden/ResProjects/SCZ_HCTSA/UCLA/UCLA_SubjectIDs.txt" ;;
+	M3_NAMIC) SUBJECT_LIST="/home/lindenmp/kg98/Linden/ResProjects/SCZ_HCTSA/NAMIC/NAMIC_SubjectIDs.txt" ;;
 esac
 
 # MASSIVE modules
@@ -53,7 +54,7 @@ echo -e "\t\t ----- Compressing outputs ----- \n"
 datadir=/home/lindenmp/kg98/Linden/ResProjects/SCZ_HCTSA/${WhichProject:3}/data/
 
 if [[ "$WhichProject" == "M3_COBRE" ]]; then t1str=/session_1/anat_1/; preprostr=/session_1/rest_1/prepro/; fi
-if [[ "$WhichProject" == "M3_UCLA" ]]; then t1str=/anat/; preprostr=/func/prepro/; fi
+if [[ "$WhichProject" == "M3_UCLA" ]] || [[ "$WhichProject" == "M3_NAMIC" ]]; then t1str=/anat/; preprostr=/func/prepro/; fi
 
 # T1 dir
 cd ${datadir}${subject}${t1str}
