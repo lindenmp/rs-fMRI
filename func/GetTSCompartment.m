@@ -10,8 +10,8 @@ function [ts_compartment,key_compartment] = GetTSCompartment(fsldir,rsData,gmMas
 	% INPUTS
 	% ------
 	% 
-	% fsldir - location of fsl commands. e.g., fsldir = '/usr/share/fsl/5.0/bin/';
-	% rsData - location and name of processed resting state data. e.g., /path/to/dir/rest_prepro.nii
+	% fsldir - location of fsl binaries. e.g., fsldir = '/usr/share/fsl/5.0/bin/';
+	% rsData - location and name of processed resting state data. e.g., /path/to/dir/epi_prepro.nii
 	% gmMask - location and name of grey matter probability mask. e.g., /path/to/dir/crwc1t1.nii
 	% wmMask - location and name of white matter probability mask. e.g., /path/to/dir/crwc2t1.nii
 	% csfMask - location and name of csf probability mask. e.g., /path/to/dir/crwc3t1.nii

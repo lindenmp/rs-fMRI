@@ -11,12 +11,12 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
 	% ------
 	% subject			- a string identifying the subject being plotted.
 	% 					Note, this is just for naming the output .png file
-	% mov 				- a matrix containing movement parameters extracted from SPM8's realignment
-	% fdPower			- a vector containing Power's framewise displacement (see GetFDPower.m)
-	% fdJenk			- a vector containing Jenkinson's framewise displacement (see GetFDJenk.m)
-	% dvars 			- a vector containg dvars (see GetDVARS.m)
+	% mov 				- an numVols*6 matrix containing movement parameters extracted from SPM8's realignment
+	% fdPower			- an numVols*1 vector containing Power's framewise displacement (see GetFDPower.m)
+	% fdJenk			- an numVols*1 vector containing Jenkinson's framewise displacement (see GetFDJenk.m)
+	% dvars 			- an numVols*1 vector containg dvars (see GetDVARS.m)
 	% 
-	% ts_compartment 	- a numVols x numVoxels timeseries matrix compartmentalised by
+	% ts_compartment 	- a numVols * numVoxels timeseries matrix compartmentalised by
 	% 					grey/white/csf (see GetTSCompartment.m)
 	% key_compartment 	- a vector denoting which compartment a voxel belongs to (see GetTSCompartment.m)
 	% 
@@ -49,12 +49,13 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
 	% ------------------------------------------------------------------------------
 	% Plot
 	% ------------------------------------------------------------------------------
-    h1 = figure('color','w','name',['ThePlot: ',subject]); box('on'); hold on;
+	FSize = 10;
+	h1 = figure('color','w', 'units', 'centimeters', 'pos', [0 0 21 29.7], 'name',['ThePlot: ',subject]); box('on'); movegui(h1,'center');
 	
-	set(h1,'PaperType','A4', ...
-	         'paperOrientation', 'portrait', ...
-	         'paperunits','CENTIMETERS', ...
-	         'PaperPosition',[.63, .63, 19.72, 28.41]);
+	% set(h1,'PaperType','A4', ...
+	%          'paperOrientation', 'portrait', ...
+	%          'paperunits','CENTIMETERS', ...
+	%          'PaperPosition',[.63, .63, 19.72, 28.41]);
 
 	h2 = suptitle(['ThePlot: ',subject]);
     pos = get(h2,'Position');
@@ -75,6 +76,7 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
 	legend('boxoff')
 	xlim([1 numVols])
     set(sp1,'XTickLabel','');
+	set(gca,'FontSize',FSize)
 
 	% overlay threshold line
 	if any(max(abs(mov(:,1:3))) > movThr)
@@ -101,6 +103,7 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
 	legend('boxoff')
 	xlim([1 numVols])
     set(sp2,'XTickLabel','');
+	set(gca,'FontSize',FSize)
 
 	% overlay threshold line
 	if any(max(abs(mov(:,4:6))) > movThr)
@@ -121,6 +124,7 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
 	xlim([1 numVols])
 	ylim([0 max(fdPower)+(max(fdPower)*.10)])
     set(sp3,'XTickLabel','');
+	set(gca,'FontSize',FSize)
 
 	% overlay threshold line
 	if max(fdPower) > fdPowerThr
@@ -153,6 +157,7 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
 	xlim([1 numVols])
 	ylim([0 max(fdJenk)+(max(fdJenk)*.10)])
     set(sp4,'XTickLabel','');
+	set(gca,'FontSize',FSize)
 
 	% overlay threshold line
 	if max(fdJenk) > fdJenkThr
@@ -170,6 +175,7 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
 	xlim([1 numVols])
 	ylim([0 max(dvars)+(max(dvars)*.10)])
     set(sp5,'XTickLabel','');
+	set(gca,'FontSize',FSize)
 
 	% ------------------------------------------------------------------------------
 	% Time series
@@ -180,26 +186,27 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
 	colormap(gray)
 	caxis([0 1])
 	title('Time Series','fontweight','bold')
-	ylabel('Voxels')
+	ylabel('CSF  |  WHITE  |  GREY')
 	xlabel('time (volumes)')
 	colorbar
+	set(gca,'FontSize',FSize)
 
 	sp7 = subplot(6,2,12);
     pos7 = get(sp7,'Position');
 	imagesc(key_compartment')
     set(sp7,'YTickLabel','','XTickLabel','','TickLength',[0,0]);
+	set(gca,'FontSize',FSize)
 
     % ------------------------------------------------------------------------------
     % Sizing
     % ------------------------------------------------------------------------------
 	% [left bottom width height]
-    set(sp1,'Position',[pos1(1)*.7, pos1(2)*1.02 pos1(3)*2.5, pos1(4)*1]);
-    set(sp2,'Position',[pos2(1)*.7, pos2(2)*1.035, pos2(3)*2.5, pos2(4)*1]);
-    set(sp3,'Position',[pos3(1)*.7, pos3(2)*1.05, pos3(3)*2.5, pos3(4)*1]);
-    set(sp4,'Position',[pos4(1)*.7, pos4(2)*1.08, pos4(3)*2.5, pos4(4)*1]);
-    set(sp5,'Position',[pos5(1)*.7, pos5(2)*1.125, pos5(3)*2.5, pos5(4)*1]);
+    set(sp1,'Position',[pos1(1)*.6, pos1(2)*1.02 pos1(3)*2.5, pos1(4)*1]);
+    set(sp2,'Position',[pos2(1)*.6, pos2(2)*1.035, pos2(3)*2.5, pos2(4)*1]);
+    set(sp3,'Position',[pos3(1)*.6, pos3(2)*1.05, pos3(3)*2.5, pos3(4)*1]);
+    set(sp4,'Position',[pos4(1)*.6, pos4(2)*1.08, pos4(3)*2.5, pos4(4)*1]);
+    set(sp5,'Position',[pos5(1)*.6, pos5(2)*1.125, pos5(3)*2.5, pos5(4)*1]);
     
-    set(sp6,'Position',[pos6(1)*.7, pos6(2)*0.35, pos6(3)*2.5, pos6(4)*2]);
-    set(sp7,'Position',[pos7(1)*.09, pos7(2)*0.35, pos7(3)*.1, pos7(4)*2]);
-
+    set(sp6,'Position',[pos6(1)*.6, pos6(2)*0.35, pos6(3)*2.5, pos6(4)*2]);
+    set(sp7,'Position',[pos7(1)*.085, pos7(2)*0.35, pos7(3)*.065, pos7(4)*2]);
 end
