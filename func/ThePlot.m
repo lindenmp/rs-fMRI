@@ -116,13 +116,11 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
 	% ------------------------------------------------------------------------------
 	% FD Jenk
 	% ------------------------------------------------------------------------------
-	str = 'fdJenk.    ';
-
 	sp3 = subplot(6,2,5);
     pos3 = get(sp3,'Position');
 	plot(fdJenk)
 	hold on
-	title([str,str1,str2,str3,str4],'fontweight','bold')
+	title('fdJenk','fontweight','bold')
 	ylabel('mm')
 	xlim([1 numVols])
 	ylim([0 max(fdJenk)+(max(fdJenk)*.10)])
