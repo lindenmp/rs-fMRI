@@ -9,8 +9,8 @@ clear all; close all; clc
 % ------------------------------------------------------------------------------
 % Set string switches
 % ------------------------------------------------------------------------------
-Projects = {'OCDPG','UCLA','NYU_2','GoC'};
-WhichProject = Projects{1};
+Projects = {'OCDPG','UCLA','NYU_2','GoC','M3_COBRE','M3_UCLA','M3_NAMIC'};
+WhichProject = Projects{7};
 
 WhichParc = 'Gordon'; % 'Gordon' 'Power'
 
@@ -29,6 +29,7 @@ end
 excludeGroup = true;
 
 % NOTE: only run one or the other. Both CANNOT be set to true
+% NOTE: does not work for M3 projects right now ('M3_*')
 runScrub = false;
 runSR = false;
 if runScrub & runSR
@@ -53,6 +54,71 @@ end
 
 if runScrub | runSR
 	fprintf(1, '\tVolume censoring: yes\n');
+end
+
+% ------------------------------------------------------------------------------
+% Set project variables
+% ------------------------------------------------------------------------------
+switch WhichProject
+	case 'OCDPG'
+		projdir = '~/Dropbox/Work/ResProjects/rfMRI_denoise/OCDPG/';
+		sublist = [projdir,'OCDPGe.csv'];
+		datadir = [projdir,'data/'];
+		preprostr = '/rfMRI/prepro/';
+
+		TR = 2.5;
+
+		nbsdir = '~/Dropbox/Work/ResProjects/rfMRI_denoise/OCDPG/NBS_tDOF/';
+	case 'UCLA'
+		projdir = '~/Dropbox/Work/ResProjects/rfMRI_denoise/UCLA/';
+		sublist = [projdir,'UCLA.csv'];
+		datadir = [projdir,'data/'];
+        preprostr = '/rfMRI/prepro/';
+
+		TR = 2;
+
+		% nbsdir = '~/Dropbox/Work/ResProjects/rfMRI_denoise/UCLA/NBS_tDOF/';
+		% nbsdir = '~/Dropbox/Work/ResProjects/rfMRI_denoise/UCLA/NBS_tDOF_scrub/';
+		nbsdir = '~/Dropbox/Work/ResProjects/rfMRI_denoise/UCLA/NBS_tDOF_spikeReg/';
+	case 'NYU_2'
+		projdir = '~/Dropbox/Work/ResProjects/rfMRI_denoise/NYU_2/';
+		sublist = [projdir,'NYU_2.csv'];
+		datadir = [projdir,'data/'];
+		% Baseline data directory string
+		% Note, we use the baseline data to calculate motion
+		preprostr = '/session_1/rest_1/prepro/';
+		% preprostr = '/session_1/rest_2/prepro/';
+		% preprostr = '/session_2/rest_1/prepro/';
+	
+		TR = 2;
+	case 'GoC'
+		projdir = '~/Dropbox/Work/ResProjects/rfMRI_denoise/goc_qc/';
+		sublist = [projdir,'goc_qc.csv'];
+		datadir = [projdir,'data/'];
+		preprostr = '/';
+	
+		TR = 0.754;
+	case 'M3_COBRE'
+		projdir = '~/Dropbox/Work/ResProjects/SCZ_HCTSA/COBRE/';
+		sublist = [projdir,'COBRE.csv'];
+		datadir = [projdir,'data/'];
+		preprostr = '/session_1/rest_1/prepro/';
+	
+		TR = 2;
+	case 'M3_UCLA'
+		projdir = '~/Dropbox/Work/ResProjects/SCZ_HCTSA/UCLA/';
+		sublist = [projdir,'UCLA.csv'];
+		datadir = [projdir,'data/'];
+		preprostr = '/func/prepro/';
+	
+		TR = 2;
+	case 'M3_NAMIC'
+		projdir = '~/Dropbox/Work/ResProjects/SCZ_HCTSA/NAMIC/';
+		sublist = [projdir,'NAMIC.csv'];
+		datadir = [projdir,'data/'];
+		preprostr = '/func/prepro/';
+	
+		TR = 3;
 end
 
 % ------------------------------------------------------------------------------
@@ -102,38 +168,47 @@ numConnections = numROIs * (numROIs - 1) / 2;
 % 							Preprocessing pipelines
 % ------------------------------------------------------------------------------
 if ~runSR & ~runScrub
-	noiseOptions = {'6P',...
-					'6P+2P',...
-					'6P+2P+GSR',...
-					'24P',...
-					'24P+8P',...
-					'24P+8P+4GSR',...
-					'24P+aCC',...
-					'24P+aCC+4GSR',...
-					'24P+aCC50',...
-					'24P+aCC50+4GSR',...
-					'12P+aCC',...
-					'12P+aCC50',...
-					'sICA-AROMA+2P',...
-					'sICA-AROMA+2P+GSR',...
-					'sICA-AROMA+8P',...
-					'sICA-AROMA+8P+4GSR'};
-	noiseOptionsNames = {'6HMP',...
-						'6HMP+2Phys',...
-						'6HMP+2Phys+GSR',...
-						'24HMP',...
-						'24HMP+8Phys',...
-						'24HMP+8Phys+4GSR',...
-						'24HMP+aCompCor',...
-						'24HMP+aCompCor+4GSR',...
-						'24HMP+aCompCor50',...
-						'24HMP+aCompCor50+4GSR',...
-						'12HMP+aCompCor',...
-						'12HMP+aCompCor50',...
-						'ICA-AROMA+2Phys',...
-						'ICA-AROMA+2Phys+GSR',...
-						'ICA-AROMA+8Phys',...
-						'ICA-AROMA+8Phys+4GSR'};
+	switch WhichProject
+		case {'M3_COBRE','M3_UCLA','M3_NAMIC'}
+			noiseOptions = {'sICA-AROMA+2P',...
+							'sICA-AROMA+2P+GSR'};
+			noiseOptionsNames = {'ICA-AROMA+2Phys',...
+								'ICA-AROMA+2Phys+GSR'};		
+		otherwise
+			noiseOptions = {'6P',...
+							'6P+2P',...
+							'6P+2P+GSR',...
+							'24P',...
+							'24P+8P',...
+							'24P+8P+4GSR',...
+							'24P+aCC',...
+							'24P+aCC+4GSR',...
+							'24P+aCC50',...
+							'24P+aCC50+4GSR',...
+							'12P+aCC',...
+							'12P+aCC50',...
+							'sICA-AROMA+2P',...
+							'sICA-AROMA+2P+GSR',...
+							'sICA-AROMA+8P',...
+							'sICA-AROMA+8P+4GSR'};
+			noiseOptionsNames = {'6HMP',...
+								'6HMP+2Phys',...
+								'6HMP+2Phys+GSR',...
+								'24HMP',...
+								'24HMP+8Phys',...
+								'24HMP+8Phys+4GSR',...
+								'24HMP+aCompCor',...
+								'24HMP+aCompCor+4GSR',...
+								'24HMP+aCompCor50',...
+								'24HMP+aCompCor50+4GSR',...
+								'12HMP+aCompCor',...
+								'12HMP+aCompCor50',...
+								'ICA-AROMA+2Phys',...
+								'ICA-AROMA+2Phys+GSR',...
+								'ICA-AROMA+8Phys',...
+								'ICA-AROMA+8Phys+4GSR'};
+	end
+
 elseif runScrub | runSR
 	% volume censoring
 	noiseOptions = {'24P+8P+4GSR',...
@@ -147,58 +222,16 @@ end
 numPrePro = length(noiseOptions);
 
 % ------------------------------------------------------------------------------
-% Set project variables
-% ------------------------------------------------------------------------------
-switch WhichProject
-	case 'OCDPG'
-		projdir = '~/Dropbox/Work/ResProjects/rfMRI_denoise/OCDPG/';
-		sublist = [projdir,'OCDPGe.csv'];
-		datadir = [projdir,'data/'];
-		preprostr = '/rfMRI/prepro/';
-
-		TR = 2.5;
-
-		nbsdir = '~/Dropbox/Work/ResProjects/rfMRI_denoise/OCDPG/NBS_tDOF/';
-	case 'UCLA'
-		projdir = '~/Dropbox/Work/ResProjects/rfMRI_denoise/UCLA/';
-		sublist = [projdir,'UCLA.csv'];
-		datadir = [projdir,'data/'];
-        preprostr = '/rfMRI/prepro/';
-
-		TR = 2;
-
-		% nbsdir = '~/Dropbox/Work/ResProjects/rfMRI_denoise/UCLA/NBS_tDOF/';
-		% nbsdir = '~/Dropbox/Work/ResProjects/rfMRI_denoise/UCLA/NBS_tDOF_scrub/';
-		nbsdir = '~/Dropbox/Work/ResProjects/rfMRI_denoise/UCLA/NBS_tDOF_spikeReg/';
-	case 'NYU_2'
-		projdir = '~/Dropbox/Work/ResProjects/rfMRI_denoise/NYU_2/';
-		sublist = [projdir,'NYU_2.csv'];
-		datadir = [projdir,'data/'];
-		% Baseline data directory string
-		% Note, we use the baseline data to calculate motion
-		preprostr = '/session_1/rest_1/prepro/';
-		% preprostr = '/session_1/rest_2/prepro/';
-		% preprostr = '/session_2/rest_1/prepro/';
-	
-		TR = 2;
-	case 'GoC'
-		projdir = '~/Dropbox/Work/ResProjects/rfMRI_denoise/goc_qc/';
-		sublist = [projdir,'goc_qc.csv'];
-		datadir = [projdir,'data/'];
-		preprostr = '/';
-	
-		TR = 0.754;
-end
-
-% ------------------------------------------------------------------------------
 % Subject list
 % ------------------------------------------------------------------------------
 fileID = fopen(sublist);
 switch WhichProject
-	case 'UCLA'
-		metadata = textscan(fileID, '%s %u %u %s %s %u','HeaderLines',1, 'delimiter',',');
-	otherwise
+	case {'OCDPG','UCLA','M3_NAMIC'}
 		metadata = textscan(fileID, '%s %u %u %s %s','HeaderLines',1, 'delimiter',',');
+	case {'UCLA','M3_UCLA'}
+		metadata = textscan(fileID, '%s %u %u %s %s %u','HeaderLines',1, 'delimiter',',');
+	case 'M3_COBRE'
+		metadata = textscan(fileID, '%s %u %u %s %s %s %s','HeaderLines',1, 'delimiter',',');
 end
 
 metadata{2} = double(metadata{2}); metadata{3} = double(metadata{3});
@@ -1004,7 +1037,7 @@ if runPlot
 		clear extraParams
 		extraParams.customSpot = '';
 		extraParams.add0Line = true;
-		extraParams.theColors = theColors;
+		extraParams.theColors = theColors(tDOF_idx);
 		JitteredParallelScatter(data(tDOF_idx),1,1,0,extraParams)
 		ax = gca;
 
@@ -1028,7 +1061,7 @@ if runPlot
 		clear extraParams
 		extraParams.customSpot = '';
 		extraParams.add0Line = true;
-		extraParams.theColors = theColors;
+		extraParams.theColors = theColors(tDOF_idx);
 		JitteredParallelScatter(data(tDOF_idx),1,1,0,extraParams)
 		ax = gca;
 
@@ -1064,7 +1097,7 @@ if runPlot
 		extraParams.xLabel = 'Pipeline';
 		extraParams.yLabel = 'ICC t-stat';
 		extraParams.yLimits = [0 230];
-	    extraParams.theColors = theColors;
+	    extraParams.theColors = theColors(tDOF_idx);
     	extraParams.theLines = theLines;
 
 		TheBarChart(data,data_std,true,extraParams)
@@ -1098,8 +1131,15 @@ if runBigPlots
 		numThresholds = 11;
 		BF_PlotQuantiles(ROIDistVec(allData(i).NaNFilter),allData(i).QCFCVec,numThresholds)
 		hold on
+		plot([0:200],zeros(1,201),'--','Color','k')
 
-		ylim([-0.4 0.4])
+		if ismember('OCDPG',WhichProject,'rows')
+			ylim([-0.1 0.2])
+		elseif ismember('UCLA',WhichProject,'rows')
+			ylim([-0.1 0.3])
+		elseif ismember('NYU_2',WhichProject,'rows')
+			ylim([-0.1 0.3])
+		end
 		
 		xlabel('Distance (mm)')
 		ylabel('QC-FC')
@@ -1665,7 +1705,7 @@ if runOverlapPlots
 	% ------------------------------------------------------------------------------
 	% 1) Pairwise overlap between significant networks
 	% ------------------------------------------------------------------------------
-	WhichOverlap = 'intersection'; % 'intersection' 'phi' 
+	WhichOverlap = 'Intersection/Union'; % 'Intersection/Union' 'phi' 
 	f = figure('color','w', 'units', 'centimeters', 'pos', [0 0 23 12], 'name',['NBS Overlap']); box('on'); movegui(f,'center');
 	for i = 1:numContrasts
 		if i == 1
@@ -1684,22 +1724,26 @@ if runOverlapPlots
 		data = data(NaNFilter,:); 
 
 		switch WhichOverlap
-			case 'intersection'
+			case 'Intersection/Union'
 				mat = [];
 				for j = 1:size(data,2)
 					for k = 1:size(data,2)
 						x = data(:,j);
 						y = data(:,k);
-						% Number of sig connections present in both pipelines
-						C = sum(x + y == 2);
-						% express C as a fraction of the smaller NBS network
-						if sum(x) < sum(y)
-							mat(j,k) = C/sum(x);
-						elseif sum(y) < sum(x)
-							mat(j,k) = C/sum(y);
-						elseif sum(x) == sum(y)
-							mat(j,k) = 1;
-						end
+						% Num of signifcant edges in intersection
+						Ci = sum(x + y == 2);
+						% Num of signifcant edges in union
+						Cu = sum(x + y > 0);
+
+						mat(j,k) = Ci/Cu;
+						% % express Ci as a fraction of the smaller NBS network
+						% if sum(x) < sum(y)
+						% 	mat(j,k) = Ci/sum(x);
+						% elseif sum(y) < sum(x)
+						% 	mat(j,k) = Ci/sum(y);
+						% elseif sum(x) == sum(y)
+						% 	mat(j,k) = 1;
+						% end
 					end
 				end
 			case 'phi'
@@ -1732,7 +1776,7 @@ if runOverlapPlots
 			for j = i:size(mat,2)
 				if i ~= j
 					text(i,j,num2str(mat(i,j),'%0.1f'),'HorizontalAlignment','center',...
-						'Color','w','FontSize',FSize,'FontWeight','normal');
+						'Color','k','FontSize',FSize,'FontWeight','normal');
 				end
 			end
 		end
