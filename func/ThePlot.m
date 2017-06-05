@@ -1,5 +1,5 @@
 %% ThePlot:
-function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compartment,movThr,fdPowerThr,fdJenkThr)
+function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compartment,TR,movThr,fdPowerThr,fdJenkThr)
 
 	% This function plots a series of movement traces over top of a plot of timeseries as
 	% as in Power (2016), called 'ThePlot'
@@ -20,6 +20,10 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
 	% 					grey/white/csf (see GetTSCompartment.m)
 	% key_compartment 	- a vector denoting which compartment a voxel belongs to (see GetTSCompartment.m)
 	% 
+	% TR 				- Integer representing EPI acquisition time in seconds. This is used to estimate the amount
+	% 					time, in minutes, would remain following volume censoring and to mark subjects for exclusion
+	% 					if <4 minutes remain
+	% 
 	% movThr 			- cut off for movement parameters. default = 2
 	% 					Note, only for visualisation
 	% fdPowerThr 		- cut off for fdPower trace. default = 0.2
@@ -32,17 +36,20 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
 	% Linden Parkes, Brain & Mental Health Laboratory, 2016
 	% ------------------------------------------------------------------------------	
 
-	if nargin < 8
+	if nargin < 9
 		movThr = 2;
 	end
 
-	if nargin < 9
+	if nargin < 10
 		fdPowerThr = 0.2;
 	end
 
-	if nargin < 10
+	if nargin < 11
 		fdJenkThr = 0.25;
 	end
+
+	% threshold for exclusion in minutes
+	thresh = 4;
 
     numVols = size(ts_compartment,1);
 
@@ -51,12 +58,6 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
 	% ------------------------------------------------------------------------------
 	FSize = 10;
 	h1 = figure('color','w', 'units', 'centimeters', 'pos', [0 0 21 29.7], 'name',['ThePlot: ',subject]); box('on'); movegui(h1,'center');
-	
-	% set(h1,'PaperType','A4', ...
-	%          'paperOrientation', 'portrait', ...
-	%          'paperunits','CENTIMETERS', ...
-	%          'PaperPosition',[.63, .63, 19.72, 28.41]);
-
 	h2 = suptitle(['ThePlot: ',subject]);
     pos = get(h2,'Position');
     set(h2,'Position',[pos(1)*1, pos(2)*0.5, pos(3)*1]);
@@ -115,20 +116,34 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
 	% ------------------------------------------------------------------------------
 	% FD Jenk
 	% ------------------------------------------------------------------------------
-	str = 'fdJenk. ';
+	str = 'fdJenk.    ';
 
 	fdJenk_m = mean(fdJenk);
 	fdJenkPerc = MyRound(sum(fdJenk > fdJenkThr)/numVols*100);
 	fdJenkThrPerc = MyRound(numVols * 0.20);
 	
-	str1 = ['Mean: ',num2str(MyRound(fdJenk_m)),'mm, '];
-	str2 = ['Spikes: ',num2str(fdJenkPerc),'%'];
+	% Spike regression exclusion
+	spikereg = GetSpikeRegressors(fdJenk,fdJenkThr);
+	% number of volumes - number of spike regressors (columns)
+	numCVols = numVols - size(spikereg,2);
+	% Compute length, in minutes, of time series data left after censoring
+	NTime = (numCVols * TR)/60;
+	
+	str1 = ['Mean: ',num2str(MyRound(fdJenk_m)),'mm,  '];
+	str2 = ['Spikes: ',num2str(fdJenkPerc),'%,  '];
+	str3 = ['Uncensored minutes: ',num2str(NTime),',  '];
+	% if less than threshold, mark for exclusion
+	if NTime < thresh
+		str4 = 'Exclude: YES';
+	elseif NTime >= thresh
+		str4 = 'Exclude: NO';
+	end
 
 	sp3 = subplot(6,2,5);
     pos3 = get(sp3,'Position');
 	plot(fdJenk)
 	hold on
-	title([str,str1,str2],'fontweight','bold')
+	title([str,str1,str2,str3,str4],'fontweight','bold')
 	ylabel('mm')
 	xlim([1 numVols])
 	ylim([0 max(fdJenk)+(max(fdJenk)*.10)])
