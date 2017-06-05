@@ -1,5 +1,5 @@
 %% ThePlot:
-function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compartment,TR,movThr,fdPowerThr,fdJenkThr)
+function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compartment,TR,movThr,fdPowerThr,fdJenkThr,dvarsThr)
 
 	% This function plots a series of movement traces over top of a plot of timeseries as
 	% as in Power (2016), called 'ThePlot'
@@ -46,6 +46,10 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
 
 	if nargin < 11
 		fdJenkThr = 0.25;
+	end
+
+	if nargin < 12
+		dvarsThr = 3;
 	end
 
 	% threshold for exclusion in minutes
@@ -129,20 +133,22 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
 
 	% Add text to plot
 	fdJenk_m = mean(fdJenk); % mean FD
-	fdJenkPerc = MyRound(sum(fdJenk > fdJenkThr)/numVols*100); fdJenkThrPerc = MyRound(numVols * 0.20); % spike percentage
+	fdJenkPerc = sum(fdJenk > fdJenkThr) / numVols * 100; % spike percentage
 	spikereg = GetSpikeRegressors(fdJenk,fdJenkThr); % Spike regression exclusion
 	numCVols = numVols - size(spikereg,2); % number of volumes - number of spike regressors (columns)
 	NTime = (numCVols * TR)/60; % Compute length, in minutes, of time series data left after censoring
 	
-	str1 = ['Mean: ',num2str(fdJenk_m,'%0.2f'),'mm, '];
-	str2 = ['Spikes: ',num2str(fdJenkPerc,'%0.1f'),'%, '];
-	str3 = ['Uncensored minutes: ',num2str(NTime,'%0.0f'),', '];
-	% if less than threshold, mark for exclusion
-	if NTime < thresh; str4 = 'Exclude: YES'; elseif NTime >= thresh; str4 = 'Exclude: NO';	end
+	str1 = ['Mean = ',num2str(fdJenk_m,'%0.2f'),'mm. Supra thresh spikes = ',num2str(fdJenkPerc,'%0.1f'),'%.'];
+	if NTime < thresh;
+		% if less than threshold, mark for exclusion
+		str2 = [num2str(NTime,'%0.0f'),' uncensored minutes remain. Exclude: YES'];
+	elseif NTime >= thresh;
+		str2 = [num2str(NTime,'%0.0f'),' uncensored minutes remain. Exclude: NO'];
+	end
 	
 	yLimits = ylim;
-	text(round(numVols*.05),yLimits(2) - yLimits(2)*.20,[str1,str2,str3,str4],... 
-					'HorizontalAlignment','left',... 
+	text(round(numVols*.05),yLimits(2) - yLimits(2)*.10,{str1,str2},... 
+					'HorizontalAlignment','left',...
 					'VerticalAlignment','middle',...
 					'Color','black',...
 					'FontSize', FSize)
@@ -166,6 +172,28 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
     set(sp4,'XTickLabel','');
 	set(gca,'FontSize',FSize)
 
+	% Add text to plot
+	fdPower_m = mean(fdPower); % mean FD
+	fdPowerPerc = sum(fdPower > fdPowerThr) / numVols * 100; % spike percentage
+	ScrubMask = GetScrubMask(fdPower,dvars,fdPowerThr,dvarsThr,'no');
+	numCVols = numVols - sum(ScrubMask); % number of volumes - number of spike regressors (columns)
+	NTime = (numCVols * TR)/60; % Compute length, in minutes, of time series data left after censoring
+
+	str1 = ['Mean = ',num2str(fdPower_m,'%0.2f'),'mm. Supra thresh spikes = ',num2str(fdPowerPerc,'%0.1f'),'%.'];
+	if NTime < thresh;
+		% if less than threshold, mark for exclusion
+		str2 = [num2str(NTime,'%0.0f'),' uncensored minutes remain. Exclude: YES'];
+	elseif NTime >= thresh;
+		str2 = [num2str(NTime,'%0.0f'),' uncensored minutes remain. Exclude: NO'];
+	end
+	
+	yLimits = ylim;
+	text(round(numVols*.05),yLimits(2) - yLimits(2)*.10,{str1,str2},... 
+					'HorizontalAlignment','left',...
+					'VerticalAlignment','middle',...
+					'Color','black',...
+					'FontSize', FSize)
+
 	% overlay threshold line
 	if max(fdPower) > fdPowerThr
 		line([0 numVols],[fdPowerThr fdPowerThr],'LineStyle','--','Color','k')
@@ -183,6 +211,11 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
 	ylim([0 max(dvars)+(max(dvars)*.10)])
     set(sp5,'XTickLabel','');
 	set(gca,'FontSize',FSize)
+
+	% overlay threshold line
+	if max(dvars) > dvarsThr
+		line([0 numVols],[dvarsThr dvarsThr],'LineStyle','--','Color','k')
+	end
 
 	% ------------------------------------------------------------------------------
 	% Time series
