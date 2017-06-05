@@ -118,27 +118,6 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
 	% ------------------------------------------------------------------------------
 	str = 'fdJenk.    ';
 
-	fdJenk_m = mean(fdJenk);
-	fdJenkPerc = MyRound(sum(fdJenk > fdJenkThr)/numVols*100);
-	fdJenkThrPerc = MyRound(numVols * 0.20);
-	
-	% Spike regression exclusion
-	spikereg = GetSpikeRegressors(fdJenk,fdJenkThr);
-	% number of volumes - number of spike regressors (columns)
-	numCVols = numVols - size(spikereg,2);
-	% Compute length, in minutes, of time series data left after censoring
-	NTime = (numCVols * TR)/60;
-	
-	str1 = ['Mean: ',num2str(MyRound(fdJenk_m)),'mm,  '];
-	str2 = ['Spikes: ',num2str(fdJenkPerc),'%,  '];
-	str3 = ['Uncensored minutes: ',num2str(NTime),',  '];
-	% if less than threshold, mark for exclusion
-	if NTime < thresh
-		str4 = 'Exclude: YES';
-	elseif NTime >= thresh
-		str4 = 'Exclude: NO';
-	end
-
 	sp3 = subplot(6,2,5);
     pos3 = get(sp3,'Position');
 	plot(fdJenk)
@@ -149,6 +128,26 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
 	ylim([0 max(fdJenk)+(max(fdJenk)*.10)])
     set(sp3,'XTickLabel','');
 	set(gca,'FontSize',FSize)
+
+	% Add text to plot
+	fdJenk_m = mean(fdJenk); % mean FD
+	fdJenkPerc = MyRound(sum(fdJenk > fdJenkThr)/numVols*100); fdJenkThrPerc = MyRound(numVols * 0.20); % spike percentage
+	spikereg = GetSpikeRegressors(fdJenk,fdJenkThr); % Spike regression exclusion
+	numCVols = numVols - size(spikereg,2); % number of volumes - number of spike regressors (columns)
+	NTime = (numCVols * TR)/60; % Compute length, in minutes, of time series data left after censoring
+	
+	str1 = ['Mean: ',num2str(fdJenk_m,'%0.2f'),'mm, '];
+	str2 = ['Spikes: ',num2str(fdJenkPerc,'%0.1f'),'%, '];
+	str3 = ['Uncensored minutes: ',num2str(NTime,'%0.0f'),', '];
+	% if less than threshold, mark for exclusion
+	if NTime < thresh; str4 = 'Exclude: YES'; elseif NTime >= thresh; str4 = 'Exclude: NO';	end
+	
+	yLimits = ylim;
+	text(round(numVols*.05),yLimits(2) - yLimits(2)*.20,[str1,str2,str3,str4],... 
+					'HorizontalAlignment','right',... 
+					'VerticalAlignment','middle',...
+					'Color','black',...
+					'FontSize', FSize)
 
 	% overlay threshold line
 	if max(fdJenk) > fdJenkThr
