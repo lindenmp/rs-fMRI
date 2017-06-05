@@ -138,16 +138,16 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
 	numCVols = numVols - size(spikereg,2); % number of volumes - number of spike regressors (columns)
 	NTime = (numCVols * TR)/60; % Compute length, in minutes, of time series data left after censoring
 	
-	str1 = ['Mean = ',num2str(fdJenk_m,'%0.2f'),'mm. Supra thresh spikes = ',num2str(fdJenkPerc,'%0.1f'),'%.'];
+	str1 = ['Mean = ',num2str(fdJenk_m,'%0.2f'),'mm. Supra threshold spikes = ',num2str(fdJenkPerc,'%0.1f'),'%.'];
 	if NTime < thresh;
 		% if less than threshold, mark for exclusion
-		str2 = [num2str(NTime,'%0.0f'),' uncensored minutes remain. Exclude: YES'];
+		str2 = [num2str(NTime,'%0.0f'),' mins of uncensored data. Exclude: YES'];
 	elseif NTime >= thresh;
-		str2 = [num2str(NTime,'%0.0f'),' uncensored minutes remain. Exclude: NO'];
+		str2 = [num2str(NTime,'%0.0f'),' mins of uncensored data. Exclude: NO'];
 	end
 	
 	yLimits = ylim;
-	text(round(numVols*.05),yLimits(2) - yLimits(2)*.10,{str1,str2},... 
+	text(round(numVols*.05),yLimits(2) - yLimits(2)*.2,{str1,str2},... 
 					'HorizontalAlignment','left',...
 					'VerticalAlignment','middle',...
 					'Color','black',...
@@ -179,16 +179,16 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
 	numCVols = numVols - sum(ScrubMask); % number of volumes - number of spike regressors (columns)
 	NTime = (numCVols * TR)/60; % Compute length, in minutes, of time series data left after censoring
 
-	str1 = ['Mean = ',num2str(fdPower_m,'%0.2f'),'mm. Supra thresh spikes = ',num2str(fdPowerPerc,'%0.1f'),'%.'];
+	str1 = ['Mean = ',num2str(fdPower_m,'%0.2f'),'mm. Supra threshold spikes = ',num2str(fdPowerPerc,'%0.1f'),'%.'];
 	if NTime < thresh;
 		% if less than threshold, mark for exclusion
-		str2 = [num2str(NTime,'%0.0f'),' uncensored minutes remain. Exclude: YES'];
+		str2 = [num2str(NTime,'%0.0f'),' mins of uncensored data. Exclude: YES'];
 	elseif NTime >= thresh;
-		str2 = [num2str(NTime,'%0.0f'),' uncensored minutes remain. Exclude: NO'];
+		str2 = [num2str(NTime,'%0.0f'),' mins of uncensored data. Exclude: NO'];
 	end
 	
 	yLimits = ylim;
-	text(round(numVols*.05),yLimits(2) - yLimits(2)*.10,{str1,str2},... 
+	text(round(numVols*.05),yLimits(2) - yLimits(2)*.2,{str1,str2},... 
 					'HorizontalAlignment','left',...
 					'VerticalAlignment','middle',...
 					'Color','black',...
