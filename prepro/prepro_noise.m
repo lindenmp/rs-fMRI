@@ -357,6 +357,8 @@ function [noiseTS,outdir] = prepro_noise(cfg)
     % 4) Spike regression
     % ------------------------------------------------------------------------------
         if runSpikeReg == 1
+            fprintf(1,'\n\t\t ----- Generating spike regressors ----- \n\n');
+
             % calculate Jenkinson FD
             fd = GetFDJenk(mov);
 
