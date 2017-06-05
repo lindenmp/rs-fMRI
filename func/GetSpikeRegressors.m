@@ -7,7 +7,7 @@ function [spikereg] = GetSpikeRegressors(fd,thr)
 
 	% find indices of spikes
 	if any(fd > thr)
-	    fprintf(1,'Generating spike regressors...');
+	    % fprintf(1,'Generating spike regressors...');
 
 		idx = find(fd > thr);
 
@@ -17,7 +17,7 @@ function [spikereg] = GetSpikeRegressors(fd,thr)
 		% find number of spikes
 		Nspike = numel(idx);
 
-		fprintf(1, 'found %u spikes...',Nspike);
+		% fprintf(1, 'found %u spikes...',Nspike);
 
 		% initialise spike regression matrix
 		spikereg = zeros(N,Nspike);
@@ -28,7 +28,7 @@ function [spikereg] = GetSpikeRegressors(fd,thr)
 	
 		fprintf(1,' done\n');
 	else
-	    fprintf(1,'no spikes detected\n');
+	    % fprintf(1,'no spikes detected\n');
 	    spikereg = [];
 	end
 end
