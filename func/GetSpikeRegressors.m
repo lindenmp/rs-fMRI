@@ -26,7 +26,7 @@ function [spikereg] = GetSpikeRegressors(fd,thr)
 			spikereg(idx(i),i) = 1;
 		end
 	
-		fprintf(1,' done\n');
+		% fprintf(1,' done\n');
 	else
 	    % fprintf(1,'no spikes detected\n');
 	    spikereg = [];
