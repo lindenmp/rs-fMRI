@@ -54,7 +54,10 @@ end
 % Subject list
 % ------------------------------------------------------------------------------
 fileID = fopen(sublist);
+header = textscan(fileID, repmat('%[^,],', 1, 46), 1);
 metadata = textscan(fileID, ['%s %f %f %s %s' repmat(' %f', 1, 41)],'HeaderLines',1, 'delimiter',',');
+fclose(fileID)
+
 ParticipantIDs = metadata{1};
 Group = metadata{2};
 
@@ -71,7 +74,7 @@ end
 % SPM
 % ------------------------------------------------------------------------------
 for conNum = conNums
-	outdir = [projdir,'SecondLevelSPM/TwoSampleT/',removeNoise,'/',WhichSeed,'/contrast_',num2str(conNum),'/'];
+	outdir = [projdir,'SecondLevelSPM/TwoSampleT/',WhichSeed,'/ROI_',num2str(conNum),'/'];
 
 	% make outdir
 	if exist(outdir) == 0
