@@ -11,6 +11,11 @@ function [] = run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject,discard
     cfg.smoothing = smoothing;
 
     % ------------------------------------------------------------------------------
+    % Store date and time
+    % ------------------------------------------------------------------------------
+    cfg.DateTime = datetime('now');
+
+    % ------------------------------------------------------------------------------
     % Add paths - edit this section
     % ------------------------------------------------------------------------------
     switch cfg.WhichMASSIVE
@@ -347,7 +352,7 @@ function [] = run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject,discard
             % Scalar value indicating spatial smoothing kernal size in mm. 
             cfg.kernel = 8;
             % Low-pass cut-off for bandpass filter in Hz (e.g., .08) 
-            cfg.LowPass = 0.08;
+            cfg.LowPass = 10^6;
             % Hi-pass cut-off for bandpass filter in Hz (e.g., .008)
             cfg.HighPass = 0.008;
             
@@ -402,7 +407,7 @@ function [] = run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject,discard
             % Scalar value indicating spatial smoothing kernal size in mm. 
             cfg.kernel = 8;
             % Low-pass cut-off for bandpass filter in Hz (e.g., .08) 
-            cfg.LowPass = 0.08;
+            cfg.LowPass = 10^6;
             % Hi-pass cut-off for bandpass filter in Hz (e.g., .008)
             cfg.HighPass = 0.008;
             
@@ -457,7 +462,7 @@ function [] = run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject,discard
             % Scalar value indicating spatial smoothing kernal size in mm. 
             cfg.kernel = 8;
             % Low-pass cut-off for bandpass filter in Hz (e.g., .08) 
-            cfg.LowPass = 0.08;
+            cfg.LowPass = 10^6;
             % Hi-pass cut-off for bandpass filter in Hz (e.g., .008)
             cfg.HighPass = 0.008;
             
