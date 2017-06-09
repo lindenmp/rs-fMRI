@@ -10,7 +10,7 @@ clear all; close all; clc
 % Set string switches
 % ------------------------------------------------------------------------------
 Projects = {'OCDPG','UCLA','NYU_2','GoC','M3_COBRE','M3_UCLA','M3_NAMIC'};
-WhichProject = Projects{7};
+WhichProject = Projects{2};
 
 WhichParc = 'Gordon'; % 'Gordon' 'Power'
 
@@ -208,15 +208,22 @@ if ~runSR & ~runScrub
 								'ICA-AROMA+8Phys',...
 								'ICA-AROMA+8Phys+4GSR'};
 	end
-
 elseif runScrub | runSR
-	% volume censoring
-	noiseOptions = {'24P+8P+4GSR',...
-					'24P+aCC+4GSR',...
-					'sICA-AROMA+2P'};
-	noiseOptionsNames = {'24HMP+8Phys+4GSR',...
-						'24HMP+aCompCor+4GSR',...
-						'ICA-AROMA+2Phys'};
+	switch WhichProject
+		case {'M3_COBRE','M3_UCLA','M3_NAMIC'}
+			noiseOptions = {'sICA-AROMA+2P',...
+							'sICA-AROMA+2P+GSR'};
+			noiseOptionsNames = {'ICA-AROMA+2Phys',...
+								'ICA-AROMA+2Phys+GSR'};		
+		otherwise
+			% volume censoring
+			noiseOptions = {'24P+8P+4GSR',...
+							'24P+aCC+4GSR',...
+							'sICA-AROMA+2P'};
+			noiseOptionsNames = {'24HMP+8Phys+4GSR',...
+								'24HMP+aCompCor+4GSR',...
+								'ICA-AROMA+2Phys'};
+	end
 end
 
 numPrePro = length(noiseOptions);
@@ -226,7 +233,7 @@ numPrePro = length(noiseOptions);
 % ------------------------------------------------------------------------------
 fileID = fopen(sublist);
 switch WhichProject
-	case {'OCDPG','UCLA','M3_NAMIC'}
+	case {'OCDPG','NYU_2','M3_NAMIC'}
 		metadata = textscan(fileID, '%s %u %u %s %s','HeaderLines',1, 'delimiter',',');
 	case {'UCLA','M3_UCLA'}
 		metadata = textscan(fileID, '%s %u %u %s %s %u','HeaderLines',1, 'delimiter',',');
@@ -266,15 +273,16 @@ numVols = length(fdJenk{1});
 % ------------------------------------------------------------------------------
 % Perform initial exclusion based on gross movement
 % ------------------------------------------------------------------------------
-ParticipantIDs(exclude(:,1)) = [];
-Group(exclude(:,1)) = [];
-fdJenk_m(exclude(:,1)) = [];
-fdJenk(exclude(:,1)) = [];
+WhichExclude = 1;
+ParticipantIDs(exclude(:,WhichExclude)) = [];
+Group(exclude(:,WhichExclude)) = [];
+fdJenk_m(exclude(:,WhichExclude)) = [];
+fdJenk(exclude(:,WhichExclude)) = [];
+fprintf(1, 'Excluded %u subjects based on gross movement\n', sum(exclude(:,WhichExclude)));
+exclude(exclude(:,WhichExclude),:) = [];
 
 % compute numsubs
 numSubs = length(ParticipantIDs);
-
-fprintf(1, 'Excluded %u subjects based on gross movement\n', sum(exclude(:,1)));
 
 % ------------------------------------------------------------------------------
 % Movement params
@@ -292,6 +300,16 @@ if numGroups > 1
 		fprintf(1, 'There is a significant group difference in mean FD. t-value = %s. p-value = %s\n',num2str(stats.tstat),num2str(p));
 	end
 end
+
+% ------------------------------------------------------------------------------
+% Plot Movement params
+% ------------------------------------------------------------------------------
+JitteredParallelScatter(fdJenk_m_Group)
+ax = gca;
+ax.XTick = [1,2];
+ax.XTickLabel = {'Controls','Patients'};
+xlabel('Group')
+ylabel('Mean FD')
 
 % ------------------------------------------------------------------------------
 % Variables
@@ -786,25 +804,6 @@ FSize = 10;
 if runPlot
 	clear extraParams
 	% ------------------------------------------------------------------------------
-	% Movement params
-	% ------------------------------------------------------------------------------
-	figure('color','w', 'units', 'centimeters', 'pos', [0 0 10.5*(numGroups+1) 8.5], 'name',['']); box('on');
-	theColors = num2cell([0 0 0.8; 0 0.8 0; 0.8 0 0],2);
-
-	for i = 1:numGroups
-		subplot(1,numGroups+1,i)
-		plot(fdJenk_Group{i},'Color',theColors{i});
-		hold on
-		xlabel('Time in volumes')
-		ylabel('FD')
-		xlim([0 length(fdJenk{1})])
-		ylim([0 1])
-	end
-
-	subplot(1,numGroups+1,numGroups+1)
-	JitteredParallelScatter(fdJenk_m_Group,1,1,0)
-
-	% ------------------------------------------------------------------------------
 	% Chart colors and line styles
 	% ------------------------------------------------------------------------------
 	tempColors = num2cell([255,105,97;97,168,255;178,223,138;117,112,179]./255,2);  
@@ -907,25 +906,45 @@ if runPlot
 	% ------------------------------------------------------------------------------
 	% QC-FC uncorrected
 	% ------------------------------------------------------------------------------
-	% Create data
-	data = {[allData(:).QCFC_PropSig_unc]'};
-	data_std = cell(1,length(data)); [data_std{:}] = deal(zeros(size(data{1})));
+	if ~runScrub & ~runSR
+		% Create data
+		data = {[allData(:).QCFC_PropSig_unc]'};
+		data_std = cell(1,length(data)); [data_std{:}] = deal(zeros(size(data{1})));
 
-	% Create table
-	T = table(data{1},'RowNames',{allData(:).noiseOptionsNames}','VariableNames',{'QCFC_PropSig'})
+		% Create table
+		T = table(data{1},'RowNames',{allData(:).noiseOptionsNames}','VariableNames',{'QCFC_PropSig_unc'})
 
-	% Create bar chart
-	clear extraParams
-	extraParams.xTickLabels = {allData(:).noiseOptionsNames};
-	extraParams.xLabel = ''; % 'Pipeline'
-	extraParams.yLabel = 'QC-FC (%)';
-	extraParams.plotWidth = 10.5;
-	extraParams.plotHeight = 9;
-    extraParams.theColors = theColors;
-    extraParams.theLines = theLines;
-	extraParams.yLimits = [0 100];
+		% Create bar chart
+		clear extraParams
+		extraParams.xTickLabels = {allData(:).noiseOptionsNames};
+		extraParams.xLabel = ''; % 'Pipeline'
+		extraParams.yLabel = 'QC-FC (%)';
+		extraParams.plotWidth = 10.5;
+		extraParams.plotHeight = 9;
+	    extraParams.theColors = theColors;
+	    extraParams.theLines = theLines;
+		extraParams.yLimits = [0 100];
 
-	TheBarChart(data,data_std,true,extraParams)
+		TheBarChart(data,data_std,true,extraParams)
+	elseif runScrub | runSR
+		% Create data
+		data = {[allData(:).QCFC_PropSig_unc;allData(:).preCensor_QCFC_PropSig_unc;allData(:).postCensor_QCFC_PropSig_unc]'};
+		data_std = cell(1,length(data)); [data_std{:}] = deal(zeros(size(data{1})));
+
+		% Create table
+		T = table(data{1},'RowNames',{allData(:).noiseOptionsNames}','VariableNames',{'QCFC_PropSig_unc'})
+
+		% Create bar chart
+		clear extraParams
+		extraParams.xTickLabels = {allData(:).noiseOptionsNames};
+		extraParams.xLabel = 'Pipeline';
+		extraParams.yLabel = 'QC-FC (%)';
+		extraParams.plotWidth = 10.5;
+		extraParams.plotHeight = 9;
+		extraParams.yLimits = [0 50];
+
+		TheBarChart(data,data_std,true,extraParams)
+	end
 
 	% ------------------------------------------------------------------------------
 	% QC-FC distance dependence
@@ -976,12 +995,13 @@ if runPlot
 	TheBarChart(data,data_std,true,extraParams)
 
 	% ------------------------------------------------------------------------------
-	% Size of significant NBS component
+	% Size of significant edge component
 	% ------------------------------------------------------------------------------
 	if ismember('OCDPG',WhichProject,'rows') | ismember('UCLA',WhichProject,'rows')
 		% Create table
 	    if ismember('Diagnostic',WhichSplit,'rows')
 			PropSig = vertcat(allData(:).NBS_PropSig);
+			% PropSig = vertcat(allData(:).FDR_PropSig);
 		elseif ismember('Motion',WhichSplit,'rows')
 			PropSig = vertcat(allData(:).u05_PropSig);
 			% PropSig = vertcat(allData(:).u001_PropSig);
@@ -1794,14 +1814,14 @@ if runOverlapPlots
     f = figure('color','w', 'units', 'centimeters', 'pos', [0 0 11.5 15], 'name',['24P+8P+4GSR']); box('on'); movegui(f,'center');
     % subplot(1,2,1)
 	% 24P+8P+4GSR
-	SigMatrix = full(allData(2).NBS_sigMat{2});
-	[out,outPC,outNorm] = plotClassifiedEdges(SigMatrix,ROIStructID,2,ROILabels)
+	SigMatrix = full(allData(6).NBS_sigMat{2});
+	[out,outPC,outNorm] = plotClassifiedEdges(SigMatrix,ROIStructID,2,ROILabels);
 
     f = figure('color','w', 'units', 'centimeters', 'pos', [0 0 11.5 15], 'name',['ICA-AROMA+2P']); box('on'); movegui(f,'center');
     % subplot(1,2,2)
 	% ICA-AROMA+2P
-	SigMatrix = full(allData(5).NBS_sigMat{1});
-	[out,outPC,outNorm] = plotClassifiedEdges(SigMatrix,ROIStructID,2,ROILabels)
+	SigMatrix = full(allData(13).NBS_sigMat{1});
+	[out,outPC,outNorm] = plotClassifiedEdges(SigMatrix,ROIStructID,2,ROILabels);
 
 	% ------------------------------------------------------------------------------
 	% 3) Neuromarvl
