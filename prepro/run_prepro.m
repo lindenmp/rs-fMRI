@@ -477,7 +477,7 @@ function [] = run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject,discard
 
     % ------------------------------------------------------------------------------
     % run prepro_base
-    runBase = 0;
+    runBase = 1;
     % ------------------------------------------------------------------------------
     if runBase == 1
         [cfg.tN,cfg.gm,cfg.wm,cfg.csf,cfg.epiBrainMask,cfg.t1BrainMask,cfg.BrainMask,cfg.gmmask,cfg.wmmask,cfg.csfmask,cfg.outEPI] = prepro_base(cfg);
@@ -509,8 +509,7 @@ function [] = run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject,discard
     % If you only want to run one then just use something like: noiseOptions = {'24P+aCC'};
     
     % All pipelines
-    % noiseOptions = {'6P','6P+2P','6P+2P+GSR','24P','24P+8P','24P+8P+4GSR','24P+8P+SpikeReg','24P+8P+4GSR+SpikeReg','12P+aCC','24P+aCC','12P+aCC50','24P+aCC50','24P+aCC+4GSR','24P+aCC50+4GSR','24P+aCC+SpikeReg','24P+aCC+4GSR+SpikeReg','ICA-AROMA+2P','ICA-AROMA+2P+SpikeReg','ICA-AROMA+GSR','ICA-AROMA+2P+GSR','ICA-AROMA+8P','ICA-AROMA+4GSR','ICA-AROMA+8P+4GSR'};
-    noiseOptions = {'ICA-AROMA+2P','ICA-AROMA+2P+GSR','ICA-AROMA+2P+SpikeReg','ICA-AROMA+2P+GSR+SpikeReg'};
+    noiseOptions = {'6P','6P+2P','6P+2P+GSR','24P','24P+8P','24P+8P+4GSR','24P+8P+SpikeReg','24P+8P+4GSR+SpikeReg','12P+aCC','24P+aCC','12P+aCC50','24P+aCC50','24P+aCC+4GSR','24P+aCC50+4GSR','24P+aCC+SpikeReg','24P+aCC+4GSR+SpikeReg','ICA-AROMA+2P','ICA-AROMA+2P+SpikeReg','ICA-AROMA+GSR','ICA-AROMA+2P+GSR','ICA-AROMA+8P','ICA-AROMA+4GSR','ICA-AROMA+8P+4GSR'};
 
     % Loop over noise correction options
     for i = 1:length(noiseOptions)
@@ -613,5 +612,30 @@ function [] = run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject,discard
 
         % Save data
         save('cfg.mat','cfg')
+
+        % ------------------------------------------------------------------------------
+        % Compress final outputs
+        % ------------------------------------------------------------------------------
+        fprintf('\n\t\t ----- Compressing %s outputs ----- \n\n',cfg.removeNoise);
+        cd(cfg.outdir)
+        gzip('*.nii')
+        pause(5)
+        delete('*.nii')
+        fprintf('\n\t\t ----- Finished. ----- \n\n');
     end
+
+    % ------------------------------------------------------------------------------
+    % Compress base & t1 outputs
+    % ------------------------------------------------------------------------------
+    fprintf('\n\t\t ----- Compressing base outputs ----- \n\n');
+    cd(cfg.preprodir)
+    gzip('*.nii')
+    pause(5)
+    delete('*.nii')
+
+    cd(cfg.t1dir)
+    gzip('*.nii')
+    pause(5)
+    delete('*.nii')
+    fprintf('\n\t\t ----- Finished. ----- \n\n');
 end
