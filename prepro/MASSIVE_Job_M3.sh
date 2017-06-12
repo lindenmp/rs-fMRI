@@ -45,35 +45,3 @@ despike=1
 smoothing=before
 
 matlab -nodisplay -r "run_prepro('${WhichMASSIVE}','${WhichProject}','${WhichSessScan}','${subject}',$discard,$slicetime,$despike,'$smoothing'); exit"
-
-# ------------------------------------------------------------------------------
-# Compressing outputs
-# ------------------------------------------------------------------------------
-echo -e "\t\t ----- Compressing outputs ----- \n"
-
-datadir=/home/lindenmp/kg98/Linden/ResProjects/SCZ_HCTSA/${WhichProject:3}/data/
-
-if [[ "$WhichProject" == "M3_COBRE" ]]; then t1str=/session_1/anat_1/; preprostr=/session_1/rest_1/prepro/; fi
-if [[ "$WhichProject" == "M3_UCLA" ]] || [[ "$WhichProject" == "M3_NAMIC" ]]; then t1str=/anat/; preprostr=/func/prepro/; fi
-
-# T1 dir
-cd ${datadir}${subject}${t1str}
-count=`ls -1 *.nii 2>/dev/null | wc -l`
-if [ $count != 0 ]; then gzip *.nii; fi
-
-# Prepro dir
-cd ${datadir}${subject}${preprostr}
-count=`ls -1 *.nii 2>/dev/null | wc -l`
-if [ $count != 0 ]; then gzip *.nii; fi
-
-# export list of prepro subdirs
-find ./ -maxdepth 1 -mindepth 1 -type d -printf '%f\n' >> ${subject}.txt
-folders=$(<${subject}.txt)
-for i in $folders; do
-	if [[ "$i" != "mot" ]]; then cd ${datadir}${subject}${preprostr}${i}; count=`ls -1 *.nii 2>/dev/null | wc -l`; if [ $count != 0 ]; then echo -e "\t\tCompressing ${i} data"; gzip *.nii; fi; fi
-done
-
-cd ${datadir}${subject}${preprostr}
-rm -f ${subject}.txt
-
-echo -e "\t\t ----- Finished. ----- \n"
