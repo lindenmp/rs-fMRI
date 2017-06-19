@@ -163,7 +163,7 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
     % ------------------------------------------------------------------------------
     % Realignment #1
     % Important note: we only retain and use the realignment parameters from this
-    % step for use with motion correction
+    % step for use with QCFC benchmarks
     % The realigned data is NOT retained or used further.
     % For that, see below for Realignment #2
     % ------------------------------------------------------------------------------
