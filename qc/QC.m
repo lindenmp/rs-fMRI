@@ -36,7 +36,7 @@ if runScrub & runSR
     error('FATAL: Scrubbing and spike regression cannot be run concurrently. Choose one only!');
 end
 
-runPlot = true;
+runPlot = false;
 runBigPlots = false;
 runNBSPlots = false;
 runTPlots = false;
@@ -231,80 +231,59 @@ numPrePro = length(noiseOptions);
 % ------------------------------------------------------------------------------
 % Subject list
 % ------------------------------------------------------------------------------
-fileID = fopen(sublist);
-switch WhichProject
-	case {'OCDPG','NYU_2','M3_NAMIC'}
-		metadata = textscan(fileID, '%s %u %u %s %s','HeaderLines',1, 'delimiter',',');
-	case {'UCLA','M3_UCLA'}
-		metadata = textscan(fileID, '%s %u %u %s %s %u','HeaderLines',1, 'delimiter',',');
-	case 'M3_COBRE'
-		metadata = textscan(fileID, '%s %u %u %s %s %s %s','HeaderLines',1, 'delimiter',',');
+metadata = readtable(sublist);
+% convert participant IDs to strings
+if ~iscellstr(metadata.ParticipantID)
+	metadata.ParticipantID =  cellfun(@num2str, num2cell(metadata.ParticipantID), 'UniformOutput', false);
+	if ismember('M3_COBRE',WhichProject,'rows')
+		metadata.ParticipantID = cellfun(@(c)['00' c],metadata.ParticipantID,'UniformOutput',false);
+	end
 end
-
-metadata{2} = double(metadata{2}); metadata{3} = double(metadata{3});
-
-ParticipantIDs = metadata{1};
-Group = metadata{2};
 
 % Retain only group 1 (assumed to be HCs) and group 2 (assumed to be patients)
 % I do this because the OCDPG dataset has some PGs in it that need to be removed
 if excludeGroup
 	% Only do this if there is more than a single group
-	if numel(unique(Group)) > 1
-		ParticipantIDs(Group == 3) = [];
-		Group(Group == 3) = [];
+	if numel(unique(metadata.Diagnosis)) > 1
+		metadata(metadata.Diagnosis == 3,:) = [];
 	end
 end
 
-numGroups = numel(unique(Group));
+numGroups = numel(unique(metadata.Diagnosis));
 
 % ------------------------------------------------------------------------------
 % Jenkinson's mean FD
 % ------------------------------------------------------------------------------
 fprintf(1, 'Loading Jenkinson''s mean FD metric\n');
-% [exclude,~,fdJenk,fdJenk_m] = GetExcludeForSample(datadir,ParticipantIDs,[preprostr,'mot/']);
-[exclude,~,fdJenk,fdJenk_m] = GetExcludeForSample(datadir,ParticipantIDs,preprostr);
+[metadata.exclude,~,metadata.fdJenk,metadata.fdJenk_m] = GetExcludeForSample(datadir,metadata.ParticipantID,preprostr);
 fprintf(1, 'done\n');
 
 % compute number of volumes using the length of fdJenk
 % note, this is assumed to be same for all subjects!
-numVols = length(fdJenk{1});
+numVols = length(metadata.fdJenk{1});
 
 % ------------------------------------------------------------------------------
 % Perform initial exclusion based on gross movement
 % ------------------------------------------------------------------------------
 WhichExclude = 1;
-ParticipantIDs(exclude(:,WhichExclude)) = [];
-Group(exclude(:,WhichExclude)) = [];
-fdJenk_m(exclude(:,WhichExclude)) = [];
-fdJenk(exclude(:,WhichExclude)) = [];
-fprintf(1, 'Excluded %u subjects based on gross movement\n', sum(exclude(:,WhichExclude)));
-exclude(exclude(:,WhichExclude),:) = [];
+metadata(metadata.exclude(:,WhichExclude),:) = [];
+
+fprintf(1, 'Excluded %u subjects based on gross movement\n', sum(metadata.exclude(:,WhichExclude)));
 
 % compute numsubs
-numSubs = length(ParticipantIDs);
+numSubs = size(metadata,1);
 
 % ------------------------------------------------------------------------------
-% Movement params
+% Plot Movement params
 % ------------------------------------------------------------------------------
-fdJenk_Group = cell(numGroups,1);
-fdJenk_m_Group = cell(numGroups,1);
-for i = 1:numGroups
-	fdJenk_Group{i} = [fdJenk{Group == i}];
-	fdJenk_m_Group{i} = fdJenk_m(Group == i);
-end
-
 if numGroups > 1
-	[h,p,~,stats] = ttest2(fdJenk_m_Group{1},fdJenk_m_Group{2},'Vartype','unequal');
+	[h,p,~,stats] = ttest2(metadata.fdJenk_m(metadata.Diagnosis == 1),metadata.fdJenk_m(metadata.Diagnosis == 2),'Vartype','unequal');
 	if p < 0.05
 		fprintf(1, 'There is a significant group difference in mean FD. t-value = %s. p-value = %s\n',num2str(stats.tstat),num2str(p));
 	end
 end
 
-% ------------------------------------------------------------------------------
-% Plot Movement params
-% ------------------------------------------------------------------------------
-JitteredParallelScatter(fdJenk_m_Group)
+JitteredParallelScatter({metadata.fdJenk_m(metadata.Diagnosis == 1),metadata.fdJenk_m(metadata.Diagnosis == 2)})
 ax = gca;
 ax.XTick = [1,2];
 ax.XTickLabel = {'Controls','Patients'};
@@ -398,7 +377,7 @@ ylabel('Mean FD')
 % ------------------------------------------------------------------------------
 if runScrub
 	fprintf(1, 'Loading scrubbing mask\n');
-	[ScrubMask,mov,fdPower,dvars] = GetScrubbingForSample(datadir,ParticipantIDs,preprostr);
+	[metadata.ScrubMask,metadata.mov,metadata.fdPower,metadata.dvars] = GetScrubbingForSample(datadir,metadata.ParticipantID,preprostr);
 	fprintf(1, 'done\n');
 end
 
@@ -417,10 +396,10 @@ if runScrub | runSR
 		% Find number of vols left after censoring
 		if runScrub
 			% number of volumes - number of scrubbed volumes
-			numCVols = numVols - sum(ScrubMask{i});			
+			numCVols = numVols - sum(metadata.ScrubMask{i});			
 		elseif runSR
 			% Get spike regressors for subject i
-			spikereg = GetSpikeRegressors(fdJenk{i},0.25);
+			spikereg = GetSpikeRegressors(metadata.fdJenk{i},0.25);
 			% number of volumes - number of spike regressors (columns)
 			numCVols = numVols - size(spikereg,2);
 		end	
@@ -450,14 +429,14 @@ for i = 1:numPrePro
 	% Get time series and functional connectivity data
 	% ------------------------------------------------------------------------------
 	cfgFile = 'cfg.mat';
-	[allData(i).cfg,allData(i).FC,allData(i).FCVec,allData(i).VarCovar,allData(i).Var,allData(i).GCOR] = GetFCForSample(datadir,ParticipantIDs,preprostr,removeNoise,cfgFile,Parc,numROIs,numConnections);
+	[allData(i).cfg,allData(i).FC,allData(i).FCVec,allData(i).VarCovar,allData(i).Var,allData(i).GCOR] = GetFCForSample(datadir,metadata.ParticipantID,preprostr,removeNoise,cfgFile,Parc,numROIs,numConnections);
 
 	% ------------------------------------------------------------------------------
 	% Compute QC-FC
 	% Note, make sure use z transformed r values
 	% ------------------------------------------------------------------------------
 	fprintf(1, 'Computing QC-FC: %s\n',removeNoise);
-	[allData(i).QCFCVec,allData(i).NaNFilter,allData(i).QCFC_PropSig_corr,allData(i).QCFC_PropSig_unc,~,allData(i).QCFC_DistDep,allData(i).QCFC_DistDep_Pval] = RunQCFC(fdJenk_m,allData(i).FC,ROIDistVec);
+	[allData(i).QCFCVec,allData(i).NaNFilter,allData(i).QCFC_PropSig_corr,allData(i).QCFC_PropSig_unc,~,allData(i).QCFC_DistDep,allData(i).QCFC_DistDep_Pval] = RunQCFC(metadata.fdJenk_m,allData(i).FC,ROIDistVec);
 
 	% ------------------------------------------------------------------------------
 	% Compute mean edge weight
@@ -486,7 +465,7 @@ for i = 1:numPrePro
 			for j = 1:numSubs
 				% Load in spike regressed time series data
 			    clear temp
-			    temp = load([datadir,ParticipantIDs{j},preprostr,removeNoise,'+SpikeReg/cfg.mat']);
+			    temp = load([datadir,metadata.ParticipantID{j},preprostr,removeNoise,'+SpikeReg/cfg.mat']);
 			    
 			    allData(i).cfg(j).roiTS_censored{Parc} = temp.cfg.roiTS{Parc};
 			    allData(i).cfg(j).noiseTS_spikereg = temp.cfg.noiseTS;
@@ -496,7 +475,7 @@ for i = 1:numPrePro
 		if runScrub
 			% scrub time series
 			for j = 1:numSubs
-				allData(i).cfg(j).roiTS_censored{Parc} = allData(i).cfg(j).roiTS{Parc}(~ScrubMask{j},:);
+				allData(i).cfg(j).roiTS_censored{Parc} = allData(i).cfg(j).roiTS{Parc}(~metadata.ScrubMask{j},:);
 			end
 		end
 
@@ -520,12 +499,12 @@ for i = 1:numPrePro
 		% ------------------------------------------------------------------------------
 		% Compute pre-censoring QC-FC
 		% ------------------------------------------------------------------------------
-		[allData(i).preCensor_QCFCVec,~,allData(i).preCensor_QCFC_PropSig_corr,allData(i).preCensor_QCFC_PropSig_unc,~,allData(i).preCensor_QCFC_DistDep,allData(i).preCensor_QCFC_DistDep_Pval] = RunQCFC(fdJenk_m(~excludeCensor),allData(i).FC(:,:,~excludeCensor),ROIDistVec);
+		[allData(i).preCensor_QCFCVec,~,allData(i).preCensor_QCFC_PropSig_corr,allData(i).preCensor_QCFC_PropSig_unc,~,allData(i).preCensor_QCFC_DistDep,allData(i).preCensor_QCFC_DistDep_Pval] = RunQCFC(metadata.fdJenk_m(~excludeCensor),allData(i).FC(:,:,~excludeCensor),ROIDistVec);
 
 		% ------------------------------------------------------------------------------
 		% Compute post-censoring QC-FC
 		% ------------------------------------------------------------------------------
-		[allData(i).postCensor_QCFCVec,~,allData(i).postCensor_QCFC_PropSig_corr,allData(i).postCensor_QCFC_PropSig_unc,~,allData(i).postCensor_QCFC_DistDep,allData(i).postCensor_QCFC_DistDep_Pval] = RunQCFC(fdJenk_m(~excludeCensor),allData(i).FC_censored(:,:,~excludeCensor),ROIDistVec);
+		[allData(i).postCensor_QCFCVec,~,allData(i).postCensor_QCFC_PropSig_corr,allData(i).postCensor_QCFC_PropSig_unc,~,allData(i).postCensor_QCFC_DistDep,allData(i).postCensor_QCFC_DistDep_Pval] = RunQCFC(metadata.fdJenk_m(~excludeCensor),allData(i).FC_censored(:,:,~excludeCensor),ROIDistVec);
 	end
 
 	% ------------------------------------------------------------------------------
@@ -544,15 +523,15 @@ for i = 1:numPrePro
 		end
 
 		if runScrub
-			allData(i).tDOF(j) = allData(i).tDOF(j) + sum(ScrubMask{j});
+			allData(i).tDOF(j) = allData(i).tDOF(j) + sum(metadata.ScrubMask{j});
 		end
 
 		% Then, if ICA-AROMA pipeline, find number of ICs and add to tDOF
 		if ~isempty(strfind(removeNoise,'ICA-AROMA'))
 			if runSR
-				x = dlmread([datadir,ParticipantIDs{j},preprostr,removeNoise,'+SpikeReg/classified_motion_ICs.txt']);
+				x = dlmread([datadir,metadata.ParticipantID{j},preprostr,removeNoise,'+SpikeReg/classified_motion_ICs.txt']);
 			else
-				x = dlmread([datadir,ParticipantIDs{j},preprostr,removeNoise,'/classified_motion_ICs.txt']);
+				x = dlmread([datadir,metadata.ParticipantID{j},preprostr,removeNoise,'/classified_motion_ICs.txt']);
 			end
 			allData(i).tDOF(j) = allData(i).tDOF(j) + length(x);
 		end
@@ -572,21 +551,21 @@ for i = 1:numPrePro
 		allData(i).tDOF_std = std(allData(i).tDOF);
 	end
 
-	% also get mean by diagnostic groups (Group)
+	% also get mean by diagnostic groups (metadata.Diagnosis)
 	if ismember('OCDPG',WhichProject,'rows') | ismember('UCLA',WhichProject,'rows')
-		allData(i).tDOF_gmean(1) = mean(allData(i).tDOF(Group == 1));
-		allData(i).tDOF_gmean(2) = mean(allData(i).tDOF(Group == 2));
+		allData(i).tDOF_gmean(1) = mean(allData(i).tDOF(metadata.Diagnosis == 1));
+		allData(i).tDOF_gmean(2) = mean(allData(i).tDOF(metadata.Diagnosis == 2));
 		
-		allData(i).tDOF_gstd(1) = std(allData(i).tDOF(Group == 1));
-		allData(i).tDOF_gstd(2) = std(allData(i).tDOF(Group == 2));
+		allData(i).tDOF_gstd(1) = std(allData(i).tDOF(metadata.Diagnosis == 1));
+		allData(i).tDOF_gstd(2) = std(allData(i).tDOF(metadata.Diagnosis == 2));
 	end
 
 	% ------------------------------------------------------------------------------
 	% Perform t-test on tDOF-loss
 	% ------------------------------------------------------------------------------
 	if ismember('OCDPG',WhichProject,'rows') | ismember('UCLA',WhichProject,'rows')
-		x = allData(i).tDOF(Group == 1);
-		y = allData(i).tDOF(Group == 2);
+		x = allData(i).tDOF(metadata.Diagnosis == 1);
+		y = allData(i).tDOF(metadata.Diagnosis == 2);
 
 		[h,p,~,stats] = ttest2(x,y,'Vartype','unequal');
 		if p < 0.05
@@ -1809,25 +1788,9 @@ if runOverlapPlots
 	end
 
 	% ------------------------------------------------------------------------------
-	% 2) wihin and between community edge plot
-	% ------------------------------------------------------------------------------
-    f = figure('color','w', 'units', 'centimeters', 'pos', [0 0 11.5 15], 'name',['24P+8P+4GSR']); box('on'); movegui(f,'center');
-    % subplot(1,2,1)
-	% 24P+8P+4GSR
-	SigMatrix = full(allData(6).NBS_sigMat{2});
-	[out,outPC,outNorm] = plotClassifiedEdges(SigMatrix,ROIStructID,2,ROILabels);
-
-    f = figure('color','w', 'units', 'centimeters', 'pos', [0 0 11.5 15], 'name',['ICA-AROMA+2P']); box('on'); movegui(f,'center');
-    % subplot(1,2,2)
-	% ICA-AROMA+2P
-	SigMatrix = full(allData(13).NBS_sigMat{1});
-	[out,outPC,outNorm] = plotClassifiedEdges(SigMatrix,ROIStructID,2,ROILabels);
-
-	% ------------------------------------------------------------------------------
-	% 3) Neuromarvl
+	% 2) Figure 10
 	% ------------------------------------------------------------------------------
 	cd('/Users/lindenmp/Dropbox/Work/Papers/PhD_Chapters/rfMRI_denoise/Figures/Fig10_Neuromarvl/neuromarvl')
-
 	% node coords
 	T = table(ROI_Coords(:,1),ROI_Coords(:,2),ROI_Coords(:,3),'VariableNames',{'x','y','z'});
 	writetable(T,'coordinates.txt')
@@ -1837,16 +1800,55 @@ if runOverlapPlots
 	T = table(ones(numROIs,1),ROIStructID,'VariableNames',{'dummy','ROIStructID'});
 	writetable(T,'attributes.txt')
 
-	ConMatrix = full(allData(2).NBS_statMat{2});
-	SigMatrix = full(allData(2).NBS_sigMat{2});
+	% A)
+    f = figure('color','w', 'units', 'centimeters', 'pos', [0 0 11.5 15], 'name',['24P+8P+4GSR_con2']); box('on'); movegui(f,'center');
+    % subplot(1,2,1)
+	% 24P+8P+4GSR
+	SigMatrix = full(allData(6).NBS_sigMat{2});
+	[out,outPC,outNorm] = plotClassifiedEdges(SigMatrix,ROIStructID,2,ROILabels);
+
+	ConMatrix = full(allData(6).NBS_statMat{2});
 	ConMatrix(SigMatrix == 0) = 0;
 	dlmwrite('24P+8P+4GSR_con2.txt',ConMatrix)
+	% http://immersive.erc.monash.edu.au/neuromarvl/?save=7ade0237-9061-4b59-8981-7b717c9072de_130.194.90.77
+    
+	% B)
+    f = figure('color','w', 'units', 'centimeters', 'pos', [0 0 11.5 15], 'name',['ICA-AROMA+2P_con1']); box('on'); movegui(f,'center');
+    % subplot(1,2,2)
+	% ICA-AROMA+2P
+	SigMatrix = full(allData(13).NBS_sigMat{1});
+	[out,outPC,outNorm] = plotClassifiedEdges(SigMatrix,ROIStructID,2,ROILabels);
 
 	% connectivity matrix
-	ConMatrix = full(allData(5).NBS_statMat{1});
-	SigMatrix = full(allData(5).NBS_sigMat{1});
+	ConMatrix = full(allData(13).NBS_statMat{1});
 	ConMatrix(SigMatrix == 0) = 0;
 	dlmwrite('ICA-AROMA+2P_con1.txt',ConMatrix)
+	% http://immersive.erc.monash.edu.au/neuromarvl/?save=a43d6c5a-7ec6-492e-a33c-7cb8f28855a1_130.194.90.77
+
+	% C) 
+    f = figure('color','w', 'units', 'centimeters', 'pos', [0 0 11.5 15], 'name',['6P+2P+GSR_con2']); box('on'); movegui(f,'center');
+    % subplot(1,2,2)
+	% 6P+2P+GSR_con2
+	SigMatrix = full(allData(3).NBS_sigMat{2});
+	[out,outPC,outNorm] = plotClassifiedEdges(SigMatrix,ROIStructID,2,ROILabels);
+
+	ConMatrix = full(allData(3).NBS_statMat{2});
+	ConMatrix(SigMatrix == 0) = 0;
+	dlmwrite('6P+2P+GSR_con2.txt',ConMatrix)
+	% http://immersive.erc.monash.edu.au/neuromarvl/?save=31f769f5-beda-4e33-bda5-ac06725fbeb5_130.194.90.77
+	
+	% D)
+    f = figure('color','w', 'units', 'centimeters', 'pos', [0 0 11.5 15], 'name',['6P+2P+GSR_con1']); box('on'); movegui(f,'center');
+    % subplot(1,2,1)
+	% 6P+2P+GSR_con1
+	SigMatrix = full(allData(3).NBS_sigMat{1});
+	[out,outPC,outNorm] = plotClassifiedEdges(SigMatrix,ROIStructID,2,ROILabels);
+
+	ConMatrix = full(allData(3).NBS_statMat{1});
+	ConMatrix(SigMatrix == 0) = 0;
+	dlmwrite('6P+2P+GSR_con1.txt',ConMatrix)
+	% http://immersive.erc.monash.edu.au/neuromarvl/?save=0e9f235b-f38b-451e-8b04-aa9708522717_130.194.90.77
+
 end
 
 clear pval* vec temp FC*
