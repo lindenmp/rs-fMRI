@@ -1,14 +1,46 @@
 %% run_prepro: 
-function [] = run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject,discard,slicetime,despike,smoothing)
+function [] = run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject,smoothing,discard,slicetime,despike,detr,intnorm)
     cfg.WhichMASSIVE = WhichMASSIVE;
     cfg.WhichProject = WhichProject;
     cfg.WhichSessScan = WhichSessScan;
     cfg.subject = subject;
     % preprocessing options
-    cfg.discard = discard;
-    cfg.slicetime = slicetime;
-    cfg.despike = despike;
-    cfg.smoothing = smoothing;
+    if nargin < 5
+        cfg.smoothing = 'after';
+    else
+        cfg.smoothing = smoothing;
+    end
+
+    if nargin < 6
+        cfg.discard = 1;
+    else
+        cfg.discard = discard;
+    end
+
+    if nargin < 7
+        cfg.slicetime = 1;
+    else
+        cfg.slicetime = slicetime;
+    end
+
+    if nargin < 8
+        cfg.despike = 1;
+    else
+        cfg.despike = despike;
+    end
+
+    if nargin < 9
+        cfg.detr = 1;
+    else
+        cfg.detr = detr;
+    end
+
+    if nargin < 10
+        cfg.intnorm = 1;
+    else
+        cfg.intnorm = intnorm;
+    end
+
 
     % ------------------------------------------------------------------------------
     % Store date and time

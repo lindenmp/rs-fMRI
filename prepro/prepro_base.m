@@ -370,64 +370,73 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
     % ------------------------------------------------------------------------------
     % Detrend EPI
     % ------------------------------------------------------------------------------
-        fprintf(1,'\n\t\t ----- Detrending ----- \n\n')
+        if cfg.detr == 1
+            fprintf(1,'\n\t\t ----- Detrending ----- \n\n')
+            cd(cfg.preprodir)
 
-        DetrendIn = normEPI;
-        DetrendOut = ['d',DetrendIn];
+            DetrendIn = normEPI;
+            DetrendOut = ['d',DetrendIn];
 
-        cd(cfg.preprodir)
-        % create separate directory for REST detrend function
-        dtdir = [cfg.preprodir,'temp'];
-        mkdir(dtdir)
-        % move 4d file to directory
-        movefile([cfg.preprodir,DetrendIn],dtdir,'f')
-        
-        switch cfg.WhichNii
-            case '4D'
-                % detrend epis using rest
-                cd(cfg.preprodir)
-                rest_detrend(dtdir, '_detrend')
-                
-                % Move 4D file back to cfg.preprodir
-                movefile([dtdir,'/',DetrendIn],cfg.preprodir,'f')
-            case '3D'
-                % Split 4D file in 3D
-                cd(dtdir)
-                spm_file_split(DetrendIn)
-                
-                % Move 4D file back to cfg.preprodir
-                movefile(DetrendIn,cfg.preprodir,'f')
+            % create separate directory for REST detrend function
+            dtdir = [cfg.preprodir,'temp'];
+            mkdir(dtdir)
+            % move 4d file to directory
+            movefile([cfg.preprodir,DetrendIn],dtdir,'f')
+            
+            switch cfg.WhichNii
+                case '4D'
+                    % detrend epis using rest
+                    cd(cfg.preprodir)
+                    rest_detrend(dtdir, '_detrend')
+                    
+                    % Move 4D file back to cfg.preprodir
+                    movefile([dtdir,'/',DetrendIn],cfg.preprodir,'f')
+                case '3D'
+                    % Split 4D file in 3D
+                    cd(dtdir)
+                    spm_file_split(DetrendIn)
+                    
+                    % Move 4D file back to cfg.preprodir
+                    movefile(DetrendIn,cfg.preprodir,'f')
 
-                % detrend epis using rest
-                cd(cfg.preprodir)
-                rest_detrend(dtdir, '_detrend')
+                    % detrend epis using rest
+                    cd(cfg.preprodir)
+                    rest_detrend(dtdir, '_detrend')
 
-                % delete 3D files
-                cd(dtdir)
-                delete([DetrendIn(1:end-4),'*nii'])
+                    % delete 3D files
+                    cd(dtdir)
+                    delete([DetrendIn(1:end-4),'*nii'])
+            end
+
+            % move output file back to cfg.preprodir
+            movefile([dtdir,'_detrend/detrend_4DVolume.nii'],[cfg.preprodir,DetrendOut],'f')
+
+            cd(cfg.preprodir)
+            rmdir('temp','s')
+            rmdir('temp_detrend','s')
         end
-
-        % move output file back to cfg.preprodir
-        movefile([dtdir,'_detrend/detrend_4DVolume.nii'],[cfg.preprodir,DetrendOut],'f')
-
-        cd(cfg.preprodir)
-        rmdir('temp','s')
-        rmdir('temp_detrend','s')
 
     % ------------------------------------------------------------------------------
     % 4D intensity normalisation
     % ------------------------------------------------------------------------------
-        fprintf(1,'\n\t\t ----- EPI intensity normalisation ----- \n\n')
-        cd(cfg.preprodir)
-        
-        IntNormIn = DetrendOut;
+        if cfg.intnorm == 1
+            fprintf(1,'\n\t\t ----- EPI intensity normalisation ----- \n\n')
+            cd(cfg.preprodir)
+            
+            if cfg.detrend == 1
+                IntNormIn = DetrendOut;
+            else
+                IntNormIn = normEPI;
+            end
 
-        IntensityNormalise(IntNormIn)
+            IntensityNormalise(IntNormIn)
+        end
 
     % ------------------------------------------------------------------------------
     % Spatially smooth the data
     % ------------------------------------------------------------------------------
         fprintf('\n\t\t ----- Spatial smoothing ----- \n\n');
+        cd(cfg.preprodir)
 
         SmoothIn = ['i',IntNormIn];
 

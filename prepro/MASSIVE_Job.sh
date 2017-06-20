@@ -40,9 +40,11 @@ echo -e "\t\t\t --------------------------- \n"
 # Run pipeline
 cd /gpfs/M2Home/projects/Monash076/Linden/scripts/rs-fMRI/prepro/
 
+smoothing=before
 discard=1
 slicetime=1
 despike=1
-smoothing=after
+detr=1
+intnorm=1
 
-matlab -nodisplay -r "run_prepro('${WhichMASSIVE}','${WhichProject}','${WhichSessScan}','${subject}',$discard,$slicetime,$despike,'$smoothing'); exit"
+matlab -nodisplay -r "run_prepro('${WhichMASSIVE}','${WhichProject}','${WhichSessScan}','${subject}','$smoothing',$discard,$slicetime,$despike,$detr,$intnorm); exit"
