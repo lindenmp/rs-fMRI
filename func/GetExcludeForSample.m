@@ -65,6 +65,12 @@ function [exclude,mov,fdJenk,fdJenk_m] = GetExcludeForSample(datadir,Participant
 	    mfile = dir([workdir,mname]);
 	    mov{i} = dlmread([workdir,mfile(1).name]);
 
+	    [pathstr,name,ext] = fileparts(mfile.name);
+	    if ismember('.par',ext,'rows')
+	    	% If movement file has .par extension, assume FSL organisation of columns (rot,trans) and reordered to SPM organisation (trans,rot)
+	    	mov{i} = mov{i}(:,[4:6,1:3]);
+	    end
+
 	    % ------------------------------------------------------------------------------
 		% Compute fd (Jenkinson2002) (used by Satterthwaite2012)
 	    % ------------------------------------------------------------------------------
@@ -81,25 +87,14 @@ function [exclude,mov,fdJenk,fdJenk_m] = GetExcludeForSample(datadir,Participant
  			% Calculate whether subject has suprathreshold mean movement
 			% If the mean of displacement is greater than 0.55 mm (Sattethwaite), then exclude
 			if fdJenk_m(i) > 0.55
-				x = 1;
+				exclude(i,1) = 1;
 			else
-				x = 0;
+				exclude(i,1) = 0;
 			end	
 
-		% If any of the above criteria are true of subject i, mark for exclusion
-		if x == 1
-			exclude(i,1) = 1;
-		else
-			exclude(i,1) = 0;
-		end
-
-		clear x
 		% ------------------------------------------------------------------------------
 		% Stringent, multi criteria exclusion
 		% ------------------------------------------------------------------------------
-		% Threshold for detecting 'spikes'
-		fdJenkThr = 0.25;
-
 		% 1) Exclude on mean rms displacement
 			% Calculate whether subject has suprathreshold mean movement
 			% If the mean of displacement is greater than 0.2 mm (Ciric), then exclude
@@ -110,6 +105,8 @@ function [exclude,mov,fdJenk,fdJenk_m] = GetExcludeForSample(datadir,Participant
 			end	
 
 		% 2) Exclude on proportion of spikes
+			% Threshold for detecting 'spikes'
+			fdJenkThr = 0.25;
 			% Calculate whether subject has >20% suprathreshold spikes
 			numVols = size(mov,1)-1;
 			fdJenkThrPerc = round(numVols * 0.20);
