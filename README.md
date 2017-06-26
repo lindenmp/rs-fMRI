@@ -37,7 +37,7 @@ This is desirable because it allows the user to compare how each noise correctio
 
 The following is a brief summary of what the two scripts do
 
-### prepro_base.m
+##### prepro_base.m
 	1 - Segment T1 using SPM (Generate tissue masks)
 	2 - Discard first 4 volumes (optional. set using input argument)
 	3 - Slice-timing correction (optional. set using input argument)
@@ -51,20 +51,20 @@ The following is a brief summary of what the two scripts do
 	11 - Modal intensity normalisation (to 1000) (optional. set using input argument)
 	12 - Spatial smoothing (for ICA-AROMA)
 
-### prepro_noise.m
+##### prepro_noise.m
 	1 - Correct noise in EPI output from step 11 of prepro_base script (or output from step 12 in case of ICA-AROMA)
 	2 - Bandpass filter (includes demeaning)
 	3 - Spatial smoothing (not in case of ICA-AROMA)	
 	
-### Basic usage (Matlab)
+##### Basic usage (Matlab)
 	>> WhichMASSIVE = 'M2';
 	>> WhichProject = 'OCDPG';
 	>> WhichSessScan = 'Sess1_Scan1';
 	>> subject = '1008.2.48.009'; % <-- string containing subject ID
 	>> run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject)
 
-### Usage (MASSIVE)
-- MASSIVE_Job.sh
+##### Usage (MASSIVE)
+- MASSIVE_Job.sh / MASSIVE_Job_M3.sh
 
 This script submits an array slurm job for processing multiple participants at once on M2/M3
 
