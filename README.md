@@ -77,7 +77,7 @@ To reproduce the figures, the user will need to download the processed data from
 
 Example:
 
-Assuming a user has downloaded all the contents of the Figshare to their desktop (~/Desktop/), the following snippet should allow the user to reproduce the figures.
+Assuming a user has downloaded an unzipped all the contents of the Figshare to their desktop (~/Desktop/), the following snippet should allow the user to reproduce the figures.
 
 	% ------------------------------------------------------------------------------
 	% Set project variables
