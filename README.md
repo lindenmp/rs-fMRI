@@ -58,7 +58,7 @@ The following is a brief summary of what the two scripts do
 	
 #### Basic usage (Matlab)
 	>> WhichMASSIVE = 'M2';
-	>> WhichProject = 'OCDPG';
+	>> WhichProject = 'UCLA';
 	>> WhichSessScan = 'Sess1_Scan1';
 	>> subject = '1008.2.48.009'; % <-- string containing subject ID
 	>> run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject)
@@ -77,9 +77,10 @@ See Figshare () for fully processed rs-fMRI timeseries data for two of the three
 #### QC.m
 
 This script computes the quality control benchmarks outlined in the above pre-print and produces the corresponding figures.
-To reproduce the figures, the user will need to download the processed data from Figshare (see above) and edit the directories accordingly (see % Set project variables)
+To reproduce the figures, the user will need to download the processed data from Figshare (see above) and edit the directories accordingly (see % Set project variables).
 
 Example:
+
 Assuming a user has downloaded all the contents of the Figshare to their desktop (~/Desktop/), the following snippet should allow the user to reproduce the figures.
 
 	% ------------------------------------------------------------------------------
@@ -94,7 +95,7 @@ Assuming a user has downloaded all the contents of the Figshare to their desktop
 
 			TR = 2;
 
-			nbsdir = '~/Desktop/UCLA/NBS_tDOF/';
+			nbsdir = '~/Desktop/UCLA/NBS_tDOF_spikeReg/';
 		case 'NYU_2'
 			projdir = '~/Desktop/NYU_2/';
 			sublist = [projdir,'NYU_2.csv'];
@@ -103,6 +104,11 @@ Assuming a user has downloaded all the contents of the Figshare to their desktop
 		
 			TR = 2;
 	end
+
+#### QC_ThePlot.m
+
+This script will produce a *carpet plot* (see Power 2016, NeuroImage) so that the user can perform subject-level quality control.
+This script is also hard coded for use with my own projects but can be edited to run on new data.
 
 ## stats
 
