@@ -52,18 +52,19 @@ The following is a brief summary of what the two scripts do
 	12 - Spatial smoothing (for ICA-AROMA)
 
 ### prepro_noise.m
-1 - Correct noise in EPI output from step 11 of prepro_base script (or output from step 12 in case of ICA-AROMA)
-2 - Bandpass filter (includes demeaning)
-3 - Spatial smoothing (not in case of ICA-AROMA)	
+	1 - Correct noise in EPI output from step 11 of prepro_base script (or output from step 12 in case of ICA-AROMA)
+	2 - Bandpass filter (includes demeaning)
+	3 - Spatial smoothing (not in case of ICA-AROMA)	
 	
 ### Basic usage (Matlab)
-'''
-WhichMASSIVE = 'M2';
-WhichProject = 'OCDPG';
-WhichSessScan = 'Sess1_Scan1';
-subject = '1008.2.48.009'; % <-- string containing subject ID
-run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject)
-'''
+	```
+	WhichMASSIVE = 'M2';
+	WhichProject = 'OCDPG';
+	WhichSessScan = 'Sess1_Scan1';
+	subject = '1008.2.48.009'; % <-- string containing subject ID
+	run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject)
+	```
+	
 ### Usage (MASSIVE)
 - MASSIVE_Job.sh
 
