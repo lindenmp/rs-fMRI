@@ -8,7 +8,7 @@ The details of each subdirectory can be found below.
 
 ## prepro
 
-This code was developed and tested on the Multi-modal Australian ScienceS Imaging and Visualisation Environment (MASSIVE: https://www.massive.org.au).
+Code in the ***prepro*** subdirectory was developed and tested on the Multi-modal Australian ScienceS Imaging and Visualisation Environment (MASSIVE: https://www.massive.org.au).
 This code uses the following software:
 - MATLAB R2014a (8.3.0.532) 64-bit (glnxa64) February 11, 2014
 - SPM8 r5236
@@ -37,7 +37,7 @@ This is desirable because it allows the user to compare how each noise correctio
 
 The following is a brief summary of what the two scripts do
 
-##### prepro_base.m
+#### prepro_base.m
 	1 - Segment T1 using SPM (Generate tissue masks)
 	2 - Discard first 4 volumes (optional. set using input argument)
 	3 - Slice-timing correction (optional. set using input argument)
@@ -51,28 +51,43 @@ The following is a brief summary of what the two scripts do
 	11 - Modal intensity normalisation (to 1000) (optional. set using input argument)
 	12 - Spatial smoothing (for ICA-AROMA)
 
-##### prepro_noise.m
+#### prepro_noise.m
 	1 - Correct noise in EPI output from step 11 of prepro_base script (or output from step 12 in case of ICA-AROMA)
 	2 - Bandpass filter (includes demeaning)
 	3 - Spatial smoothing (not in case of ICA-AROMA)	
 	
-##### Basic usage (Matlab)
+#### Basic usage (Matlab)
 	>> WhichMASSIVE = 'M2';
 	>> WhichProject = 'OCDPG';
 	>> WhichSessScan = 'Sess1_Scan1';
 	>> subject = '1008.2.48.009'; % <-- string containing subject ID
 	>> run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject)
 
-##### Usage (MASSIVE)
+#### Usage (MASSIVE)
 - MASSIVE_Job.sh / MASSIVE_Job_M3.sh
 
 This script submits an array slurm job for processing multiple participants at once on M2/M3
 
 ## qc
 
+The code in the **qc** subdirectory can be used to reproduce the figures in **An evaluation of the efficacy, reliability, and sensitivity of motion correction strategies for resting-state functional MRI.** L. Parkes, B. D. Fulcher, M. Yucel, & A. Fornito. *bioRxiv* (2017).
+
+See Figshare () for fully processed rs-fMRI timeseries data for two of the three datasets used the above pre-print.
+
+#### QC.m
+
+This script computes the quality control benchmarks outlined in the above pre-print and produces the corresponding figures.
+To reproduce the figures, the user will need to download the processed data (see above) and edit the directories accordingly (see % Set project variables)
+
 ## stats
 
+The **stats** subdirectory contains the code used to compute whole-brain differences in functional connectivity using the Network Based Statistic (Zalesky et al., 2014. NeuroImage)
+
 ## func
+
+The **func** subdirectory contains matlab functions and shell scripts needed for the repo
+
+antsRegistrationSyN.sh and antsRegistrationSyNQuick.sh are copyright (c) 2009-2013 ConsortiumOfANTS. All rights reserved.
 
 # Publications
 See the following publications for examples of this code in use:
