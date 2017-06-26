@@ -29,11 +29,7 @@ All three of these are called by the script
 
 run_prepro.m is the script that the user should edit.
 
-prepro_noise allows the user to select from a handful of different noise correction
-strategies but each of these methods works off of the output file (except see ICA-AROMA) of the prepro_base script.
-The decision to split the scripts was so that users may run all the noise correction options offered
-by prepro_noise on their dataset without unnecessarily repeating the base processing steps.
-This is desirable because it allows the user to compare how each noise correction strategy compares to the others (see the **qc**).
+run_prepro.m allows the user to select from a handful of different noise correction strategies but each of these methods works off of the output file (except see ICA-AROMA) of the prepro_base script. The decision to split the scripts was so that users may run all the noise correction options available on their dataset without unnecessarily repeating the base processing steps. This is desirable because it allows the user to examine how each noise correction strategy compares to the others (see the **qc**).
 
 The following is a brief summary of what the two scripts do
 
