@@ -90,7 +90,7 @@ Assuming a user has downloaded all the contents of the Figshare to their desktop
 			projdir = '~/Desktop/UCLA/';
 			sublist = [projdir,'UCLA.csv'];
 			datadir = [projdir,'data/'];
-	        preprostr = '/rfMRI/prepro/';
+			preprostr = '/rfMRI/prepro/';
 
 			TR = 2;
 
