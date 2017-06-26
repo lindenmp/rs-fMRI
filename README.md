@@ -72,12 +72,37 @@ This script submits an array slurm job for processing multiple participants at o
 
 The code in the **qc** subdirectory can be used to reproduce the figures in **An evaluation of the efficacy, reliability, and sensitivity of motion correction strategies for resting-state functional MRI.** L. Parkes, B. D. Fulcher, M. Yucel, & A. Fornito. *bioRxiv* (2017).
 
-See Figshare () for fully processed rs-fMRI timeseries data for two of the three datasets used the above pre-print.
+See Figshare () for fully processed rs-fMRI timeseries data for two of the three datasets used in the above pre-print.
 
 #### QC.m
 
 This script computes the quality control benchmarks outlined in the above pre-print and produces the corresponding figures.
-To reproduce the figures, the user will need to download the processed data (see above) and edit the directories accordingly (see % Set project variables)
+To reproduce the figures, the user will need to download the processed data from Figshare (see above) and edit the directories accordingly (see % Set project variables)
+
+Example:
+Assuming a user has downloaded all the contents of the Figshare to their desktop (~/Desktop/), the following snippet should allow the user to reproduce the figures.
+
+	% ------------------------------------------------------------------------------
+	% Set project variables
+	% ------------------------------------------------------------------------------
+	switch WhichProject
+		case 'UCLA'
+			projdir = '~/Desktop/UCLA/';
+			sublist = [projdir,'UCLA.csv'];
+			datadir = [projdir,'data/'];
+	        preprostr = '/rfMRI/prepro/';
+
+			TR = 2;
+
+			nbsdir = '~/Desktop/UCLA/NBS_tDOF/';
+		case 'NYU_2'
+			projdir = '~/Desktop/NYU_2/';
+			sublist = [projdir,'NYU_2.csv'];
+			datadir = [projdir,'data/'];
+			preprostr = '/session_1/rest_1/prepro/';
+		
+			TR = 2;
+	end
 
 ## stats
 
