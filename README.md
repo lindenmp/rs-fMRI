@@ -72,7 +72,7 @@ This script submits an array slurm job for processing multiple participants at o
 
 The code in the **qc** subdirectory can be used to reproduce the figures in **An evaluation of the efficacy, reliability, and sensitivity of motion correction strategies for resting-state functional MRI.** L. Parkes, B. D. Fulcher, M. Yucel, & A. Fornito. *bioRxiv* (2017).
 
-See Figshare () for fully processed rs-fMRI timeseries data for two of the three datasets used in the above pre-print.
+See Figshare (https://doi.org/10.4225/03/595193482c03e) for fully processed rs-fMRI timeseries data for two of the three datasets used in the above pre-print.
 
 #### QC.m
 
