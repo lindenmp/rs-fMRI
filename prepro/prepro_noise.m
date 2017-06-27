@@ -4,7 +4,7 @@ function [noiseTS,outdir] = prepro_noise(cfg)
     % 2 - Bandpass filter (includes demeaning)
     % 3 - Spatial smoothing (not in case of ICA-AROMA)
     % 
-    % Linden Parkes, Brain & Mental Health Laboratory, 2016
+    % Copyright (C) 2017, Linden Parkes <lindenparkes@gmail.com>,
     % ------------------------------------------------------------------------------
     % Choose noise removal
     % ------------------------------------------------------------------------------
@@ -111,6 +111,14 @@ function [noiseTS,outdir] = prepro_noise(cfg)
     fprintf(1, '\t\t Subject: %s \n', cfg.subject)
     fprintf(1, '\t\t Noise correction: %s%s \n', cfg.removeNoise, cfg.suffix);
     fprintf(1, '\t\t Input file: %s \n', cfg.CleanIn);
+
+    if cfg.runReg == 1
+        fprintf(1, '\t\t Nuisance regression: extract and regress \n');
+    elseif cfg.runReg == 0
+        fprintf(1, '\t\t Nuisance regression: extract only \n');
+    end
+
+    fprintf('\n\t\t ---------------------------- \n\n');
 
     % ------------------------------------------------------------------------------
     % Setup output directory
@@ -229,22 +237,28 @@ function [noiseTS,outdir] = prepro_noise(cfg)
             % set FSL output to nifti_gz because ICA-AROMA requires it!!!!
             setenv('FSLOUTPUTTYPE','NIFTI_GZ');
 
-            str = ['python2.7 ',cfg.scriptdir_ICA,'ICA_AROMA.py -in ',cfg.preprodir,cfg.CleanIn,' -out ',outdir,' -mc ',cfg.preprodir,'rp*.txt -m ',cfg.preprodir,cfg.BrainMask,' -tr ',num2str(cfg.TR)];
-            system(str);
-    
-            % unzip
-            system('gunzip -rf denoised_func_data_nonaggr.nii.gz');
+            if cfg.runReg == 1
+                str = ['python2.7 ',cfg.scriptdir_ICA,'ICA_AROMA.py -in ',cfg.preprodir,cfg.CleanIn,' -out ',outdir,' -mc ',cfg.preprodir,'rp*.txt -m ',cfg.preprodir,cfg.BrainMask,' -tr ',num2str(cfg.TR)];
+                system(str);
 
-            fprintf(1, '\n\t\t !!!! Overriding inputs for ICA-AROMA !!!! \n\n');
-            % redefine clean in
-            CleanInNew = ['ica_',cfg.CleanIn];
-            cfg.CleanIn = CleanInNew;
-            % redefine wm/csf files
-            cfg.NuisanceIn_wm = CleanInNew;
-            cfg.NuisanceIn_csf = CleanInNew;
+                % unzip
+                system('gunzip -rf denoised_func_data_nonaggr.nii.gz');
 
-            % Move ICA-AROMA output file up a step in the directory and rename
-            movefile('denoised_func_data_nonaggr.nii',[cfg.preprodir,cfg.CleanIn])
+                fprintf(1, '\n\t\t !!!! Overriding inputs for ICA-AROMA !!!! \n\n');
+                % redefine clean in
+                CleanInNew = ['ica_',cfg.CleanIn];
+                cfg.CleanIn = CleanInNew;
+                % redefine wm/csf files
+                cfg.NuisanceIn_wm = CleanInNew;
+                cfg.NuisanceIn_csf = CleanInNew;
+
+                % Move ICA-AROMA output file up a step in the directory and rename
+                movefile('denoised_func_data_nonaggr.nii',[cfg.preprodir,cfg.CleanIn])
+
+            elseif cfg.runReg == 0
+                str = ['python2.7 ',cfg.scriptdir_ICA,'ICA_AROMA.py -in ',cfg.preprodir,cfg.CleanIn,' -out ',outdir,' -mc ',cfg.preprodir,'rp*.txt -m ',cfg.preprodir,cfg.BrainMask,' -tr ',num2str(cfg.TR),' -den no'];
+                system(str);
+            end
 
             % Set FSL output back to nifti
             setenv('FSLOUTPUTTYPE','NIFTI');
@@ -428,30 +442,34 @@ function [noiseTS,outdir] = prepro_noise(cfg)
     % ------------------------------------------------------------------------------
     % Clean data: fsl_regfilt
     % ------------------------------------------------------------------------------
-        fprintf(1,'\n\t\t ----- Running nuisance regression ----- \n\n');
-        
-        % also, write out noise signals as text file (for regfilt)
-        dlmwrite('noiseTS.txt',noiseTS,'delimiter','\t','precision','%.6f');
+        if cfg.runReg == 1
+            fprintf(1,'\n\t\t ----- Running nuisance regression ----- \n\n');
+            
+            % also, write out noise signals as text file (for regfilt)
+            dlmwrite('noiseTS.txt',noiseTS,'delimiter','\t','precision','%.6f');
 
-        % clean data with fsl_regfilt
-        % Linden: x is a variable that stores the -f flag input for fsl_regfilt.
-        %     e.g., -f 1,2,3,4,5
-        x = regexprep(num2str(1:size(noiseTS,2)),' ',',');
-        x = regexprep(x,',,,',',');
-        x = regexprep(x,',,',',');
-        x = ['"',x,'"'];
+            % clean data with fsl_regfilt
+            % Linden: x is a variable that stores the -f flag input for fsl_regfilt.
+            %     e.g., -f 1,2,3,4,5
+            x = regexprep(num2str(1:size(noiseTS,2)),' ',',');
+            x = regexprep(x,',,,',',');
+            x = regexprep(x,',,',',');
+            x = ['"',x,'"'];
 
-        str = [cfg.fsldir,'fsl_regfilt -i ',cfg.preprodir,cfg.CleanIn,' -o epi_clean -d noiseTS.txt -f ',x];
-        system(str);
+            str = [cfg.fsldir,'fsl_regfilt -i ',cfg.preprodir,cfg.CleanIn,' -o epi_clean -d noiseTS.txt -f ',x];
+            system(str);
 
-        clear x
+            clear x
 
-        system('gunzip -rf *epi_clean*');
+            system('gunzip -rf *epi_clean*');
 
-        % ------------------------------------------------------------------------------
-        if runICA == 1
-            % Move back
-            movefile([cfg.preprodir,cfg.CleanIn],outdir)
+            % ------------------------------------------------------------------------------
+            if runICA == 1
+                % Move back
+                movefile([cfg.preprodir,cfg.CleanIn],outdir)
+            end
+        elseif cfg.runReg == 0
+            fprintf(1,'\n\t\t ----- Skipping nuisance regression ----- \n\n');
         end
 
     % ------------------------------------------------------------------------------
@@ -459,7 +477,13 @@ function [noiseTS,outdir] = prepro_noise(cfg)
     % ------------------------------------------------------------------------------
         fprintf(1,'\n\t\t ----- Running bandpass filtering ----- \n\n');
 
-        FiltIn = 'epi_clean.nii';
+        if cfg.runReg == 1
+            FiltIn = 'epi_clean.nii';
+        elseif cfg.runReg == 0
+            FiltIn = cfg.CleanIn;
+            copyfile([cfg.preprodir,FiltIn],outdir)
+        end
+
         CUTNUMBER = 1;
 
         cd(outdir)
