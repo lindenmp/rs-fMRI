@@ -58,7 +58,7 @@ The following is a brief summary of what the two scripts do
 	>> WhichMASSIVE = 'M2';
 	>> WhichProject = 'UCLA';
 	>> WhichSessScan = 'Sess1_Scan1';
-	>> subject = '1008.2.48.009'; % <-- string containing subject ID
+	>> subject = 'sub-10159'; % <-- string containing subject ID
 	>> run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject)
 
 #### Usage (MASSIVE)
