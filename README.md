@@ -6,6 +6,8 @@ Resting-state fMRI is highly sensitive to artefacts caused by in-scanner movemen
 This code is broken into four main subdirectories, **prepro**, **qc**, **stats**, and **func**. 
 The details of each subdirectory can be found below.
 
+Linden Parkes, Brain & Mental Health Laboratory, Monash University
+
 ## prepro
 
 Code in the ***prepro*** subdirectory was developed and tested on the Multi-modal Australian ScienceS Imaging and Visualisation Environment (MASSIVE: https://www.massive.org.au).
@@ -126,4 +128,3 @@ antsRegistrationSyN.sh and antsRegistrationSyNQuick.sh are copyright (c) 2009-20
 See the following publications for examples of this code in use:
 - **An evaluation of the efficacy, reliability, and sensitivity of motion correction strategies for resting-state functional MRI.** L. Parkes, B. D. Fulcher, M. Yucel, & A. Fornito. *bioRxiv* (2017).
 
-Linden Parkes, Brain & Mental Health Laboratory, Monash University
