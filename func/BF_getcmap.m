@@ -37,21 +37,8 @@ function cmapOut = BF_getcmap(whichMap,numGrads,cellOut,flipMe)
 % end
 
 % ------------------------------------------------------------------------------
-% Copyright (C) 2015, Ben D. Fulcher <ben.d.fulcher@gmail.com>,
+% Copyright (C) 2016, Ben D. Fulcher <ben.d.fulcher@gmail.com>,
 % <http://www.benfulcher.com>
-%
-% This function is free software: you can redistribute it and/or modify it under
-% the terms of the GNU General Public License as published by the Free Software
-% Foundation, either version 3 of the License, or (at your option) any later
-% version.
-%
-% This program is distributed in the hope that it will be useful, but WITHOUT
-% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-% FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
-% details.
-%
-% You should have received a copy of the GNU General Public License along with
-% this program. If not, see <http://www.gnu.org/licenses/>.
 % ------------------------------------------------------------------------------
 
 %-------------------------------------------------------------------------------
@@ -62,10 +49,10 @@ if nargin < 2 || isempty(numGrads)
     numGrads = 6;
 end
 if nargin < 3 || isempty(cellOut)
-    cellOut = 0; % output as matrix for colourmap instead
+    cellOut = false; % output as matrix for colourmap instead
 end
 if nargin < 4 || isempty(flipMe)
-    flipMe = 0; % flips order of output
+    flipMe = false; % flips order of output
 end
 
 % Minimum number of groups is 3 for some color maps:
@@ -1805,60 +1792,6 @@ switch whichMap
             204, 235, 197;
             255, 237, 111]; % 12 class
         cmapOut = cmapOut(1:numGrads,:);
-    case 'set4'
-        if numGrads > 12, numGrads = 12; end
-        cmapOut = [166, 206, 227;
-            31, 120, 180;
-            178, 223, 138;
-            51, 160, 44;
-            251, 154, 153;
-            227, 26, 28;
-            253, 191, 111;
-            255, 127, 0;
-            202, 178, 214;
-            106, 61, 154;
-            255, 255, 153;
-            177, 89, 40]; % 12 Class added by LP
-        cmapOut = cmapOut(1:numGrads,:);
-    case 'set5'
-        if numGrads > 24, numGrads = 24; end
-        cmapOut = [166, 206, 227;
-            31, 120, 180;
-            178, 223, 138;
-            51, 160, 44;
-            251, 154, 153;
-            227, 26, 28;
-            253, 191, 111;
-            255, 127, 0;
-            202, 178, 214;
-            106, 61, 154;
-            255, 255, 153;
-            177, 89, 40;
-            141, 211, 199;
-            255, 255, 179;
-            190, 186, 218;
-            251, 128, 114;
-            128, 177, 211;
-            253, 180, 98;
-            179, 222, 105;
-            252, 205, 229;
-            217, 217, 217;
-            188, 128, 189;
-            204, 235, 197;
-            255, 237, 111]; % 24 Class added by LP. This is a concatenation of set3 and set4
-        cmapOut = cmapOut(1:numGrads,:);
-    case 'linden'
-        if numGrads > 9, numGrads = 9; end
-        cmapOut = [55, 126, 184;
-            77, 175, 74;
-            228, 26, 28;
-            152, 78, 163;
-            255, 127, 0;
-            153, 0, 76;
-            166, 86, 40;
-            247, 129, 191;
-            153, 153, 153]; % 9 class
-        cmapOut = cmapOut(1:numGrads,:);
     case 'ben'
         if numGrads > 10, numGrads = 10; end
         cmapOut = 255*[1, 0.4, 0.4; % red
@@ -1872,27 +1805,6 @@ switch whichMap
                         0, 0, 0;
                         1, 1, 0];
         cmapOut = cmapOut(1:numGrads,:);
-    case 'blackwhite'
-        if numGrads > 11, numGrads = 11; end
-        switch numGrads
-            case 3
-                cmapOut = 255*[0,0,0;
-                                0.3,0.3,0.3;
-                                0.6,0.6,0.6];
-            case 11
-                cmapOut = 255*[0,0,0;
-                                0.1,0.1,0.1;
-                                0.2,0.2,0.2;
-                                0.3,0.3,0.3;
-                                0.4,0.4,0.4;
-                                0.5,0.5,0.5;
-                                0.6,0.6,0.6;
-                                0.7,0.7,0.7;
-                                0.8,0.8,0.8;
-                                0.9,0.9,0.9;
-                                1,1,1];
-        end
-
     otherwise
         error('Unknown color map specified: ''%s''',whichMap);
 end
