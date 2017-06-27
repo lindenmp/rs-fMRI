@@ -5,7 +5,7 @@ Resting-state fMRI is highly sensitive to artefacts caused by in-scanner movemen
 
 This code is broken into four main subdirectories:
 1. **prepro**: process and denoising rs-fMRI data on [MASSIVE](https://www.massive.org.au).
-2. **qc**: calculates quality control benchmarks and reproduces figures found in the following manuscript
+2. **qc**: calculates quality control benchmarks and reproduces figures found in the following [manuscript](http://biorxiv.org/content/early/2017/06/27/156380)
 3. **stats**: various second-level statistics
 4. **func**: functions for repository
 
@@ -16,7 +16,7 @@ Linden Parkes, linden.parkes@monash.edu, Brain & Mental Health Laboratory, Monas
 # Publications
 
 See the following publications for examples of this code in use:
-- **An evaluation of the efficacy, reliability, and sensitivity of motion correction strategies for resting-state functional MRI.** L. Parkes, B. D. Fulcher, M. Yucel, & A. Fornito. *bioRxiv* (2017).
+- **An evaluation of the efficacy, reliability, and sensitivity of motion correction strategies for resting-state functional MRI.** L. Parkes, B. D. Fulcher, M. Yucel, & A. Fornito. [*bioRxiv*](http://biorxiv.org/content/early/2017/06/27/156380) (2017).
 
 # Data
 
@@ -87,8 +87,7 @@ This script submits an array slurm job for processing multiple participants at o
 
 ## qc
 
-The code in the **qc** subdirectory can be used to reproduce the figures in **An evaluation of the efficacy, reliability, and sensitivity of motion correction strategies for resting-state functional MRI.** L. Parkes, B. D. Fulcher, M. Yucel, & A. Fornito. *bioRxiv* (2017).
-<!-- You should turn this into a hyperlink when available online -->
+The code in the **qc** subdirectory can be used to reproduce the figures in **An evaluation of the efficacy, reliability, and sensitivity of motion correction strategies for resting-state functional MRI.** L. Parkes, B. D. Fulcher, M. Yucel, & A. Fornito. [*bioRxiv*](http://biorxiv.org/content/early/2017/06/27/156380) (2017).
 
 #### QC.m
 
