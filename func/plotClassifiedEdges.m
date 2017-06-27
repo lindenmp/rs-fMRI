@@ -158,12 +158,12 @@ if plotFig > 0
     colorbar; % show colour bar
 
     % plot values in lower triangle of matrix
-    for i=1:size(plotMat,1)
-       for j=i:size(plotMat,2)
-            text(i,j,num2str(plotMat(i,j),'%0.0f'),'HorizontalAlignment','center',...
-                'Color','k','FontSize',10,'FontWeight','normal');
-       end
-    end
+    % for i=1:size(plotMat,1)
+    %    for j=i:size(plotMat,2)
+    %         text(i,j,num2str(plotMat(i,j),'%0.0f'),'HorizontalAlignment','center',...
+    %             'Color','k','FontSize',10,'FontWeight','normal');
+    %    end
+    % end
 
 end
 
