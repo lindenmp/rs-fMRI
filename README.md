@@ -1,15 +1,22 @@
 # Resting-state functional magnetic resonance imaging
 *rs-fMRI* is a repository of code for preprocessing, denoising, and running quality control on resting-state fMRI datasets, using Matlab.
-<!-- DO YOU WANT TO GIVE IT ANOTHER NAME THAN rs-fMRI? This is something that others may end up using and citing -- imaging them saying "we preprocessed using rs-fMRI [Parkes et al.]" Probably you want to give it some name -- consider giving it a BMH name? It's ok if you don't care -- people will just cite the work rather than the repo name -->
 
 Resting-state fMRI is highly sensitive to artefacts caused by in-scanner movement. These artefacts can cause spurious correlations in the time-series data that hinder functional connectivity analyses. This code applies a wide range of popular data denoising methods designed to correct for these artefacts and produces a range of quality control benchmarks in order to facilitate the evaluation of their efficacy.
 
 This code is broken into four main subdirectories: **prepro**, **qc**, **stats**, and **func**.
 The details of each subdirectory can be found below.
-<!-- Maybe give a quick description of each here, in parentheses -->
 
-Linden Parkes, Brain & Mental Health Laboratory, Monash University
-<!--  Consider adding an email or contact info for yourself here, or making BMH a hyperlink to the current BMH webpage-->
+Linden Parkes, linden.parkes@monash.edu, Brain & Mental Health Laboratory, Monash University
+
+# Publications
+
+See the following publications for examples of this code in use:
+- **An evaluation of the efficacy, reliability, and sensitivity of motion correction strategies for resting-state functional MRI.** L. Parkes, B. D. Fulcher, M. Yucel, & A. Fornito. *bioRxiv* (2017).
+
+# Data
+
+Fully processed rs-fMRI time-series data for two of the three datasets (*CNP* and *NYU*) used in the above preprint are available for download from [Figshare](https://doi.org/10.4225/03/595193482c03e).
+Raw, unprocessed data is also available for [CNP](https://openfmri.org/dataset/ds000030/) and [NYU](http://fcon_1000.projects.nitrc.org/indi/CoRR/html/)
 
 ## prepro
 
@@ -78,17 +85,10 @@ This script submits an array slurm job for processing multiple participants at o
 The code in the **qc** subdirectory can be used to reproduce the figures in **An evaluation of the efficacy, reliability, and sensitivity of motion correction strategies for resting-state functional MRI.** L. Parkes, B. D. Fulcher, M. Yucel, & A. Fornito. *bioRxiv* (2017).
 <!-- You should turn this into a hyperlink when available online -->
 
-Fully processed rs-fMRI time-series data for two of the three datasets (*CNP* and *NYU*) used in the above preprint are available for download from [Figshare](https://doi.org/10.4225/03/595193482c03e).
-Raw, unprocessed data is also available for [CNP](https://openfmri.org/dataset/ds000030/) and [NYU](http://fcon_1000.projects.nitrc.org/indi/CoRR/html/)
-
-<!-- I'd put all of this up-top? -->
-
 #### QC.m
 
 This script computes the quality control benchmarks outlined in the above pre-print and produces the corresponding figures.
-To reproduce the figures, the user will need to download the processed data from [Figshare](https://doi.org/10.4225/03/595193482c03e) and edit the directories accordingly (see % Set project variables).
-
-<!-- What is this "Set project variables"?? -->
+To reproduce the figures, the user will need to download the processed data from [Figshare](https://doi.org/10.4225/03/595193482c03e) and edit the directories accordingly.
 
 Example:
 
@@ -117,26 +117,20 @@ end
 
 #### QC_ThePlot.m
 
-<!-- You should provide a hyperlink to the power paper here -->
-`QC_ThePlot.m` produces a *carpet plot* (see Power 2016, NeuroImage) so that the user can perform subject-level quality control.
+`QC_ThePlot.m` produces a *carpet plot* (see [Power 2016, NeuroImage](https://doi.org/10.1016/j.neuroimage.2016.08.009)) so that the user can perform subject-level quality control.
 This script is also hard coded for use with my own projects but can be edited to run on new data.
 
 ## stats
 
-The **stats** subdirectory contains the code used to compute whole-brain differences in functional connectivity using the Network Based Statistic (Zalesky et al., 2014. NeuroImage)
-<!-- You should provide a hyperlink to the Zalesky paper here -->
-
+The **stats** subdirectory contains the code used to compute whole-brain differences in functional connectivity using the Network Based Statistic ([Zalesky et al., 2014. NeuroImage](https://doi.org/10.1016/j.neuroimage.2010.06.041))
 
 ## func
 
 The **func** subdirectory contains Matlab functions and shell scripts needed for the repo
 
-`antsRegistrationSyN.sh` and `antsRegistrationSyNQuick.sh` are copyright (c) 2009-2013 ConsortiumOfANTS. All rights reserved.
+# External dependencies
 
-<!-- You should look into whether you're mixing licenses -- you may not be able to license the full repo as MIT if it contains other components that are not. You should think about this and be specific about which components the MIT license covers (and include dependencies from external packages if they're licensed differently) -->
+This repository requires two shell scripts provided by the ConsoritumOfANTs, `antsRegistrationSyN.sh` and `antsRegistrationSyNQuick.sh`.
 
-# Publications
-See the following publications for examples of this code in use:
-- **An evaluation of the efficacy, reliability, and sensitivity of motion correction strategies for resting-state functional MRI.** L. Parkes, B. D. Fulcher, M. Yucel, & A. Fornito. *bioRxiv* (2017).
+These can be downloaded from [ANTs](https://github.com/stnava/ANTs/tree/master/Scripts)
 
-<!-- I'd put this up-top! And add a hyperlink when ready -->
