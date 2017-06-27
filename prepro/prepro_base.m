@@ -1,4 +1,4 @@
-function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,outEPI] = prepro_base(cfg)
+function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,dvars,dvarsExtract,outEPI] = prepro_base(cfg)
     % This script performs the base preprocessing, upon all variants of nuissance removal is run
     % These steps includes:
     %
@@ -18,17 +18,49 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
     % 7 - Spatially normalize T1 to MNI template
     % 8 - Application of T1-spatial normalization parameters to coregistered EPI and tissue masks
     % 9 - Mask out non-brain voxels
-    % 10 - Linear detrending of realigned EPI time series (uses REST)
-    % 11 - Modal intensity normalisation (to 1000)
+    % 10 - Linear detrending of realigned EPI time series (uses REST) (optional. set using input argument)
+    % 11 - Modal intensity normalisation (to 1000) (optional. set using input argument)
     % 12 - Spatial smoothing
     %
-    % Linden Parkes, Brain & Mental Health Laboratory, 2016
+    % Copyright (C) 2017, Linden Parkes <lindenparkes@gmail.com>,
     %
     % ------------------------------------------------------------------------------
 
     fprintf('\n\t\t ----- Base preprocessing ----- \n\n');
 
     fprintf(1, '\t\t Subject: %s \n', cfg.subject)
+
+    if cfg.discard == 1
+        fprintf(1, '\t\t Discard EPI volumes: yes \n');
+    elseif cfg.discard == 0
+        fprintf(1, '\t\t Discard EPI volumes: no \n');
+    end
+
+    if cfg.slicetime == 1
+        fprintf(1, '\t\t Slicetime EPI: yes \n');
+    elseif cfg.slicetime == 0
+        fprintf(1, '\t\t Slicetime EPI: no \n');
+    end
+
+    if cfg.despike == 1
+        fprintf(1, '\t\t Despike EPI: yes \n');
+    elseif cfg.despike == 0
+        fprintf(1, '\t\t Despike EPI: no \n');
+    end
+
+    if cfg.detr == 1
+        fprintf(1, '\t\t Detrend EPI: yes \n');
+    elseif cfg.detr == 0
+        fprintf(1, '\t\t Detrend EPI: no \n');
+    end
+
+    if cfg.intnorm == 1
+        fprintf(1, '\t\t Normalise EPI intensity: yes \n');
+    elseif cfg.intnorm == 0
+        fprintf(1, '\t\t Normalise EPI intensity: no \n');
+    end
+
+    fprintf('\n\t\t ------------------------------ \n\n');
 
     % ------------------------------------------------------------------------------
     % Set prepro dir
@@ -114,27 +146,27 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
         cd([cfg.datadir,cfg.subject])
 
         % Clean and reinitialise T1 dir
-        movefile([cfg.t1dir,cfg.t1name],[cfg.datadir,cfg.subject])
-        if exist([cfg.t1dir,'*json']) == 2
-            movefile([cfg.t1dir,'*json'],[cfg.datadir,cfg.subject])
-        end
+        % movefile([cfg.t1dir,cfg.t1name],[cfg.datadir,cfg.subject])
+        % if exist([cfg.t1dir,'*json']) == 2
+        %     movefile([cfg.t1dir,'*json'],[cfg.datadir,cfg.subject])
+        % end
 
-        delete([cfg.t1dir,'*'])
+        % delete([cfg.t1dir,'*'])
 
-        movefile([cfg.datadir,cfg.subject,'/',cfg.t1name],cfg.t1dir)
-        if exist([cfg.datadir,cfg.subject,'/*json']) == 2
-            movefile([cfg.datadir,cfg.subject,'/*json'],cfg.t1dir)
-        end
+        % movefile([cfg.datadir,cfg.subject,'/',cfg.t1name],cfg.t1dir)
+        % if exist([cfg.datadir,cfg.subject,'/*json']) == 2
+        %     movefile([cfg.datadir,cfg.subject,'/*json'],cfg.t1dir)
+        % end
         
-        cd(cfg.t1dir);
+        % cd(cfg.t1dir);
 
         % First crop out neck
         outname = ['c',cfg.t1name];
-        system([cfg.fsldir,'robustfov -i ',cfg.t1name,' -r ',outname]);
+        % system([cfg.fsldir,'robustfov -i ',cfg.t1name,' -r ',outname]);
         cfg.t1name = outname;
 
         % Tissue segment T1 with SPM
-        SegmentT1([cfg.t1dir,cfg.t1name],cfg.spmdir,0,0);
+        % SegmentT1([cfg.t1dir,cfg.t1name],cfg.spmdir,0,0);
 
         % outputs
         gm = ['c1',cfg.t1name];
@@ -158,6 +190,9 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
             system([cfg.fsldir,'fslroi ',cfg.rawdir,cfg.EPI,' ',cfg.preprodir,outname,' 4 -1']);
             cfg.EPI = outname;
             tN = cfg.N - 4;
+        elseif cfg.discard == 0
+            copyfile([cfg.rawdir,cfg.EPI],cfg.preprodir)
+            tN = cfg.N;
         end
 
     % ------------------------------------------------------------------------------
@@ -414,22 +449,28 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
             cd(cfg.preprodir)
             rmdir('temp','s')
             rmdir('temp_detrend','s')
+        elseif cfg.detr == 0
+            DetrendOut = normEPI;
         end
 
     % ------------------------------------------------------------------------------
     % 4D intensity normalisation
     % ------------------------------------------------------------------------------
+        IntNormIn = DetrendOut;
+
         if cfg.intnorm == 1
             fprintf(1,'\n\t\t ----- EPI intensity normalisation ----- \n\n')
             cd(cfg.preprodir)
             
-            if cfg.detrend == 1
-                IntNormIn = DetrendOut;
-            else
-                IntNormIn = normEPI;
-            end
-
+            IntNormOut = ['i',IntNormIn];
+            
             IntensityNormalise(IntNormIn)
+
+            % Get dvars and save to .mat
+            dvarsExtract = IntNormOut;
+            dvars = GetDVARS(dvarsExtract,BrainMask);
+        elseif cfg.intnorm == 0
+            IntNormOut = IntNormIn;
         end
 
     % ------------------------------------------------------------------------------
@@ -438,7 +479,7 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
         fprintf('\n\t\t ----- Spatial smoothing ----- \n\n');
         cd(cfg.preprodir)
 
-        SmoothIn = ['i',IntNormIn];
+        SmoothIn = IntNormOut;
 
         % Whole brain
         system([cfg.afnidir,'3dBlurInMask -input ',SmoothIn,' -FWHM ',num2str(cfg.kernel),' -mask ',cfg.preprodir,BrainMask,' -prefix s']);
