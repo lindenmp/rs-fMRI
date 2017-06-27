@@ -1,24 +1,35 @@
-% ------------------------------------------------------------------------------
-% Ben Fulcher, 2014-08-21 (Edited: Linden Parkes)
-% ------------------------------------------------------------------------------
+function [ff,xx] = BF_JitteredParallelScatter(dataCell,addMeans,doveTail,makeFigure,extraParams)
 % Plots a scatter of a set of distributions with data offset randomly in x
 % input is a cell with each element containing a collection of data.
+%
+%---INPUTS:
+% dataCell, a cell where each element is a vector of numbers specifying a distribution
+% addMeans, a flag for whether to add a strip for the mean of each group
+% doveTail, whether to show a kernel smoothed distributions
+% makeFigure, a flag to specify whether to generate a new figure to plot into
+% extraParams, a structure of additional custom parameters
+%
+%---EXAMPLE USAGE:
+% dataCell = {randn(1000,1),randn(500,1)*2+1};
+% BF_JitteredParallelScatter(dataCell,true,true,true);
+
+% ------------------------------------------------------------------------------
+% Copyright (C) 2016, Ben D. Fulcher <ben.d.fulcher@gmail.com>,
+% <http://www.benfulcher.com>
 % ------------------------------------------------------------------------------
 
-function JitteredParallelScatter(dataCell,addMeans,doveTail,makeFigure,extraParams)
-
 if nargin < 2
-    addMeans = 1;
+    addMeans = true;
     % Add strip for mean of each group by default
 end
 
 if nargin < 3
-    doveTail = 1;
+    doveTail = true;
     % Add kernel distribution
 end
 
 if nargin < 4
-    makeFigure = 1;
+    makeFigure = true;
 end
 
 if nargin < 5
@@ -32,7 +43,7 @@ numGroups = length(dataCell);
 
 % Custom marker for points within the distribution:
 if ~isfield(extraParams,'customSpot')
-    customSpot = 'o';
+    customSpot = '.';
 else
     customSpot = extraParams.customSpot;
 end
@@ -54,30 +65,17 @@ end
 
 % Custom colormap
 if ~isfield(extraParams,'theColors')
-    if numGroups == 2
+    if numGroups <= 3
         theColors = BF_getcmap('set1',numGroups,1);
     else
-        theColors = BF_getcmap('linden',numGroups,1);
+        theColors = BF_getcmap('spectral',numGroups,1);
     end
     if length(theColors) < numGroups
         theColors = arrayfun(@(x)zeros(3,1),1:numGroups,'UniformOutput',0);
     end
 else
     theColors = extraParams.theColors;
-end
-
-% Custom x axis labels
-if ~isfield(extraParams,'theLabels')
-    theLabels = [];
-else
-    theLabels = extraParams.theLabels;
-end
-
-% add zero line
-if ~isfield(extraParams,'add0Line')
-    add0Line = false;
-else
-    add0Line = extraParams.add0Line;
+    % fprintf(1,'Using custom colors\n');
 end
 
 % ------------------------------------------------------------------------------
@@ -112,24 +110,13 @@ if doveTail
         % keepR = (x>=min(dataCell{i}) & x<=max(dataCell{i}));
         x = x(keepR);
         f = f(keepR);
-        h1 = plot(customOffset+i+f*offsetRange/2,x,'-','color',theColors{i},'LineWidth',2);
-        h2 = plot(customOffset+i-f*offsetRange/2,x,'-','color',theColors{i},'LineWidth',2);
-        
-%         if i == 1
-%             h1.LineStyle = '-';
-%             h2.LineStyle = '-';
-%         elseif i == 2
-%             h1.LineStyle = '--';
-%             h2.LineStyle = '--';
-%         elseif i == 3
-%             h1.LineStyle = ':';
-%             h2.LineStyle = ':';
-%         end
-        
+        plot(customOffset+i+f*offsetRange/2,x,'-','color',theColors{i},'LineWidth',2)
+        plot(customOffset+i-f*offsetRange/2,x,'-','color',theColors{i},'LineWidth',2)
+
         % Plot top and bottom
         plot(customOffset+i+[-f(1),+f(1)]*offsetRange/2,min(x)*ones(2,1),'-','color',theColors{i},'LineWidth',0.1)
         plot(customOffset+i+[-f(end),f(end)]*offsetRange/2,max(x)*ones(2,1),'-','color',theColors{i},'LineWidth',0.1)
-        
+
         % Keep for dovetailing the jittered scatter points:
         xx{i} = x; ff{i} = f;
     end
@@ -151,7 +138,7 @@ if ~isempty(customSpot)
         else
             xRand = rand([length(dataCell{i}),1])*offsetRange-offsetRange/2;
         end
-        plot(customOffset + i + xRand,dataCell{i},customSpot,'color',theColors{i},'MarkerFaceColor',theColors{i})
+        plot(customOffset + i + xRand,dataCell{i},customSpot,'color',theColors{i})
     end
 end
 
@@ -166,35 +153,13 @@ for i = 1:numGroups
     catch
         brightColor = theColors{i};
     end
-    
+
     plot([customOffset + i - offsetRange/2,customOffset + i + offsetRange/2],nanmean(dataCell{i})*ones(2,1),'-',...
                             'color',brightColor,'LineWidth',2)
     % plot([customOffset + i - offsetRange/2,customOffset + i + offsetRange/2],(nanmean(dataCell{i})-nanstd(dataCell{i}))*ones(2,1),'--',...
-    %                         'color',brightColor,'LineWidth',2)
+                            % 'color',brightColor,'LineWidth',2)
     % plot([customOffset + i - offsetRange/2,customOffset + i + offsetRange/2],(nanmean(dataCell{i})+nanstd(dataCell{i}))*ones(2,1),'--',...
-    %                         'color',brightColor,'LineWidth',2)
-
-    % plot([customOffset + i - offsetRange/2,customOffset + i + offsetRange/2],nanmedian(abs(dataCell{i}))*ones(2,1),'-',...
-    %                         'color',brightColor,'LineWidth',2)
-
+                            % 'color',brightColor,'LineWidth',2)
 end
-
-% ------------------------------------------------------------------------------
-% Add dotted line at 0
-% ------------------------------------------------------------------------------
-if add0Line
-    plot([0:numGroups+1],zeros(1,numGroups+2),':','Color','k')
-end
-
-% ------------------------------------------------------------------------------
-% Add custom x axis labels
-% ------------------------------------------------------------------------------
-if ~isempty(theLabels)
-    set(gca,'XTick',1:length(theLabels),'XTickLabel',theLabels,'FontSize',12)
-    xlim([0 length(theLabels) + 1])
-    ax = gca;
-    ax.XTickLabelRotation = 0;
-end
-
 
 end
