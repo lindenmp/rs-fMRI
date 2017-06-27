@@ -1,4 +1,6 @@
 %% run_prepro: 
+% Copyright (C) 2017, Linden Parkes <lindenparkes@gmail.com>,
+
 function [] = run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject,smoothing,discard,slicetime,despike,detr,intnorm)
     cfg.WhichMASSIVE = WhichMASSIVE;
     cfg.WhichProject = WhichProject;
@@ -41,7 +43,6 @@ function [] = run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject,smoothi
         cfg.intnorm = intnorm;
     end
 
-
     % ------------------------------------------------------------------------------
     % Store date and time
     % ------------------------------------------------------------------------------
@@ -49,6 +50,8 @@ function [] = run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject,smoothi
 
     % ------------------------------------------------------------------------------
     % Add paths - edit this section
+    % Note, M2 and M3 refer to different clusters on MASSIVE.
+    % Our lab has projects on both clusters, which necessitates switching between.
     % ------------------------------------------------------------------------------
     switch cfg.WhichMASSIVE
         case 'M2'
@@ -509,29 +512,8 @@ function [] = run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject,smoothi
 
     % ------------------------------------------------------------------------------
     % run prepro_base
-    runBase = 1;
     % ------------------------------------------------------------------------------
-    if runBase == 1
-        [cfg.tN,cfg.gm,cfg.wm,cfg.csf,cfg.epiBrainMask,cfg.t1BrainMask,cfg.BrainMask,cfg.gmmask,cfg.wmmask,cfg.csfmask,cfg.outEPI] = prepro_base(cfg);
-    elseif runBase == 0
-        % Alot of this is hard coded just for testing purposes.
-        % Typically users will just set runBase = 1;
-        cfg.tN = cfg.N - 4;
-        cfg.gm = ['bwc1c',cfg.t1name];
-        cfg.wm = ['bwc2c',cfg.t1name];
-        cfg.csf = ['bwc3c',cfg.t1name];
-        cfg.epiBrainMask = 'epi_brain_mask.nii';
-        cfg.t1BrainMask = 't1_brain_mask.nii';
-        cfg.BrainMask = 'brain_mask.nii';
-        cfg.gmmask = 'gm50_bin.nii';
-        cfg.wmmask = 'wm_final.nii';
-        cfg.csfmask = 'csf_final.nii';
-        cfg.outEPI{1} = ['idbwrdat',cfg.EPI];
-        cfg.outEPI{2} = ['s_idbwrdat',cfg.EPI];
-        cfg.outEPI{3} = ['sgm_idbwrdat',cfg.EPI];
-        cfg.outEPI{4} = ['swm_idbwrdat',cfg.EPI];
-        cfg.outEPI{5} = ['scsf_idbwrdat',cfg.EPI];
-    end
+    [cfg.tN,cfg.gm,cfg.wm,cfg.csf,cfg.epiBrainMask,cfg.t1BrainMask,cfg.BrainMask,cfg.gmmask,cfg.wmmask,cfg.csfmask,cfg.dvars,cfg.dvarsExtract,cfg.outEPI] = prepro_base(cfg);
 
     % ------------------------------------------------------------------------------
     % noise correction and time series
@@ -542,6 +524,8 @@ function [] = run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject,smoothi
     
     % All pipelines
     noiseOptions = {'6P','6P+2P','6P+2P+GSR','24P','24P+8P','24P+8P+4GSR','24P+8P+SpikeReg','24P+8P+4GSR+SpikeReg','12P+aCC','24P+aCC','12P+aCC50','24P+aCC50','24P+aCC+4GSR','24P+aCC50+4GSR','24P+aCC+SpikeReg','24P+aCC+4GSR+SpikeReg','ICA-AROMA+2P','ICA-AROMA+2P+SpikeReg','ICA-AROMA+GSR','ICA-AROMA+2P+GSR','ICA-AROMA+8P','ICA-AROMA+4GSR','ICA-AROMA+8P+4GSR'};
+    % In cases where all pipelines aren't run and compared, we favour ICA-AROMA+2P 
+    % noiseOptions = {'ICA-AROMA+2P'};
 
     % Loop over noise correction options
     for i = 1:length(noiseOptions)
@@ -582,6 +566,9 @@ function [] = run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject,smoothi
         runNoise = 1;
         % ------------------------------------------------------------------------------
         if runNoise == 1
+            % cfg.runReg controls whether nuisance signals are extracted and regressed out of the EPI (1) or just extracted (0)
+            % cfg.runReg = 0 is useful is users want to model the nuisance signals at the level of the first level GLM
+            cfg.runReg = 1;
             [cfg.noiseTS,cfg.outdir] = prepro_noise(cfg);
         elseif runNoise == 0
             if cfg.CleanIn(1) == 's'
