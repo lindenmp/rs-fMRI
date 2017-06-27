@@ -135,5 +135,5 @@ The **func** subdirectory contains Matlab functions and shell scripts needed for
 
 # External dependencies
 
-This repository requires the `antsRegistrationSyN.sh` script provided by the [ConsoritumOfANTs](https://github.com/stnava/ANTs/tree/master/Scripts).
+This repository requires the `antsRegistrationSyN.sh` script provided by the [ConsortiumOfANTs](https://github.com/stnava/ANTs/tree/master/Scripts).
 
