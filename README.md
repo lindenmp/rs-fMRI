@@ -3,7 +3,12 @@
 
 Resting-state fMRI is highly sensitive to artefacts caused by in-scanner movement. These artefacts can cause spurious correlations in the time-series data that hinder functional connectivity analyses. This code applies a wide range of popular data denoising methods designed to correct for these artefacts and produces a range of quality control benchmarks in order to facilitate the evaluation of their efficacy.
 
-This code is broken into four main subdirectories: **prepro**, **qc**, **stats**, and **func**.
+This code is broken into four main subdirectories:
+1. **prepro**: process and denoising rs-fMRI data on [MASSIVE](https://www.massive.org.au).
+2. **qc**: calculates quality control benchmarks and reproduces figures found in the following manuscript
+3. **stats**: various second-level statistics
+4. **func**: functions for repository
+
 The details of each subdirectory can be found below.
 
 Linden Parkes, linden.parkes@monash.edu, Brain & Mental Health Laboratory, Monash University
@@ -130,7 +135,5 @@ The **func** subdirectory contains Matlab functions and shell scripts needed for
 
 # External dependencies
 
-This repository requires two shell scripts provided by the ConsoritumOfANTs, `antsRegistrationSyN.sh` and `antsRegistrationSyNQuick.sh`.
-
-These can be downloaded from [ANTs](https://github.com/stnava/ANTs/tree/master/Scripts)
+This repository requires the `antsRegistrationSyN.sh` script provided by the [ConsoritumOfANTs](https://github.com/stnava/ANTs/tree/master/Scripts).
 
