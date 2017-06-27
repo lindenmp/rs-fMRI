@@ -1,8 +1,9 @@
 % ------------------------------------------------------------------------------
 % This script performs the primary analyses for
-% Parkes, Fulcher, Yucel, Fornito. rfMRI preprocessing methods in clinical cohorts
+% Parkes, Fulcher, Yucel, Fornito. An evaluation of the efficacy, reliability, 
+% and sensitivity of motion correction strategies for resting-state functional MRI
 % 
-% Linden Parkes, Brain & Mental Health Laboratory, 2016
+% Copyright (C) 2017, Linden Parkes <lindenparkes@gmail.com>,
 % ------------------------------------------------------------------------------
 clear all; close all; clc
 
@@ -36,7 +37,7 @@ if runScrub & runSR
     error('FATAL: Scrubbing and spike regression cannot be run concurrently. Choose one only!');
 end
 
-runPlot = false;
+runPlot = true;
 runBigPlots = false;
 runNBSPlots = false;
 runTPlots = false;
@@ -283,7 +284,7 @@ if numGroups > 1
 	end
 end
 
-JitteredParallelScatter({metadata.fdJenk_m(metadata.Diagnosis == 1),metadata.fdJenk_m(metadata.Diagnosis == 2)})
+BF_JitteredParallelScatter({metadata.fdJenk_m(metadata.Diagnosis == 1),metadata.fdJenk_m(metadata.Diagnosis == 2)});
 ax = gca;
 ax.XTick = [1,2];
 ax.XTickLabel = {'Controls','Patients'};
@@ -805,6 +806,7 @@ if runPlot
 
 	% ------------------------------------------------------------------------------
 	% QC-FC significant proportion
+	% Corresponds to Figure 1 and Figure 4 in case of censoring
 	% ------------------------------------------------------------------------------
 	if ~runScrub & ~runSR
 		Fig_QCFC_Dist = figure('color','w', 'units', 'centimeters', 'pos', [0 0 16 9], 'name',['Fig_QCFC_Dist']); box('on'); movegui(Fig_QCFC_Dist,'center');
@@ -843,7 +845,7 @@ if runPlot
 		extraParams.customSpot = '';
 		extraParams.add0Line = true;
 	    extraParams.theColors = theColors;
-		JitteredParallelScatter({allData(:).QCFCVec},1,1,0,extraParams)
+		BF_JitteredParallelScatter({allData(:).QCFCVec},1,1,0,extraParams)
 		ax = gca;
 
 		% Set axis stuff
@@ -927,6 +929,7 @@ if runPlot
 
 	% ------------------------------------------------------------------------------
 	% QC-FC distance dependence
+	% Corresponds to Figure 2 and Figure 4 in case of censoring
 	% ------------------------------------------------------------------------------
 	% Create data
 	if ~runScrub & ~runSR
@@ -953,6 +956,7 @@ if runPlot
 
 	% ------------------------------------------------------------------------------
 	% tDOF
+	% Corresponds to Figure 5
 	% ------------------------------------------------------------------------------
 	% Create data
 	data = {[allData(:).tDOF_mean]'};
@@ -975,6 +979,7 @@ if runPlot
 
 	% ------------------------------------------------------------------------------
 	% Size of significant edge component
+	% Corresponds to Figure 6
 	% ------------------------------------------------------------------------------
 	if ismember('OCDPG',WhichProject,'rows') | ismember('UCLA',WhichProject,'rows')
 		% Create table
@@ -1019,6 +1024,7 @@ if runPlot
 
 	% ------------------------------------------------------------------------------
 	% ICC
+	% Corresponds to Figure 7
 	% ------------------------------------------------------------------------------
 	if ismember('NYU_2',WhichProject,'rows')
 		% ------------------------------------------------------------------------------
@@ -1037,7 +1043,7 @@ if runPlot
 		extraParams.customSpot = '';
 		extraParams.add0Line = true;
 		extraParams.theColors = theColors(tDOF_idx);
-		JitteredParallelScatter(data(tDOF_idx),1,1,0,extraParams)
+		BF_JitteredParallelScatter(data(tDOF_idx),1,1,0,extraParams)
 		ax = gca;
 
 		% Set axis stuff
@@ -1061,7 +1067,7 @@ if runPlot
 		extraParams.customSpot = '';
 		extraParams.add0Line = true;
 		extraParams.theColors = theColors(tDOF_idx);
-		JitteredParallelScatter(data(tDOF_idx),1,1,0,extraParams)
+		BF_JitteredParallelScatter(data(tDOF_idx),1,1,0,extraParams)
 		ax = gca;
 
 		% Set axis stuff
@@ -1304,7 +1310,7 @@ if runNBSPlots
 				data{g} = data{g}(allData(i).NBS_sigVec{j} == 1);
 				% data{g} = data{g}(allData(i).NaNFilter);
 			end
-			JitteredParallelScatter(data,1,1,0)
+			BF_JitteredParallelScatter(data,1,1,0)
 			set(gca,'XTick',[1,2],'XTickLabel',{'Control','Patients'})
 			% xlabel(['Contrast ',num2str(j)])
 			ylabel('Covariance of edges')
@@ -1330,7 +1336,7 @@ if runNBSPlots
 				% Threshold
 				data{g} = data{g}(NaNFilterROI);
 			end
-			JitteredParallelScatter(data,1,1,0)
+			BF_JitteredParallelScatter(data,1,1,0)
 			set(gca,'XTick',[1,2],'XTickLabel',{'Control','Patients'})
 			% xlabel(['Contrast ',num2str(j)])
 			ylabel('Variance of edges')
@@ -1355,7 +1361,7 @@ if runNBSPlots
 				data{g} = data{g}(allData(i).NBS_sigVec{j} == 1);
 				% data{g} = data{g}(allData(i).NaNFilter);
 			end
-			JitteredParallelScatter(data,1,1,0)
+			BF_JitteredParallelScatter(data,1,1,0)
 			set(gca,'XTick',[1,2],'XTickLabel',{'Control','Patients'})
 			% xlabel(['Contrast ',num2str(j)])
 			ylabel('Sqrt(prod(var)) of edges')
@@ -1704,7 +1710,7 @@ if runOverlapPlots
 	% ------------------------------------------------------------------------------
 	% 1) Pairwise overlap between significant networks
 	% ------------------------------------------------------------------------------
-	WhichOverlap = 'Intersection/Union'; % 'Intersection/Union' 'phi' 
+	WhichOverlap = 'jaccard'; % 'jaccard' 'phi' 
 	f = figure('color','w', 'units', 'centimeters', 'pos', [0 0 23 12], 'name',['NBS Overlap']); box('on'); movegui(f,'center');
 	for i = 1:numContrasts
 		if i == 1
@@ -1723,7 +1729,7 @@ if runOverlapPlots
 		data = data(NaNFilter,:); 
 
 		switch WhichOverlap
-			case 'Intersection/Union'
+			case 'jaccard'
 				mat = [];
 				for j = 1:size(data,2)
 					for k = 1:size(data,2)
@@ -1790,6 +1796,10 @@ if runOverlapPlots
 	% ------------------------------------------------------------------------------
 	% 2) Figure 10
 	% ------------------------------------------------------------------------------
+	% Neuromarvl colours
+	% BLUE | GREEN | YELLOW | RED
+	% #0029ff | #00ff75 | #ffff00 |#ff0000
+
 	cd('/Users/lindenmp/Dropbox/Work/Papers/PhD_Chapters/rfMRI_denoise/Figures/Fig10_Neuromarvl/neuromarvl')
 	% node coords
 	T = table(ROI_Coords(:,1),ROI_Coords(:,2),ROI_Coords(:,3),'VariableNames',{'x','y','z'});
@@ -1810,8 +1820,9 @@ if runOverlapPlots
 	ConMatrix = full(allData(6).NBS_statMat{2});
 	ConMatrix(SigMatrix == 0) = 0;
 	dlmwrite('24P+8P+4GSR_con2.txt',ConMatrix)
-	% http://immersive.erc.monash.edu.au/neuromarvl/?save=7ade0237-9061-4b59-8981-7b717c9072de_130.194.90.77
-    
+	% http://immersive.erc.monash.edu.au/neuromarvl/?save=0c084e38-89e8-4708-8df7-5d0b9c381d9a_130.194.90.77
+    % http://bit.ly/2sXxZiU
+
 	% B)
     f = figure('color','w', 'units', 'centimeters', 'pos', [0 0 11.5 15], 'name',['ICA-AROMA+2P_con1']); box('on'); movegui(f,'center');
     % subplot(1,2,2)
@@ -1823,7 +1834,8 @@ if runOverlapPlots
 	ConMatrix = full(allData(13).NBS_statMat{1});
 	ConMatrix(SigMatrix == 0) = 0;
 	dlmwrite('ICA-AROMA+2P_con1.txt',ConMatrix)
-	% http://immersive.erc.monash.edu.au/neuromarvl/?save=a43d6c5a-7ec6-492e-a33c-7cb8f28855a1_130.194.90.77
+	% http://immersive.erc.monash.edu.au/neuromarvl/?save=0ec770e2-6846-4725-ae05-a10d35706adf_130.194.90.77
+	% http://bit.ly/2rIwrWx
 
 	% C) 
     f = figure('color','w', 'units', 'centimeters', 'pos', [0 0 11.5 15], 'name',['6P+2P+GSR_con2']); box('on'); movegui(f,'center');
@@ -1835,7 +1847,8 @@ if runOverlapPlots
 	ConMatrix = full(allData(3).NBS_statMat{2});
 	ConMatrix(SigMatrix == 0) = 0;
 	dlmwrite('6P+2P+GSR_con2.txt',ConMatrix)
-	% http://immersive.erc.monash.edu.au/neuromarvl/?save=31f769f5-beda-4e33-bda5-ac06725fbeb5_130.194.90.77
+	% http://immersive.erc.monash.edu.au/neuromarvl/?save=72338374-995e-4a93-b540-837511ff6608_130.194.90.77
+	% http://bit.ly/2rYaua9
 	
 	% D)
     f = figure('color','w', 'units', 'centimeters', 'pos', [0 0 11.5 15], 'name',['6P+2P+GSR_con1']); box('on'); movegui(f,'center');
@@ -1847,7 +1860,8 @@ if runOverlapPlots
 	ConMatrix = full(allData(3).NBS_statMat{1});
 	ConMatrix(SigMatrix == 0) = 0;
 	dlmwrite('6P+2P+GSR_con1.txt',ConMatrix)
-	% http://immersive.erc.monash.edu.au/neuromarvl/?save=0e9f235b-f38b-451e-8b04-aa9708522717_130.194.90.77
+	% http://immersive.erc.monash.edu.au/neuromarvl/?save=1c100289-5d8b-45fb-bae6-b8db4dbf37a4_130.194.90.77
+	% http://bit.ly/2t1VTdr
 
 end
 

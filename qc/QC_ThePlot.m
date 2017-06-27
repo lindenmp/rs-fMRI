@@ -1,7 +1,7 @@
 % ------------------------------------------------------------------------------
 % This script simply loops over subjects and runs ThePlot
 % 
-% Linden Parkes, Brain & Mental Health Laboratory, 2016
+% Copyright (C) 2017, Linden Parkes <lindenparkes@gmail.com>,
 % ------------------------------------------------------------------------------
 clear all; close all; clc
 
