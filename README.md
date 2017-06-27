@@ -129,7 +129,7 @@ The **stats** subdirectory contains the code used to compute whole-brain differe
 
 ## func
 
-The **func** subdirectory contains matlab functions and shell scripts needed for the repo
+The **func** subdirectory contains Matlab functions and shell scripts needed for the repo
 
 `antsRegistrationSyN.sh` and `antsRegistrationSyNQuick.sh` are copyright (c) 2009-2013 ConsortiumOfANTS. All rights reserved.
 
