@@ -71,6 +71,7 @@ The code in the **qc** subdirectory can be used to reproduce the figures in **An
 See Figshare (https://doi.org/10.4225/03/595193482c03e) for fully processed rs-fMRI timeseries data for two of the three datasets (*CNP* and *NYU*) used in the above pre-print.
 
 Raw data for these datasets can be found at:
+
 *CNP*: https://openfmri.org/dataset/ds000030/
 
 *NYU*: http://fcon_1000.projects.nitrc.org/indi/CoRR/html/
