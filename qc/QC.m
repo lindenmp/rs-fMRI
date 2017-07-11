@@ -267,9 +267,8 @@ numVols = length(metadata.fdJenk{1});
 % Perform initial exclusion based on gross movement
 % ------------------------------------------------------------------------------
 WhichExclude = 1;
-metadata(metadata.exclude(:,WhichExclude),:) = [];
-
 fprintf(1, 'Excluded %u subjects based on gross movement\n', sum(metadata.exclude(:,WhichExclude)));
+metadata(metadata.exclude(:,WhichExclude),:) = [];
 
 % compute numsubs
 numSubs = size(metadata,1);
