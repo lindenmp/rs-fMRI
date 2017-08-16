@@ -83,7 +83,24 @@ function [] = HCP_run_prepro(subject)
         copyfile([cfg.rawdir,cfg.EPI],cfg.preprodir)
         % mov params
         copyfile([cfg.rawdir,'/Movement*'],cfg.preprodir)
+        
+    % ------------------------------------------------------------------------------
+    % Stugle's parcellations
+    % ------------------------------------------------------------------------------
+        cd(cfg.preprodir)
+        % copy
+        cfg.stugledir = '/scratch/kg98/m3earlyadoptercibf/HCP_parc/';
+        copyfile([cfg.stugledir,cfg.subject,'/aparc_standard.nii'],cfg.preprodir)
+        copyfile([cfg.stugledir,cfg.subject,'/HCPMMP1_standard.nii'],cfg.preprodir)
+        copyfile([cfg.stugledir,cfg.subject,'/custom200_standard.nii'],cfg.preprodir)
+        copyfile([cfg.stugledir,cfg.subject,'/custom500_standard.nii'],cfg.preprodir)
 
+        % reslice to EPI dimensions
+        imat = eye(4); dlmwrite('eye.mat',imat,'\t')
+        system([cfg.fsldir,'flirt -in aparc_standard.nii -ref ',cfg.EPI,' -interp nearestneighbour -applyxfm -init eye.mat -out aparc_standard.nii']);
+        system([cfg.fsldir,'flirt -in HCPMMP1_standard.nii -ref ',cfg.EPI,' -interp nearestneighbour -applyxfm -init eye.mat -out HCPMMP1_standard.nii']);
+        system([cfg.fsldir,'flirt -in custom200_standard.nii -ref ',cfg.EPI,' -interp nearestneighbour -applyxfm -init eye.mat -out custom200_standard.nii']);
+        system([cfg.fsldir,'flirt -in custom500_standard.nii -ref ',cfg.EPI,' -interp nearestneighbour -applyxfm -init eye.mat -out custom500_standard.nii']);
 
     % ------------------------------------------------------------------------------
     % Unzip
@@ -107,10 +124,10 @@ function [] = HCP_run_prepro(subject)
         csf = ['c3',cfg.t1name];
 
         % reslice to EPI dimensions
-        imat = eye(4); dlmwrite('eye.mat',imat,'\t')
-        system([cfg.fsldir,'flirt -in ',gm,' -ref ',cfg.EPI,' -applyxfm -init eye.mat -out ',gm]);
-        system([cfg.fsldir,'flirt -in ',wm,' -ref ',cfg.EPI,' -applyxfm -init eye.mat -out ',wm]);
-        system([cfg.fsldir,'flirt -in ',csf,' -ref ',cfg.EPI,' -applyxfm -init eye.mat -out ',csf]);
+        % imat = eye(4); dlmwrite('eye.mat',imat,'\t')
+        system([cfg.fsldir,'flirt -in ',gm,' -ref ',cfg.EPI,' -interp nearestneighbour -applyxfm -init eye.mat -out ',gm]);
+        system([cfg.fsldir,'flirt -in ',wm,' -ref ',cfg.EPI,' -interp nearestneighbour -applyxfm -init eye.mat -out ',wm]);
+        system([cfg.fsldir,'flirt -in ',csf,' -ref ',cfg.EPI,' -interp nearestneighbour -applyxfm -init eye.mat -out ',csf]);
 
     % ------------------------------------------------------------------------------
     % Create binary brain mask
@@ -334,13 +351,30 @@ function [] = HCP_run_prepro(subject)
     % ------------------------------------------------------------------------------
     % get time series
     % ------------------------------------------------------------------------------
-        idx = dlmread([cfg.projdir,'idx2retain.txt']);
-        cfg.parcFile = [cfg.HCPdir,cfg.subject,'/MNINonLinear/ROIs/wmparc.2.nii.gz'];
-        cfg.ExtractIn = [cfg.preprodir,cfg.removeNoise,'/epi_prepro.nii'];
-        cfg.weightGM = 'no';
+        cfg.parcFiles = {[cfg.preprodir,'/aparc_standard.nii'],...
+                        [cfg.preprodir,'/HCPMMP1_standard.nii'],...
+                        [cfg.preprodir,'/custom200_standard.nii'],...
+                        [cfg.preprodir,'/custom500_standard.nii']};
 
-        cfg.roiTS{1} = prepro_extractTS_FSL(cfg);
-        cfg.roiTS{1} = cfg.roiTS{1}(:,idx);
+        cfg.parcWeightGM = {'no',...
+                            'no',...
+                            'no',...
+                            'no'};
+
+        cfg.ExtractIn = [cfg.preprodir,cfg.removeNoise,'/epi_prepro.nii'];
+
+        % Initialise roi time series variable
+        cfg.roiTS = [];
+
+        % Loop over parcellation files
+        for i = 1:length(cfg.parcFiles)
+            % Set parcellation file
+            cfg.parcFile = cfg.parcFiles{i};
+            % set GM weight
+            cfg.weightGM = cfg.parcWeightGM{i};
+            % extract time series 
+            cfg.roiTS{i} = prepro_extractTS_FSL(cfg);
+        end
 
         cd(cfg.outdir)
         save('cfg.mat','cfg')

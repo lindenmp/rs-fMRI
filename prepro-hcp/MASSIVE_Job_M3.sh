@@ -4,16 +4,16 @@
 #SBATCH --account=kg98
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
-#SBATCH --time=10:00:00
+#SBATCH --time=5:00:00
 #SBATCH --mail-user=linden.parkes@monash.edu
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-type=END
 #SBATCH --export=ALL
 #SBATCH --mem-per-cpu=64G
-#SBATCH --array=1-100%25
+#SBATCH --array=1-100%50
 
-SUBJECT_LIST="/home/lindenmp/kg98/Linden/ResProjects/HCP_BF_TimeSeries/100_subs.txt"
-# SUBJECT_LIST="/home/lindenmp/kg98/Linden/ResProjects/HCP_BF_TimeSeries/HCP_100.txt"
+# SUBJECT_LIST="/home/lindenmp/kg98/Linden/ResProjects/HCP_BF_TimeSeries/100_subs.txt"
+SUBJECT_LIST="/home/lindenmp/kg98/Linden/ResProjects/HCP_BF_TimeSeries/HCP_100.txt"
 
 # MASSIVE modules
 module load rest/1.8 # works on M2 and M3
