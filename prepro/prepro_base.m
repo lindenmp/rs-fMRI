@@ -146,27 +146,29 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
         cd([cfg.datadir,cfg.subject])
 
         % Clean and reinitialise T1 dir
-        % movefile([cfg.t1dir,cfg.t1name],[cfg.datadir,cfg.subject])
-        % if exist([cfg.t1dir,'*json']) == 2
-        %     movefile([cfg.t1dir,'*json'],[cfg.datadir,cfg.subject])
-        % end
+        movefile([cfg.t1dir,cfg.t1name],[cfg.datadir,cfg.subject])
+        if ~isempty(dir([cfg.t1dir,'*.json'])) == 1
+            fname = dir([cfg.t1dir,'*.json']);
+            movefile([cfg.t1dir,fname.name],[cfg.datadir,cfg.subject])
+        end
 
-        % delete([cfg.t1dir,'*'])
+        delete([cfg.t1dir,'*'])
 
-        % movefile([cfg.datadir,cfg.subject,'/',cfg.t1name],cfg.t1dir)
-        % if exist([cfg.datadir,cfg.subject,'/*json']) == 2
-        %     movefile([cfg.datadir,cfg.subject,'/*json'],cfg.t1dir)
-        % end
+        movefile([cfg.datadir,cfg.subject,'/',cfg.t1name],cfg.t1dir)
+        if ~isempty(dir([cfg.datadir,cfg.subject,'/*.json'])) == 1
+            movefile([cfg.datadir,cfg.subject,'/',fname.name],cfg.t1dir)
+        end
+        clear fname
         
-        % cd(cfg.t1dir);
+        cd(cfg.t1dir);
 
         % First crop out neck
         outname = ['c',cfg.t1name];
-        % system([cfg.fsldir,'robustfov -i ',cfg.t1name,' -r ',outname]);
+        system([cfg.fsldir,'robustfov -i ',cfg.t1name,' -r ',outname]);
         cfg.t1name = outname;
 
         % Tissue segment T1 with SPM
-        % SegmentT1([cfg.t1dir,cfg.t1name],cfg.spmdir,0,0);
+        SegmentT1([cfg.t1dir,cfg.t1name],cfg.spmdir,0,0);
 
         % outputs
         gm = ['c1',cfg.t1name];
