@@ -10,7 +10,7 @@
 #SBATCH --mail-type=END
 #SBATCH --export=ALL
 #SBATCH --mem-per-cpu=16G
-# SBATCH --array=1-2
+#SBATCH --array=1-100%25
 
 # Assign input args
 WhichMASSIVE=$1
@@ -18,6 +18,7 @@ WhichProject=$2
 WhichSessScan=$3
 
 case $WhichProject in
+	M3_OCDPG) SUBJECT_LIST="/home/lindenmp/kg98/Linden/ResProjects/OCDPG/OCDPG_SubjectIDs.txt" ;;
 	M3_COBRE) SUBJECT_LIST="/home/lindenmp/kg98/Linden/ResProjects/SCZ_HCTSA/COBRE/COBRE_SubjectIDs.txt" ;;
 	M3_UCLA) SUBJECT_LIST="/home/lindenmp/kg98/Linden/ResProjects/SCZ_HCTSA/UCLA/UCLA_SubjectIDs.txt" ;;
 	M3_NAMIC) SUBJECT_LIST="/home/lindenmp/kg98/Linden/ResProjects/SCZ_HCTSA/NAMIC/NAMIC_SubjectIDs.txt" ;;
