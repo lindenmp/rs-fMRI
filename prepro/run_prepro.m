@@ -106,6 +106,64 @@ function [] = run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject,smoothi
     % Use WhichProject if you're juggling multiple datasets
     % ------------------------------------------------------------------------------
     switch cfg.WhichProject
+        case 'M3_OCDPG'
+            % Where the subjects' directories are
+            cfg.datadir = '/home/lindenmp/kg98/Linden/ResProjects/OCDPG/data/';
+
+            switch cfg.WhichSessScan
+                case 'Sess1_Scan1'
+                    % where the unprocessed EPI 4d file is
+                    cfg.rawdir = [cfg.datadir,cfg.subject,'/func/'];
+                    % Directory where the t1 is
+                    cfg.t1dir = [cfg.datadir,cfg.subject,'/anat/']; 
+            end
+            
+            % where the processed epi 4d files will be output to from prepro_base
+            cfg.preprodir = [cfg.rawdir,'prepro/'];
+
+            % file name of EPI 4d file
+            cfg.EPI = [cfg.subject,'_task-rest_bold.nii'];
+            % name of t1 file.
+            cfg.t1name = [cfg.subject,'_T1w.nii'];
+
+            % the path and filename of the template in MNI space to which everything
+            % will be normalized
+            cfg.mni_template = [cfg.spmdir,'templates/T1.nii'];    
+
+            % preprocessing settings
+            % length of time series (no. vols)
+            cfg.N = 189; 
+            % Repetition time of acquistion in secs
+            cfg.TR = 2.5;
+            % Desired voxel dimension (in mm) of analysis after spatial normalization
+            cfg.voxdim = 2;
+            % Number of slices in EPI volumes.
+            cfg.numSlices = 44;
+            % Vector defining acquisition order of EPI slices (necessary for slice-timing correction.
+            % See help of slicetime_epis.m for guidance on how to define)
+            % cfg.order = [1:1:cfg.numSlices]; % ascending
+            % cfg.order = [cfg.numSlices:-1:1]; % descending
+            cfg.order = [1:2:cfg.numSlices,2:2:cfg.numSlices]; % interleaved
+            % cfg.order = [2:2:cfg.numSlices, 1:2:cfg.numSlices-1]; %interleave alt
+            % Reference slice for slice timing acquisition. See SlicetimeEPI.m for guidance on how to define. 
+            % cfg.refSlice = round(numSlices/2)); % use for sequential order (e.g., ascending or descending)
+            cfg.refSlice = cfg.numSlices-1; % use for interleaved order
+            % cfg.refSlice = cfg.numSlices; % use for interleaved alt order
+
+            % Scalar value indicating spatial smoothing kernal size in mm. 
+            cfg.kernel = 4;
+            % Low-pass cut-off for bandpass filter in Hz (e.g., .08) 
+            cfg.LowPass = 0.08;
+            % Hi-pass cut-off for bandpass filter in Hz (e.g., .008)
+            cfg.HighPass = 0.008;
+            
+            % Select whether to run certain functions in 4D or 3D mode.
+                % Note that BOTH options assume the files are stored in 4D.
+                % I have found that SPM sometimes does not handle loading in 4D files 
+                % that consist of lots of volumes - e.g., in multiband cases or very long sequences (400+ volumes).
+                % In which case, using the '3D' option will take your 4D file, split it up, do something, then concatenate back.
+                % If you've just got a fairly typical fMRI run, leave as '4D'
+            cfg.WhichNii = '4D';
         case 'OCDPG'
             % Where the subjects' directories are
             cfg.datadir = '/gpfs/M2Home/projects/Monash076/Linden/OCDPG/data/';
@@ -523,9 +581,9 @@ function [] = run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject,smoothi
     % If you only want to run one then just use something like: noiseOptions = {'24P+aCC'};
     
     % All pipelines
-    noiseOptions = {'6P','6P+2P','6P+2P+GSR','24P','24P+8P','24P+8P+4GSR','24P+8P+SpikeReg','24P+8P+4GSR+SpikeReg','12P+aCC','24P+aCC','12P+aCC50','24P+aCC50','24P+aCC+4GSR','24P+aCC50+4GSR','24P+aCC+SpikeReg','24P+aCC+4GSR+SpikeReg','ICA-AROMA+2P','ICA-AROMA+2P+SpikeReg','ICA-AROMA+GSR','ICA-AROMA+2P+GSR','ICA-AROMA+8P','ICA-AROMA+4GSR','ICA-AROMA+8P+4GSR'};
+    % noiseOptions = {'6P','6P+2P','6P+2P+GSR','24P','24P+8P','24P+8P+4GSR','24P+8P+SpikeReg','24P+8P+4GSR+SpikeReg','12P+aCC','24P+aCC','12P+aCC50','24P+aCC50','24P+aCC+4GSR','24P+aCC50+4GSR','24P+aCC+SpikeReg','24P+aCC+4GSR+SpikeReg','ICA-AROMA+2P','ICA-AROMA+2P+SpikeReg','ICA-AROMA+GSR','ICA-AROMA+2P+GSR','ICA-AROMA+8P','ICA-AROMA+4GSR','ICA-AROMA+8P+4GSR'};
     % In cases where all pipelines aren't run and compared, we favour ICA-AROMA+2P 
-    % noiseOptions = {'ICA-AROMA+2P'};
+    noiseOptions = {'ICA-AROMA+2P','ICA-AROMA+2P+GSR'};
 
     % Loop over noise correction options
     for i = 1:length(noiseOptions)
@@ -647,6 +705,11 @@ function [] = run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject,smoothi
     % Compress base & t1 outputs
     % ------------------------------------------------------------------------------
     fprintf('\n\t\t ----- Compressing base outputs ----- \n\n');
+    cd(cfg.rawdir)
+    gzip('*.nii')
+    pause(5)
+    delete('*.nii')   
+
     cd(cfg.preprodir)
     gzip('*.nii')
     pause(5)
