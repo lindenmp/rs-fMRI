@@ -8,40 +8,51 @@
 % 	But it assumes time is the first dimension on the noiseTS matrix.
 % 	it also assumes that 1 = volumes to keep in scrubmask, not to discard.
 % ------------------------------------------------------------------------------
-function [tempimg zb newregs] = regress_nuisance(tempimg,totregs,tot_tmask)
+function [data_out zb newregs] = JP14_regress_nuisance(data,noiseTS,scrubmask)
 
-	[vox ts]=size(tempimg);
-	zlinreg=totregs(logical(tot_tmask),:); % only desired data
-	[zlinreg DMDTB]=demean_detrend(zlinreg'); % obtain fits for desired data
-	zlinreg=zlinreg';
-	zstd=std(zlinreg); % calculate std
-	zmean=mean(zlinreg);
-	zlinreg=zlinreg-(repmat(zmean,[size(zlinreg,1) 1]))./(repmat(zstd,[size(zlinreg,1) 1])); % zscore
+	[vox ts] = size(data);
+	
+	if nargin < 3;
+		scrubmask = ones(ts,1);
+	end
 
-	linreg=[repmat(1,[ts 1]) linspace(0,1,ts)'];
-	newregs=DMDTB*linreg'; % predicted all regressors demean/detrend
-	newregs=totregs-newregs'; % these are the demeaned detrended regressors
-	newregs=newregs-(repmat(zmean,[size(newregs,1) 1]))./(repmat(zstd,[size(newregs,1) 1])); % zscore
+	% make logical
+	scrubmask = logical(scrubmask);
 
-	% now we have z-scored, detrended good and all regressors.
+	% ------------------------------------------------------------------------------
+	% Regressors
+	% ------------------------------------------------------------------------------
+	% First, create regressors using the censored data
+	zlinreg = noiseTS(scrubmask,:); % only censored data
+	[zlinreg DMDTB] = JP14_demean_detrend(zlinreg'); % obtain fits for censored data
+	zlinreg = zlinreg';
+	zlinreg = zscore(zlinreg);
 
-	% demean and detrend the desired data
-	zmdtimg=tempimg(:,logical(tot_tmask));
-	[zmdtimg zmdtbetas]=demean_detrend(zmdtimg);
+	% Next, use the fit from the above censored regressors to generate regressors that span the uncensored data too
+	linreg = [repmat(1,[ts 1]) linspace(0,1,ts)'];
+	newregs = DMDTB * linreg'; % predicted all regressors demean/detrend
+	newregs = noiseTS - newregs'; % these are the demeaned detrended regressors
+	newregs = zscore(newregs);
 
-	% calculate betas on the good data
-	tempboldcell=num2cell(zmdtimg',1);
-	zlinregcell=repmat({zlinreg},[1 vox]);
+	% ------------------------------------------------------------------------------
+	% fMRI data
+	% ------------------------------------------------------------------------------
+	% demean and detrend the censored data
+	data_c = data(:,scrubmask);
+	[data_c data_c_beta] = JP14_demean_detrend(data_c);
+
+	% calculate betas on the censored data
+	tempboldcell = num2cell(data_c',1);
+	zlinregcell = repmat({zlinreg},[1 vox]);
 	zb = cellfun(@mldivide,zlinregcell,tempboldcell,'uniformoutput',0);
-	zb=cell2mat(zb);
+	zb = cell2mat(zb);
 
-	% demean and detrend all data using good fits
-	[zmdttotimg]=zmdtbetas*linreg';
-	zmdttotimg=tempimg-zmdttotimg;
+	% demean and detrend all data using censored fits
+	zmdttotimg = data_c_beta * linreg';
+	zmdttotimg = data - zmdttotimg;
 
 	% calculate residuals on all the data
-	zb=zb';
-	tempintvals=zb*newregs';
-	tempimg=zmdttotimg-tempintvals;
-
+	zb = zb';
+	tempintvals = zb * newregs';
+	data_out = zmdttotimg - tempintvals;
 end
