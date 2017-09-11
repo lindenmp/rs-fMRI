@@ -1,5 +1,5 @@
 %% GetFCForSample: 
-function [cfg,FC,FC_vec,VarCovar,Var,GCOR] = GetFCForSample(datadir,ParticipantIDs,str,removeNoise,cfgFile,Parc,numROIs,numConnections)
+function [cfg,FC,FC_vec,VarCovar,Var,GCOR] = GetFCForSample(datadir,ParticipantIDs,str,removeNoise,cfgFile,Parc,numROIs,numConnections,scrubmask)
 	% ------------------------------------------------------------------------------
 	% 
 	% Linden Parkes, Brain & Mental Health Laboratory, 2016
@@ -38,10 +38,19 @@ function [cfg,FC,FC_vec,VarCovar,Var,GCOR] = GetFCForSample(datadir,ParticipantI
 
 		cfg = [cfg temp.cfg];
 
+		% ------------------------------------------------------------------------------
+		% Censor time series
+		% ------------------------------------------------------------------------------
+		if nargin < 9
+			TS = cfg(i).roiTS{Parc};
+		elseif nargin >= 9
+			TS = cfg(i).roiTS{Parc}(~scrubmask{i},:);
+		end
+
 	    % ------------------------------------------------------------------------------
 	    % Compute correlations
 	    % ------------------------------------------------------------------------------
-		FC(:,:,i) = corr(cfg(i).roiTS{Parc});
+		FC(:,:,i) = corr(TS);
 		% Perform fisher z transform
 		FC(:,:,i) = atanh(FC(:,:,i));
 		% get GCOR
