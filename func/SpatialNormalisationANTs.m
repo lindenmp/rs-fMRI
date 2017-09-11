@@ -125,17 +125,37 @@ function [] = SpatialNormalisationANTs(EPI,N,meanEPI,t1file,gm,wm,csf,mni_templa
 	system([antsdir,'antsApplyTransforms -d 3 -e 0 -i ',movImage,' -r ',refImage,' -o ',output,' -n Linear ',warps]);
 
 	% 4) WM
-	movImage = wm;
-	[fPath,fName,fExt] = fileparts(movImage);
-	output = ['w',fName,fExt];
+	if iscell(wm)
+		for i = 1:length(wm)
+			movImage = wm{i};
+			[fPath,fName,fExt] = fileparts(movImage);
+			output = ['w',fName,fExt];
 
-	system([antsdir,'antsApplyTransforms -d 3 -e 0 -i ',movImage,' -r ',refImage,' -o ',output,' -n Linear ',warps]);
+			system([antsdir,'antsApplyTransforms -d 3 -e 0 -i ',movImage,' -r ',refImage,' -o ',output,' -n Linear ',warps]);
+		end
+	elseif ~iscell(wm)
+		movImage = wm;
+		[fPath,fName,fExt] = fileparts(movImage);
+		output = ['w',fName,fExt];
+
+		system([antsdir,'antsApplyTransforms -d 3 -e 0 -i ',movImage,' -r ',refImage,' -o ',output,' -n Linear ',warps]);
+	end
 
 	% 5) CSF
-	movImage = csf;
-	[fPath,fName,fExt] = fileparts(movImage);
-	output = ['w',fName,fExt];
+	if iscell(csf)
+		for i = 1:length(csf)
+			movImage = csf{i};
+			[fPath,fName,fExt] = fileparts(movImage);
+			output = ['w',fName,fExt];
 
-	system([antsdir,'antsApplyTransforms -d 3 -e 0 -i ',movImage,' -r ',refImage,' -o ',output,' -n Linear ',warps]);
+			system([antsdir,'antsApplyTransforms -d 3 -e 0 -i ',movImage,' -r ',refImage,' -o ',output,' -n Linear ',warps]);
+		end
+	elseif ~iscell(csf)
+		movImage = csf;
+		[fPath,fName,fExt] = fileparts(movImage);
+		output = ['w',fName,fExt];
+
+		system([antsdir,'antsApplyTransforms -d 3 -e 0 -i ',movImage,' -r ',refImage,' -o ',output,' -n Linear ',warps]);
+	end
 
 end
