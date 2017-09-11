@@ -46,20 +46,17 @@ function [mask,mov,fdPower,dvars] = GetScrubbingForSample(datadir,ParticipantIDs
 		% NOTE: Important that the epi used for this is the one BEFORE major noise correction
 		% Here I use the intensity normalised detrended epi output from core image preprocessing
 		% ------------------------------------------------------------------------------
-	    dvarsThr = 3;
+	    dvarsThr = 20;
 
 	    % Get dvars
-	    % Note, dividing by 10 is only valid for intensity normalised data
-	    % dvars{i} = GetDVARS([workdir,dvarsExtract],[workdir,brainMask])/10;
-	    temp = load([workdir,'dvars.mat']);
-	    dvars{i} = temp.dvars/10;
+	    dvars{i} = dlmread([workdir,'dvars.txt']);
 
 		% ------------------------------------------------------------------------------
 		% Generate scrubbing mask
 		% ------------------------------------------------------------------------------
 		% scrubProximal = 'yes';
 		scrubProximal = 'no';
-		mask{i} = GetScrubMask(fdPower{i},dvars{i},fdPowerThr,dvarsThr,scrubProximal);
+		mask{i} = JP12_GetScrubMask(fdPower{i},dvars{i},fdPowerThr,dvarsThr,scrubProximal);
 	    
 	    % n = numel(msg);
 	    % fprintf(repmat('\b',1,n));
