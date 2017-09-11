@@ -1,4 +1,4 @@
-function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,dvars,dvarsExtract,outEPI] = prepro_base(cfg)
+function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,dvars,dvarsExtract,fdThr,dvarsThr,exclude,outEPI] = prepro_base(cfg)
     % This script performs the base preprocessing, upon all variants of nuissance removal is run
     % These steps includes:
     %
@@ -48,16 +48,16 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
         fprintf(1, '\t\t Despike EPI: no \n');
     end
 
-    if cfg.detr == 1
-        fprintf(1, '\t\t Detrend EPI: yes \n');
-    elseif cfg.detr == 0
-        fprintf(1, '\t\t Detrend EPI: no \n');
-    end
-
     if cfg.intnorm == 1
         fprintf(1, '\t\t Normalise EPI intensity: yes \n');
     elseif cfg.intnorm == 0
         fprintf(1, '\t\t Normalise EPI intensity: no \n');
+    end
+
+    if cfg.detr == 1
+        fprintf(1, '\t\t Detrend EPI: yes \n');
+    elseif cfg.detr == 0
+        fprintf(1, '\t\t Detrend EPI: no \n');
     end
 
     fprintf('\n\t\t ------------------------------ \n\n');
@@ -176,9 +176,56 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
         csf = ['c3',cfg.t1name];
 
     % ------------------------------------------------------------------------------
+    % Generate conservative CSF/WM masks in native space
+    % Added following NeuroImage reviews
+    % ------------------------------------------------------------------------------
+        fprintf(1, '\n\t\t ----- Generating conservative CSF/WM masks ----- \n\n');
+
+        % First, get binary brain mask
+        system([cfg.fsldir,'bet ',cfg.t1name,' native_t1_brain -f 0.4 -n -m -R']);
+        delete('native_t1_brain.nii')
+
+        % CSF
+        % threshold gm and binarise
+        system([cfg.fsldir,'fslmaths ',gm,' -thr 0.95 -bin vmask']);
+        % dilate twice
+        system([cfg.fsldir,'fslmaths vmask -dilD -bin vmask']);
+        system([cfg.fsldir,'fslmaths vmask -dilD -bin vmask']);
+        % combined with wm and invert
+        system([cfg.fsldir,'fslmaths vmask -add ',wm,' -binv vmask']);
+        % erode whole brain mask twice
+        system([cfg.fsldir,'fslmaths native_t1_brain_mask -eroF e_native_t1_brain_mask']);
+        system([cfg.fsldir,'fslmaths e_native_t1_brain_mask -eroF e_native_t1_brain_mask']);
+        % multipy eroded brain mask with vmask
+        csf = ['v',csf];
+        system([cfg.fsldir,'fslmaths vmask -mul e_native_t1_brain_mask ',csf]);
+        delete('vmask.nii')
+        
+        % erode 2 times
+        csfname = csf; clear csf;
+        csf{1} = [csfname(1:end-4),'_e1.nii'];
+        system([cfg.fsldir,'fslmaths ',csfname,' -eroF -bin ',csf{1}]);
+        csf{2} = [csfname(1:end-4),'_e2.nii'];
+        system([cfg.fsldir,'fslmaths ',csf{1},' -eroF -bin ',csf{2}]);
+
+        % WM
+        % mask out non-brain
+        system([cfg.fsldir,'fslmaths ',wm,' -mas native_t1_brain_mask b',wm]);
+        wm = ['b',wm];
+        % erode 5 times
+        % we save them all so we can examine how WM to GS correlation drops with each erosion
+        % but we only pass the final (5th) erosion to wmmask output variable, which is then fed to noise correction
+        wmname = wm; clear wm; wm{1} = [wmname(1:end-4),'_e1.nii'];
+        system([cfg.fsldir,'fslmaths ',wmname,' -eroF -bin ',wm{1}]);
+        for i = 2:5
+            wm{i} = [wmname(1:end-4),'_e',num2str(i),'.nii'];
+            system([cfg.fsldir,'fslmaths ',wm{i-1},' -eroF -bin ',wm{i}]);
+        end
+
+    % ------------------------------------------------------------------------------
     % Preprocess cfg.EPI
     % ------------------------------------------------------------------------------
-        fprintf(1, '\n\t\tPreprocessing EPI image\n\n');
+        fprintf(1, '\n\t\t ----- Preprocessing EPI image ----- \n\n');
         cd(cfg.preprodir)
 
     % ------------------------------------------------------------------------------
@@ -200,17 +247,17 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
     % ------------------------------------------------------------------------------
     % Realignment #1
     % Important note: we only retain and use the realignment parameters from this
-    % step for use with QCFC benchmarks
+    % step for use with motion-correction (see Power et al., 2017 PLoS ONE)
     % The realigned data is NOT retained or used further.
     % For that, see below for Realignment #2
     % ------------------------------------------------------------------------------
         fprintf('\n\t\t ----- Realignment ----- \n\n');
 
-        % Make mot dir
-        mkdir('mot')
+        % Make raw_mov dir
+        mkdir('raw_mov')
         % Move input file
-        movefile(cfg.EPI,'mot')
-        cd('mot')
+        movefile(cfg.EPI,'raw_mov')
+        cd('raw_mov')
 
         % Run realignment
         RealignEPI(cfg.EPI,tN)
@@ -218,7 +265,7 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
         % Move input file back
         movefile(cfg.EPI,cfg.preprodir)
 
-        % Delete all in mot dir except rp*.txt
+        % Delete all in raw_mov dir except rp*.txt
         delete('*.nii','*.mat')
 
         cd(cfg.preprodir)
@@ -281,6 +328,26 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
         meanEPI = ['mean',RealignIn];
 
     % ------------------------------------------------------------------------------
+    % Masking realigned EPI
+    % ------------------------------------------------------------------------------
+    % In the NYU dataset, I was noticing that the realignment would leave NaNs around
+    % edges instead of zeros whenever realignment caused the edges of the image to have
+    % no sampled data. These NaNs cause all kinds of issues, so we replace them with zeros
+        [hdr,data] = read(RealignOut);
+        if any(isnan(data(:))) == 1
+            fprintf(1, '\t\t Correcting NaNs in realigned EPI. \n');
+            data(isnan(data)) = 0;
+            write(hdr,data,RealignOut)
+        end
+
+        [hdr,data] = read(meanEPI);
+        if any(isnan(data(:))) == 1
+            fprintf(1, '\t\t Correcting NaNs in mean EPI. \n');
+            data(isnan(data)) = 0;
+            write(hdr,data,meanEPI)
+        end
+
+    % ------------------------------------------------------------------------------
     % Spatial normalisation
         % For some reason, ANTs does not seem to work well with 4D files.
         % So we split the cfg.EPI into 3D files, normalise, concatenate, then clean up.
@@ -291,11 +358,21 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
         % Split 4D file in 3D
         spm_file_split(RealignOut)
 
+        wm_temp = cell(size(wm));
+        for i = 1:length(wm_temp)
+            wm_temp{i} = [cfg.t1dir,wm{i}];
+        end
+
+        csf_temp = cell(size(csf));
+        for i = 1:length(csf_temp)
+            csf_temp{i} = [cfg.t1dir,csf{i}];
+        end
+
         SpatialNormalisationANTs([cfg.preprodir,RealignOut(1:end-4)],tN,[cfg.preprodir,meanEPI],...
             [cfg.t1dir,cfg.t1name],...
             [cfg.t1dir,gm],...
-            [cfg.t1dir,wm],...
-            [cfg.t1dir,csf],...
+            wm_temp,...
+            csf_temp,...
             cfg.mni_template,cfg.antsdir,cfg.funcdir)
 
         % Merge warped cfg.EPI
@@ -312,14 +389,14 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
         % T1 outputs
         normT1 = ['w',cfg.t1name];    
         gm = ['w',gm];
-        wm = ['w',wm];
-        csf = ['w',csf];
+        for i = 1:length(wm); wm{i} = ['w',wm{i}]; end
+        for i = 1:length(csf); csf{i} = ['w',csf{i}]; end
 
         % move t1 ouputs to cfg.t1dir
         movefile(normT1,cfg.t1dir)
         movefile(gm,cfg.t1dir)
-        movefile(wm,cfg.t1dir)
-        movefile(csf,cfg.t1dir)
+        for i = 1:length(wm); movefile(wm{i},cfg.t1dir); end
+        for i = 1:length(csf); movefile(csf{i},cfg.t1dir); end
 
     % ------------------------------------------------------------------------------
     % Create binary brain mask
@@ -346,7 +423,7 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
         BrainMask = 'brain_mask.nii';
 
     % ------------------------------------------------------------------------------
-    % Mask out non-brain tissue from EPI image, T1, and tissue masks
+    % Mask out non-brain tissue from EPI image, T1, and GM map
     % ------------------------------------------------------------------------------
         fprintf(1,'\n\t\t ----- Apply brain masks ----- \n\n')
         
@@ -361,8 +438,8 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
 
         % Tissue masks
         system([cfg.fsldir,'fslmaths ',gm,' -mas ',cfg.preprodir,BrainMask,' b',gm]);
-        system([cfg.fsldir,'fslmaths ',wm,' -mas ',cfg.preprodir,BrainMask,' b',wm]);
-        system([cfg.fsldir,'fslmaths ',csf,' -mas ',cfg.preprodir,BrainMask,' b',csf]);
+        % system([cfg.fsldir,'fslmaths ',wm,' -mas ',cfg.preprodir,BrainMask,' b',wm]);
+        % system([cfg.fsldir,'fslmaths ',csf,' -mas ',cfg.preprodir,BrainMask,' b',csf]);
 
         % EPI outputs
         normEPI = ['b',normEPI];
@@ -371,94 +448,56 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
         % T1 outputs
         normT1 = ['b',normT1];    
         gm = ['b',gm];
-        wm = ['b',wm];
-        csf = ['b',csf];
 
     % ------------------------------------------------------------------------------
     % Generate MNI tissue masks for noise correction and tissue smoothing
     % ------------------------------------------------------------------------------
         cd(cfg.t1dir)
 
-        % retain only voxels with >=50% probability of gm
-        % Use this for gm blurring
-        system([cfg.fsldir,'fslmaths ',gm,' -thr .50 -bin gm50_bin']);
+        % Binarise WM/CSF masks following normalisation.
+        % Normalisation often introduces non-binary non-zero elements in binary maps
+        for i = 1:length(wm); system([cfg.fsldir,'fslmaths ',wm{i},' -bin ',wm{i}]); end
+        for i = 1:length(csf); system([cfg.fsldir,'fslmaths ',csf{i},' -bin ',csf{i}]); end
 
-        % retain anything with >=1% probability of being gm
-        % This is just to remove gm overlap in wm/csf masks
-        system([cfg.fsldir,'fslmaths ',gm,' -thr .01 -bin gm01_bin']);
-        % retain only voxels with >=99% probability of wm
-        system([cfg.fsldir,'fslmaths ',wm,' -thr .99 -bin wm99_bin']);
-        % retain only voxels with >=99% probability of csf
-        system([cfg.fsldir,'fslmaths ',csf,' -thr .99 -bin csf99_bin']);
+        wmmask = wm{end};
+        % Check whether the final eroded WM mask has no voxels
+        [hdr,data] = read(wmmask);
+        if sum(data(:) > 0) < 5;
+            fprintf(1, '\t\t WARNING! the eroded WM mask has too few voxels. Checking previous erosion steps.\n');
+            breakloop = 0;
+            i = length(wm)-1;
+            while breakloop == 0
+                [hdr,data_temp] = read(wm{i});
+                if sum(data_temp(:) > 0) >= 5;
+                    wmmask = wm{i};
+                    fprintf(1, '\t\t New WM is erosion %u \n', i);
+                    breakloop = 1;
+                end
+                i = i - 1;
+            end
+        end
 
-        % remove overlap between gm and white and csf masks
-        system([cfg.fsldir,'fslmaths gm01_bin -mul -1 -add 1 gm01_inv']);
-        system([cfg.fsldir,'fslmaths wm99_bin -mul gm01_inv wm_final']);
-        system([cfg.fsldir,'fslmaths csf99_bin -mul gm01_inv csf_final']);
-
-        % erode
-        % system([cfg.fsldir,'fslmaths wm_final -ero wm_final']);
-        % system([cfg.fsldir,'fslmaths csf_final -ero csf_final']);
+        csfmask = csf{end};
+        % Check whether the final eroded CSF mask has no voxels
+        [hdr,data] = read(csfmask);
+        if sum(data(:) > 0) < 5;
+            fprintf(1, '\t\t WARNING! the eroded CSF mask has too few voxels. Checking previous erosion steps.\n');
+            [hdr,data_temp] = read(csf{1});
+            if sum(data_temp(:) > 0) < 5;
+                error('\t\t There are no CSF voxels... please check subject data.\n')
+            elseif sum(data_temp(:) > 0) >= 5;
+                fprintf(1, '\t\t New CSF is erosion 1 \n');
+                csfmask = csf{1};
+            end
+        end
 
         gmmask = 'gm50_bin.nii';
-        wmmask = 'wm_final.nii';
-        csfmask = 'csf_final.nii';
-
-    % ------------------------------------------------------------------------------
-    % Detrend EPI
-    % ------------------------------------------------------------------------------
-        if cfg.detr == 1
-            fprintf(1,'\n\t\t ----- Detrending ----- \n\n')
-            cd(cfg.preprodir)
-
-            DetrendIn = normEPI;
-            DetrendOut = ['d',DetrendIn];
-
-            % create separate directory for REST detrend function
-            dtdir = [cfg.preprodir,'temp'];
-            mkdir(dtdir)
-            % move 4d file to directory
-            movefile([cfg.preprodir,DetrendIn],dtdir,'f')
-            
-            switch cfg.WhichNii
-                case '4D'
-                    % detrend epis using rest
-                    cd(cfg.preprodir)
-                    rest_detrend(dtdir, '_detrend')
-                    
-                    % Move 4D file back to cfg.preprodir
-                    movefile([dtdir,'/',DetrendIn],cfg.preprodir,'f')
-                case '3D'
-                    % Split 4D file in 3D
-                    cd(dtdir)
-                    spm_file_split(DetrendIn)
-                    
-                    % Move 4D file back to cfg.preprodir
-                    movefile(DetrendIn,cfg.preprodir,'f')
-
-                    % detrend epis using rest
-                    cd(cfg.preprodir)
-                    rest_detrend(dtdir, '_detrend')
-
-                    % delete 3D files
-                    cd(dtdir)
-                    delete([DetrendIn(1:end-4),'*nii'])
-            end
-
-            % move output file back to cfg.preprodir
-            movefile([dtdir,'_detrend/detrend_4DVolume.nii'],[cfg.preprodir,DetrendOut],'f')
-
-            cd(cfg.preprodir)
-            rmdir('temp','s')
-            rmdir('temp_detrend','s')
-        elseif cfg.detr == 0
-            DetrendOut = normEPI;
-        end
+        system([cfg.fsldir,'fslmaths ',gm,' -thr .50 -bin ',gmmask]);
 
     % ------------------------------------------------------------------------------
     % 4D intensity normalisation
     % ------------------------------------------------------------------------------
-        IntNormIn = DetrendOut;
+        IntNormIn = normEPI;
 
         if cfg.intnorm == 1
             fprintf(1,'\n\t\t ----- EPI intensity normalisation ----- \n\n')
@@ -468,11 +507,63 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
             
             IntensityNormalise(IntNormIn)
 
-            % Get dvars and save to .mat
+            % Get dvars
             dvarsExtract = IntNormOut;
             dvars = GetDVARS(dvarsExtract,BrainMask);
+            dlmwrite('dvars.txt',dvars)
+
         elseif cfg.intnorm == 0
             IntNormOut = IntNormIn;
+        end
+
+    % ------------------------------------------------------------------------------
+    % Demean & Detrend EPI
+    % ------------------------------------------------------------------------------
+        if cfg.detr == 1
+            fprintf(1,'\n\t\t ----- Detrending ----- \n\n')
+            cd(cfg.preprodir)
+
+            DetrendIn = IntNormOut;
+            DetrendOut = ['d',DetrendIn];
+
+            % load
+            [hdr,data] = read(DetrendIn);
+            
+            % reshape to 2d
+            dim = size(data);
+            data = reshape(data,[],dim(4));
+
+            % Detrend with all data
+            [data_out,~] = JP14_demean_detrend(data);
+            data_out = reshape(data_out,dim);
+            write(hdr,data_out,DetrendOut)
+
+            % ------------------------------------------------------------------------------
+            % Scrubbing (Power et al., 2014. NeuroImage) 
+            % ------------------------------------------------------------------------------
+            % get FD Power
+            mfile = dir([cfg.preprodir,'raw_mov/rp*.txt']);
+            mov = dlmread([cfg.preprodir,'raw_mov/',mfile(1).name]);
+            fd = GetFDPower(mov);
+            dlmwrite('fdPower.txt',fd)
+            
+            % Create Power temporal mask
+            fdThr = 0.2;
+            dvarsThr = 20;
+            [scrubmask, exclude] = JP14_GetScrubMask(fd,dvars,cfg.TR,fdThr,dvarsThr);
+            dlmwrite('JP14_ScrubMask.txt',scrubmask)
+
+            % Detrend including censor mask
+            if ~exclude
+                [data_out,~] = JP14_demean_detrend(data,~scrubmask(:,2));
+                data_out = reshape(data_out,dim);
+                write(hdr,data_out,['jp14',DetrendOut])
+            elseif exclude
+                fprintf(1, '\t\t WARNING! There was not enough uncensored time points to perform scrubbing.\n');
+            end
+
+        elseif cfg.detr == 0
+            DetrendOut = IntNormOut;
         end
 
     % ------------------------------------------------------------------------------
@@ -481,55 +572,39 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
         fprintf('\n\t\t ----- Spatial smoothing ----- \n\n');
         cd(cfg.preprodir)
 
-        SmoothIn = IntNormOut;
+        SmoothIn = DetrendOut;
 
         % Whole brain
-        system([cfg.afnidir,'3dBlurInMask -input ',SmoothIn,' -FWHM ',num2str(cfg.kernel),' -mask ',cfg.preprodir,BrainMask,' -prefix s']);
-        % convert to nifti
-        system([cfg.afnidir,'3dAFNItoNIFTI s+tlrc']);
-        % delete afni outputs
-        delete('s+tlrc*')
-        % rename output file
-        movefile('s.nii',['s_',SmoothIn])
+        % system([cfg.afnidir,'3dBlurInMask -input ',SmoothIn,' -FWHM ',num2str(cfg.kernel),' -mask ',cfg.preprodir,BrainMask,' -prefix sbrain']);
+        % % convert to nifti
+        % system([cfg.afnidir,'3dAFNItoNIFTI sbrain*']);
+        % % rename output file
+        % movefile('sbrain.nii',['s',SmoothIn])
+        SmoothEPI(SmoothIn,cfg.kernel,tN)
 
-        % ------------------------------------------------------------------------------
-        % Tissue specific smoothing
-        % ------------------------------------------------------------------------------
-        % GM
-        system([cfg.afnidir,'3dBlurInMask -input ',SmoothIn,' -FWHM ',num2str(cfg.kernel),' -mask ',cfg.t1dir,gmmask,' -prefix sgm']);
-        % convert to nifti
-        system([cfg.afnidir,'3dAFNItoNIFTI sgm+tlrc']);
-        % delete afni outputs
-        delete('sgm+tlrc*')
-        % rename output file
-        movefile('sgm.nii',['sgm_',SmoothIn])       
+        if ~exclude
+            % % Also smoothed the JP14 detrended data
+            % system([cfg.afnidir,'3dBlurInMask -input jp14',SmoothIn,' -FWHM ',num2str(cfg.kernel),' -mask ',cfg.preprodir,BrainMask,' -prefix jp14sbrain']);
+            % % convert to nifti
+            % system([cfg.afnidir,'3dAFNItoNIFTI jp14sbrain*']);
+            % % rename output file
+            % movefile('jp14sbrain.nii',['sjp14',SmoothIn])
+            SmoothEPI(['jp14',SmoothIn],cfg.kernel,tN)
+        end
 
-        % WM
-        system([cfg.afnidir,'3dBlurInMask -input ',SmoothIn,' -FWHM ',num2str(cfg.kernel),' -mask ',cfg.t1dir,wmmask,' -prefix swm']);
-        % convert to nifti
-        system([cfg.afnidir,'3dAFNItoNIFTI swm+tlrc']);
         % delete afni outputs
-        delete('swm+tlrc*')
-        % rename output file
-        movefile('swm.nii',['swm_',SmoothIn])  
-
-        % CSF
-        system([cfg.afnidir,'3dBlurInMask -input ',SmoothIn,' -FWHM ',num2str(cfg.kernel),' -mask ',cfg.t1dir,csfmask,' -prefix scsf']);
-        % convert to nifti
-        system([cfg.afnidir,'3dAFNItoNIFTI scsf+tlrc']);
-        % delete afni outputs
-        delete('scsf+tlrc*')
-        % rename output file
-        movefile('scsf.nii',['scsf_',SmoothIn])
+        % delete('*.BRIK')
+        % delete('*.HEAD')
 
     % ------------------------------------------------------------------------------
     % Outputs
     % ------------------------------------------------------------------------------
         outEPI{1} = SmoothIn;
-        outEPI{2} = ['s_',SmoothIn];
-        outEPI{3} = ['sgm_',SmoothIn];
-        outEPI{4} = ['swm_',SmoothIn];
-        outEPI{5} = ['scsf_',SmoothIn];
+        outEPI{2} = ['s',SmoothIn];
+        if ~exclude
+            outEPI{3} = ['jp14',SmoothIn];
+            outEPI{4} = ['sjp14',SmoothIn];
+        end
 
     fprintf('\n\t\t ----- Base preprocessing complete ----- \n\n');
 end
