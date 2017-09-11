@@ -12,7 +12,7 @@ function [out] = GetDerivatives(ts,getSquares)
      end
 
      % detrend
-     ts_detr = detrend(ts,'linear');
+     ts_detr = detrend(ts);
 
      % temporal derivatives
      ts_diff = [
