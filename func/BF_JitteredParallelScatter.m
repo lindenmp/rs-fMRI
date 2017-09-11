@@ -78,6 +78,13 @@ else
     % fprintf(1,'Using custom colors\n');
 end
 
+% add zero line
+if ~isfield(extraParams,'add0Line')
+    add0Line = false;
+else
+    add0Line = extraParams.add0Line;
+end
+
 % ------------------------------------------------------------------------------
 
 % Reset random number generator for reproducibility:
@@ -160,6 +167,13 @@ for i = 1:numGroups
                             % 'color',brightColor,'LineWidth',2)
     % plot([customOffset + i - offsetRange/2,customOffset + i + offsetRange/2],(nanmean(dataCell{i})+nanstd(dataCell{i}))*ones(2,1),'--',...
                             % 'color',brightColor,'LineWidth',2)
+end
+
+% ------------------------------------------------------------------------------
+% Add dotted line at 0
+% ------------------------------------------------------------------------------
+if add0Line
+    plot([0:numGroups+1],zeros(1,numGroups+2),':','Color','k')
 end
 
 end
