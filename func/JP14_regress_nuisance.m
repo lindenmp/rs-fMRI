@@ -6,24 +6,24 @@
 % Notes:
 % 	this functions assumes that time is on the second dimension.
 % 	But it assumes time is the first dimension on the noiseTS matrix.
-% 	it also assumes that 1 = volumes to keep in scrubmask, not to discard.
+% 	it also assumes that 1 = volumes to keep in tmask, not to discard.
 % ------------------------------------------------------------------------------
-function [data_out zb newregs] = JP14_regress_nuisance(data,noiseTS,scrubmask)
+function [data_out zb newregs] = JP14_regress_nuisance(data,noiseTS,tmask)
 
 	[vox ts] = size(data);
 	
 	if nargin < 3;
-		scrubmask = ones(ts,1);
+		tmask = ones(ts,1);
 	end
 
 	% make logical
-	scrubmask = logical(scrubmask);
+	tmask = logical(tmask);
 
 	% ------------------------------------------------------------------------------
 	% Regressors
 	% ------------------------------------------------------------------------------
 	% First, create regressors using the censored data
-	zlinreg = noiseTS(scrubmask,:); % only censored data
+	zlinreg = noiseTS(tmask,:); % only censored data
 	[zlinreg DMDTB] = JP14_demean_detrend(zlinreg'); % obtain fits for censored data
 	zlinreg = zlinreg';
 	zlinreg = zscore(zlinreg);
@@ -38,7 +38,7 @@ function [data_out zb newregs] = JP14_regress_nuisance(data,noiseTS,scrubmask)
 	% fMRI data
 	% ------------------------------------------------------------------------------
 	% demean and detrend the censored data
-	data_c = data(:,scrubmask);
+	data_c = data(:,tmask);
 	[data_c data_c_beta] = JP14_demean_detrend(data_c);
 
 	% calculate betas on the censored data

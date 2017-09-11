@@ -5,25 +5,16 @@
 % Adapted by Linden Parkes for use in Parkes et al., 2017. bioRxiv
 % This produces interpolated fMRI time series using censored data
 % ------------------------------------------------------------------------------
-function [H,f,s,c,tau,w] = JP14_getTransform(t,data,TH,Tr,ofac,hifac)
+function [H,f,s,c,tau,w] = JP14_getTransform(data,t,scrubmask,ofac,hifac)
 
 	% Inputs
 	% 
-	% t 	- column vector listing the *censored* time points in seconds
+	% data 	- N (num time points) * numVoxels matrix of uncensored fMRI time series data
+	% 
+	% t 	- column vector listing the uncensored time points in seconds
 	%		e.g., t = ([1:N]') * TR;
-	% 		2
-	% 		4
-	% 		6
-	% 		12
-	% 		14
-	% 		16
-	% 		Note the missing time points between 6 and 12
 	% 
-	% data 	- N (num time points) * numVoxels matrix of *censored* fMRI time series data
-	% 
-	% TH 	- column vector listing the *uncensored* time points in seconds
-	% 
-	% Tr 	- TR of fMRI sequences in seconds. e.g., TR = 2
+	% scrubmask 	- logical where 1 = volumes to censor
 	% 
 	% ofac 	- oversampling frequency (generally >=4 )
 	% hifac - highest frequency allowed
@@ -34,6 +25,23 @@ function [H,f,s,c,tau,w] = JP14_getTransform(t,data,TH,Tr,ofac,hifac)
 	% 		original time series. That is, this is NOT the original time series + interpolated
 	% 		volumes. It is simply the reconstructed time series.
 
+	if nargin < 5
+		hifac = 8;
+	end
+
+	if nargin < 4
+		ofac = 1;
+	end
+
+	% store and transpose uncensored time points for later (see inverse function below)
+	th = t';
+	
+	% make logical
+	scrubmask = logical(scrubmask);
+	% censor data
+	data = data(~scrubmask,:);
+	% censor t
+	t = t(~scrubmask,:);
 
 	N = size(data,1); %Number of time points
 	T = max(t) - min(t); %Total time span
@@ -74,8 +82,7 @@ function [H,f,s,c,tau,w] = JP14_getTransform(t,data,TH,Tr,ofac,hifac)
 	clear numerator denominator sterm Smult S_final_new
 
 	% The inverse function to re-construct the original time series
-	Time = TH';
-	T_rep = repmat(Time,[size(f,1),1,size(data,2)]);
+	T_rep = repmat(th,[size(f,1),1,size(data,2)]);
 	% T_rep = bsxfun(@minus,T_rep,tau);
 	% s(200) = s(199);
 	w = 2*pi*f;
@@ -87,7 +94,7 @@ function [H,f,s,c,tau,w] = JP14_getTransform(t,data,TH,Tr,ofac,hifac)
 	S = sum(sw_p);
 	C = sum(cw_p);
 	H = C + S;
-	H = reshape(H,size(Time,2),size(data,2));
+	H = reshape(H,size(th,2),size(data,2));
 
 	%Normalize the reconstructed spectrum, needed when ofac > 1
 	Std_H = std(H);
