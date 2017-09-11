@@ -1,4 +1,4 @@
-function [noiseTS,outdir] = prepro_noise(cfg)
+function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
     % 1 - Correct noise in EPI output from step 11 of prepro_base script (or output from step 12 in case of ICA-AROMA)
     %       See below for details
     % 2 - Bandpass filter (includes demeaning)
@@ -109,7 +109,7 @@ function [noiseTS,outdir] = prepro_noise(cfg)
     fprintf('\n\t\t ----- Noise correction ----- \n\n');
 
     fprintf(1, '\t\t Subject: %s \n', cfg.subject)
-    fprintf(1, '\t\t Noise correction: %s%s \n', cfg.removeNoise, cfg.suffix);
+    fprintf(1, '\t\t Noise correction: %s \n', cfg.removeNoise);
     fprintf(1, '\t\t Input file: %s \n', cfg.CleanIn);
 
     if cfg.runReg == 1
@@ -123,19 +123,7 @@ function [noiseTS,outdir] = prepro_noise(cfg)
     % ------------------------------------------------------------------------------
     % Setup output directory
     % ------------------------------------------------------------------------------
-        % If the first prefix on the cfg.CleanIn file is an 's' 
-        % then assume that the file has been smoothed during prepro_base
-        % and set outdir to include the s prefix to denote running noise correction 
-        % on smoothed data.
-        if cfg.CleanIn(1) == 's'
-            outdir = [cfg.preprodir,'s',cfg.removeNoise,'/']; 
-        else
-            outdir = [cfg.preprodir,cfg.removeNoise,'/']; 
-        end
-
-        if ~isempty(cfg.suffix)
-            outdir = [outdir(1:end-1),cfg.suffix,'/'];
-        end
+        outdir = [cfg.preprodir,cfg.removeNoise,'/']; 
 
         if exist(outdir) == 0
             fprintf(1,'\n\t\t Initialising outdir\n')
@@ -198,6 +186,7 @@ function [noiseTS,outdir] = prepro_noise(cfg)
 
         % Physiological noise
         if any(strmatch('2P',cfg.removeNoiseSplit,'exact')) == 1 || ...
+            any(strmatch('4P',cfg.removeNoiseSplit,'exact')) == 1 || ...
             any(strmatch('8P',cfg.removeNoiseSplit,'exact')) == 1
             runPhys = 1;
         else
@@ -206,6 +195,7 @@ function [noiseTS,outdir] = prepro_noise(cfg)
 
         % GSR
         if any(strmatch('GSR',cfg.removeNoiseSplit,'exact')) == 1 || ...
+            any(strmatch('2GSR',cfg.removeNoiseSplit,'exact')) == 1 || ...
             any(strmatch('4GSR',cfg.removeNoiseSplit,'exact')) == 1
             runGSR = 1;
         else
@@ -223,6 +213,13 @@ function [noiseTS,outdir] = prepro_noise(cfg)
             runaCC = 0;
         end
 
+        % Power 2014 scrubbing
+        if any(strmatch('JP14Scrub',cfg.removeNoiseSplit,'exact')) == 1
+            runJP14Scrub = 1;
+        else
+            runJP14Scrub = 0;
+        end
+
         % Spike regression
         if any(strmatch('SpikeReg',cfg.removeNoiseSplit,'exact')) == 1
             runSpikeReg = 1;
@@ -234,15 +231,52 @@ function [noiseTS,outdir] = prepro_noise(cfg)
     % 0) ICA AROMA
     % ------------------------------------------------------------------------------
         if runICA == 1
-            % set FSL output to nifti_gz because ICA-AROMA requires it!!!!
-            setenv('FSLOUTPUTTYPE','NIFTI_GZ');
 
-            if cfg.runReg == 1
-                str = ['python2.7 ',cfg.scriptdir_ICA,'ICA_AROMA.py -in ',cfg.preprodir,cfg.CleanIn,' -out ',outdir,' -mc ',cfg.preprodir,'rp*.txt -m ',cfg.preprodir,cfg.BrainMask,' -tr ',num2str(cfg.TR)];
-                system(str);
+            if runJP14Scrub == 1
+                ICA_outdir = [cfg.preprodir,'JP14_ICA-AROMA_output/'];
+            elseif runJP14Scrub == 0
+                ICA_outdir = [cfg.preprodir,'ICA-AROMA_output/'];
+            end
 
-                % unzip
-                system('gunzip -rf denoised_func_data_nonaggr.nii.gz');
+            % First check if ICA-AROMA has been run already
+            if exist(ICA_outdir) == 0
+                % If it doesn't, run ICA-AROMA
+                
+                % set FSL output to nifti_gz because ICA-AROMA requires it!!!!
+                setenv('FSLOUTPUTTYPE','NIFTI_GZ');
+
+                fprintf(1,'\n\t\t Initialising ICA_outdir\n')
+                mkdir(ICA_outdir)
+                cd(ICA_outdir)
+    
+                if cfg.runReg == 1
+                    str = ['python2.7 ',cfg.scriptdir_ICA,'ICA_AROMA.py -in ',cfg.preprodir,cfg.CleanIn,' -out ',ICA_outdir,' -mc ',cfg.preprodir,'raw_mov/rp*.txt -m ',cfg.preprodir,cfg.BrainMask,' -tr ',num2str(cfg.TR)];
+                    system(str);
+
+                    % unzip
+                    system('gunzip -rf denoised_func_data_nonaggr.nii.gz');
+
+                    fprintf(1, '\n\t\t !!!! Overriding inputs for ICA-AROMA !!!! \n\n');
+                    % redefine clean in
+                    CleanInNew = ['ica_',cfg.CleanIn];
+                    cfg.CleanIn = CleanInNew;
+                    % redefine wm/csf files
+                    cfg.NuisanceIn_wm = CleanInNew;
+                    cfg.NuisanceIn_csf = CleanInNew;
+
+                    % rename output file
+                    movefile('denoised_func_data_nonaggr.nii',[cfg.preprodir,cfg.CleanIn])
+
+                elseif cfg.runReg == 0
+                    str = ['python2.7 ',cfg.scriptdir_ICA,'ICA_AROMA.py -in ',cfg.preprodir,cfg.CleanIn,' -out ',ICA_outdir,' -mc ',cfg.preprodir,'raw_mov/rp*.txt -m ',cfg.preprodir,cfg.BrainMask,' -tr ',num2str(cfg.TR),' -den no'];
+                    system(str);
+                end
+
+                % Set FSL output back to nifti
+                setenv('FSLOUTPUTTYPE','NIFTI');
+            elseif exist(ICA_outdir) == 7
+                fprintf(1,'\n\t\t ICA-AROMA has already been done: skipping \n')
+                cd(ICA_outdir)
 
                 fprintf(1, '\n\t\t !!!! Overriding inputs for ICA-AROMA !!!! \n\n');
                 % redefine clean in
@@ -252,24 +286,19 @@ function [noiseTS,outdir] = prepro_noise(cfg)
                 cfg.NuisanceIn_wm = CleanInNew;
                 cfg.NuisanceIn_csf = CleanInNew;
 
-                % Move ICA-AROMA output file up a step in the directory and rename
-                movefile('denoised_func_data_nonaggr.nii',[cfg.preprodir,cfg.CleanIn])
-
-            elseif cfg.runReg == 0
-                str = ['python2.7 ',cfg.scriptdir_ICA,'ICA_AROMA.py -in ',cfg.preprodir,cfg.CleanIn,' -out ',outdir,' -mc ',cfg.preprodir,'rp*.txt -m ',cfg.preprodir,cfg.BrainMask,' -tr ',num2str(cfg.TR),' -den no'];
-                system(str);
+                % move ICA cleaned file
+                movefile(cfg.CleanIn,cfg.preprodir)
             end
-
-            % Set FSL output back to nifti
-            setenv('FSLOUTPUTTYPE','NIFTI');
+            % Change back to primary outdir
+            cd(outdir)
         end
 
     % ------------------------------------------------------------------------------
     % 1) Motion parameters
     % ------------------------------------------------------------------------------
         % read in motion
-        mfile = dir([cfg.preprodir,'rp*txt']);
-        mov = dlmread([cfg.preprodir,mfile(1).name]);
+        mfile = dir([cfg.preprodir,'raw_mov/rp*.txt']);
+        mov = dlmread([cfg.preprodir,'raw_mov/',mfile(1).name]);
 
     % ------------------------------------------------------------------------------
     % 2) Physiological time series
@@ -282,10 +311,36 @@ function [noiseTS,outdir] = prepro_noise(cfg)
             system(str); 
             wmTS = dlmread('wmTS.txt');
 
+            % also get the other less eroded wm masks.
+            % Note, this code is a bit lazy and will end up with a duplicate .txt file.
+            % e.g., wmTS.txt is probablity be identical to wm_e5_TS.txt
+            for i = 1:length(cfg.wm)
+                [hdr,data] = read([cfg.t1dir,cfg.wm{i}]);
+                if any(data(:)) == 1;
+                    str = [cfg.fsldir,'fslmeants -i ',cfg.preprodir,cfg.NuisanceIn_wm,' -o wm_e',num2str(i),'_TS.txt -m ',cfg.t1dir,cfg.wm{i}];
+                    system(str); 
+                end
+            end                
+
             % CSF
             str = [cfg.fsldir,'fslmeants -i ',cfg.preprodir,cfg.NuisanceIn_csf,' -o csfTS.txt -m ',cfg.t1dir,cfg.csfmask];
             system(str); 
             csfTS = dlmread('csfTS.txt');
+
+            for i = 1:length(cfg.csf)
+                [hdr,data] = read([cfg.t1dir,cfg.csf{i}]);
+                if any(data(:)) == 1;
+                    str = [cfg.fsldir,'fslmeants -i ',cfg.preprodir,cfg.NuisanceIn_csf,' -o csf_e',num2str(i),'_TS.txt -m ',cfg.t1dir,cfg.csf{i}];
+                    system(str); 
+                end
+            end
+
+            % Gray Matter
+            % Note, not used for denoising.
+            % We only retain a pre-cleaned GM signal so we can examinine wm-gm correlations as a function of wm erosion (Power et al., 2017)
+            % Note correlation to WM will likely be 0.1-0.2 higher than in Power et al., because Power uses the ribbon only to get GM (ribbon is better)
+            str = [cfg.fsldir,'fslmeants -i ',cfg.preprodir,cfg.CleanIn,' -o gmTS.txt -m ',cfg.t1dir,cfg.gmmask];
+            system(str);             
         end
 
     % ------------------------------------------------------------------------------
@@ -302,11 +357,13 @@ function [noiseTS,outdir] = prepro_noise(cfg)
     % 3) CompCor
     % ------------------------------------------------------------------------------
         if runaCC == 1
+            fprintf(1,'\n\t\t ----- Anatomical CompCor ----- \n\n')
+
             % 1) White Matter
             if aCCversion == 5
-                fprintf(1, 'Running aCompCor: white matter. 5 PCs. \n');
+                fprintf(1, '\t\t Running aCompCor: white matter. 5 PCs. \n');
             elseif aCCversion == 50
-                fprintf(1, 'Running aCompCor: white matter. 50%% PCs. \n');
+                fprintf(1, '\t\t Running aCompCor: white matter. 50%% PCs. \n');
             end
 
             % Check if tissue map is empty
@@ -330,15 +387,19 @@ function [noiseTS,outdir] = prepro_noise(cfg)
                     wm_aCompCor = CompCor(wmTS,'50pc');
                 end
 
+                % Save out number of components
+                aCC_num_wm = size(wm_aCompCor,2);
+                dlmwrite('aCC_num_wm.txt',aCC_num_wm)
+
                 clear wmTS % clear to save memory
             end
             clear temp
 
             % 2) CSF
             if aCCversion == 5
-                fprintf(1, 'Running aCompCor: csf. 5 PCs. \n');
+                fprintf(1, '\t\t Running aCompCor: csf. 5 PCs. \n');
             elseif aCCversion == 50
-                fprintf(1, 'Running aCompCor: csf. 50%% PCs. \n');
+                fprintf(1, '\t\t Running aCompCor: csf. 50%% PCs. \n');
             end
 
             % Check if tissue map is empty
@@ -362,6 +423,10 @@ function [noiseTS,outdir] = prepro_noise(cfg)
                     csf_aCompCor = CompCor(csfTS,'50pc');
                 end
 
+                % Save out number of components
+                aCC_num_csf = size(csf_aCompCor,2);
+                dlmwrite('aCC_num_csf.txt',aCC_num_csf)
+
                 clear csfTS % clear to save memory
             end
             clear temp
@@ -383,14 +448,26 @@ function [noiseTS,outdir] = prepro_noise(cfg)
         end
     
     % ------------------------------------------------------------------------------
-    % Generate noiseTS variable for fsl_regfilt
+    % Generate noiseTS
     % ------------------------------------------------------------------------------
         fprintf(1,'\n\t\t ----- Generating noiseTS ----- \n\n');
 
         % If ICA wasn't run, then start noiseTS with movement params from realignment
         if runICA == 0
             fprintf(1,'\t\t Adding motion params \n');
-            noiseTS = mov;
+
+            % Get expansions for motion
+            if any(strmatch('24P',cfg.removeNoiseSplit,'exact')) == 1
+                fprintf(1,'\t\t Getting derivatives and squares \n');
+                noiseTS = GetDerivatives(mov);
+            elseif any(strmatch('12P',cfg.removeNoiseSplit,'exact')) == 1
+                fprintf(1,'\t\t Getting derivatives only \n');
+                noiseTS = GetDerivatives(mov,0);
+            else
+                % Otherwise, just detrend (note, detrending done as part of GetDerivatives.m)
+                fprintf(1,'\t\t Detrending only \n');
+                noiseTS = detrend(mov);                
+            end
         % If it was run, then we dont regress out mov params
         elseif runICA == 1
             fprintf(1,'\t\t Skipping motion params \n');
@@ -400,32 +477,43 @@ function [noiseTS,outdir] = prepro_noise(cfg)
         % concatenate phys time series
         if runPhys == 1
             fprintf(1,'\t\t Adding phys signals \n');
-            noiseTS = [noiseTS wmTS csfTS];
+            physTS = [wmTS csfTS];
+
+            if any(strmatch('8P',cfg.removeNoiseSplit,'exact')) == 1
+                fprintf(1,'\t\t Getting derivatives and squares \n');
+                physTS = GetDerivatives(physTS);
+            elseif any(strmatch('4P',cfg.removeNoiseSplit,'exact')) == 1
+                fprintf(1,'\t\t Getting derivatives only \n');
+                physTS = GetDerivatives(physTS,0);
+            else
+                % Otherwise, just detrend (note, detrending done as part of GetDerivatives.m)
+                fprintf(1,'\t\t Detrending only \n');
+                physTS = detrend(physTS);                
+            end
+
+            noiseTS = [noiseTS physTS];
         end
 
         % concatenate global time series
         if runGSR == 1
             fprintf(1,'\t\t Adding global signal \n');
+
+            if any(strmatch('4GSR',cfg.removeNoiseSplit,'exact')) == 1
+                fprintf(1,'\t\t Getting derivatives and squares \n');
+                gsTS = GetDerivatives(gsTS);
+            elseif any(strmatch('2GSR',cfg.removeNoiseSplit,'exact')) == 1
+                fprintf(1,'\t\t Getting derivatives only \n');
+                gsTS = GetDerivatives(gsTS,0);
+            else
+                % Otherwise, just detrend (note, detrending done as part of GetDerivatives.m)
+                fprintf(1,'\t\t Detrending only \n');
+                gsTS = detrend(gsTS);                
+            end
+
             noiseTS = [noiseTS gsTS];
         end
 
-        % If expanded model is selected, get derivatives and squares
-        if any(strmatch('24P',cfg.removeNoiseSplit,'exact')) == 1 | ...
-            any(strmatch('8P',cfg.removeNoiseSplit,'exact')) == 1 | ...
-            any(strmatch('4GSR',cfg.removeNoiseSplit,'exact')) == 1
-            fprintf(1,'\t\t Getting derivatives and squares \n');
-            noiseTS = GetDerivatives(noiseTS);
-        elseif any(strmatch('12P',cfg.removeNoiseSplit,'exact')) == 1
-            fprintf(1,'\t\t Getting derivatives only \n');
-            noiseTS = GetDerivatives(noiseTS,0);
-        else
-            % Otherwise, just detrend (note, detrending done as part og GetDerivatives.m)
-            fprintf(1,'\t\t Detrending only \n');
-            noiseTS = detrend(noiseTS,'linear');
-        end
-
         % We dont get expansion terms on spike regressors or aCompCor
-        % concatenate the spike regressors and compcor stuff after derivatives.
         
         % concatenate aCompCor
         if runaCC == 1
@@ -440,34 +528,33 @@ function [noiseTS,outdir] = prepro_noise(cfg)
         end
 
     % ------------------------------------------------------------------------------
-    % Clean data: fsl_regfilt
+    % Nuisance regression
     % ------------------------------------------------------------------------------
         if cfg.runReg == 1
-            fprintf(1,'\n\t\t ----- Running nuisance regression ----- \n\n');
-            
-            % also, write out noise signals as text file (for regfilt)
-            dlmwrite('noiseTS.txt',noiseTS,'delimiter','\t','precision','%.6f');
 
-            % clean data with fsl_regfilt
-            % Linden: x is a variable that stores the -f flag input for fsl_regfilt.
-            %     e.g., -f 1,2,3,4,5
-            x = regexprep(num2str(1:size(noiseTS,2)),' ',',');
-            x = regexprep(x,',,,',',');
-            x = regexprep(x,',,',',');
-            x = ['"',x,'"'];
+            [hdr,data] = read([cfg.preprodir,cfg.CleanIn]);
 
-            str = [cfg.fsldir,'fsl_regfilt -i ',cfg.preprodir,cfg.CleanIn,' -o epi_clean -d noiseTS.txt -f ',x];
-            system(str);
+            % reshape to 2d
+            dim = size(data);
+            data = reshape(data,[],dim(4));
 
-            clear x
-
-            system('gunzip -rf *epi_clean*');
-
-            % ------------------------------------------------------------------------------
-            if runICA == 1
-                % Move back
-                movefile([cfg.preprodir,cfg.CleanIn],outdir)
+            if runJP14Scrub == 1
+                fprintf(1,'\n\t\t ----- Running nuisance regression with scrubbing ----- \n\n');
+                % Read in scrubbing mask
+                scrubmask = logical(dlmread([cfg.preprodir,'JP14_ScrubMask.txt']));
+                [data_out zb noiseTSz] = JP14_regress_nuisance(data,noiseTS,~scrubmask(:,2));
+            elseif runJP14Scrub == 0
+                fprintf(1,'\n\t\t ----- Running nuisance regression without scrubbing ----- \n\n');
+                [data_out zb noiseTSz] = JP14_regress_nuisance(data,noiseTS);
             end
+
+            CleanOut = 'epi_clean.nii';
+            data_out = reshape(data_out,dim);
+            write(hdr,data_out,CleanOut)            
+            
+            % write out noiseTS incase people want to model nuisance at SPM
+            dlmwrite('noiseTS.txt',noiseTS,'delimiter','\t','precision','%.6f');
+            dlmwrite('noiseTSz.txt',noiseTSz,'delimiter','\t','precision','%.6f');
         elseif cfg.runReg == 0
             fprintf(1,'\n\t\t ----- Skipping nuisance regression ----- \n\n');
         end
@@ -475,80 +562,106 @@ function [noiseTS,outdir] = prepro_noise(cfg)
     % ------------------------------------------------------------------------------
     % Bandpass filter with REST
     % ------------------------------------------------------------------------------
-        fprintf(1,'\n\t\t ----- Running bandpass filtering ----- \n\n');
-
         if cfg.runReg == 1
-            FiltIn = 'epi_clean.nii';
+            FiltIn = CleanOut;
         elseif cfg.runReg == 0
             FiltIn = cfg.CleanIn;
             copyfile([cfg.preprodir,FiltIn],outdir)
         end
 
-        CUTNUMBER = 1;
+        % load nifti
+        [hdr,data] = read(FiltIn);
 
-        cd(outdir)
-        % creater input directory for REST function
-        mkdir('temp');
-        filtdir = [outdir,'temp/'];
-        movefile(FiltIn,filtdir,'f');
-        
-        switch cfg.WhichNii
-            case '4D'
-                % bandpass epis using rest
-                rest_bandpass(filtdir,cfg.TR,cfg.LowPass,cfg.HighPass,'No',[cfg.preprodir,cfg.BrainMask],CUTNUMBER)
+        % reshape to 2d
+        dim = size(data);
+        data = reshape(data,[],dim(4));
+        % Put time on first dimension
+        data = data';
+        numVoxels = size(data,2);
 
-                % Move output files back to outdir
-                movefile('temp/*',outdir)
-                movefile('temp_filtered/*',outdir)
-                rmdir('temp','s')
-                rmdir('temp_filtered','s')
+        % load in brain mask
+        [hdr_mask,data_mask] = read([cfg.preprodir,cfg.BrainMask]);
+        data_mask = reshape(data_mask,[],1);
+        data_mask = logical(data_mask);
 
-                % Rename
-                movefile('Filtered_4DVolume.nii','epi_prepro.nii')
+        % mask out non-brain voxels
+        % Note, we only do this to speed up the interpolation step that is run only for JP14Scrub method
+        data = data(:,data_mask);
 
-            case '3D'
-                % split EPI into 3D files
-                cd(filtdir)
-                spm_file_split(FiltIn)
+        if runJP14Scrub == 1
+            fprintf(1,'\n\t\t ----- Running bandpass filtering with interpolation ----- \n\n');
+            % Read in scrubbing mask
+            scrubmask = logical(dlmread([cfg.preprodir,'JP14_ScrubMask.txt']));
+            TRtimes = ([1:cfg.tN]')*cfg.TR;
 
-                % Move 4D file back to outdir
-                movefile(FiltIn,outdir,'f')
+            voxbinsize = 500;
+            voxbin = 1:voxbinsize:size(data,2);
+            voxbin = [voxbin size(data,2)];
 
-                cd(outdir)
-                % bandpass epis using rest
-                rest_bandpass(filtdir,cfg.TR,cfg.LowPass,cfg.HighPass,'No',[cfg.preprodir,cfg.BrainMask],CUTNUMBER)
+            data_surrogate = zeros(size(data,1),size(data,2));
 
-                % Move output files back to outdir
-                rmdir(filtdir,'s')
-                movefile('temp_filtered/*',outdir)
-                rmdir('temp_filtered','s')
+            for v = 1:numel(voxbin)-1 % this takes huge RAM if all voxels
+                fprintf(1, 'Processing voxel bin %u/%u\n', v,numel(voxbin)-1);
+                data_surrogate(:,voxbin(v):voxbin(v+1)) = JP14_getTransform(data(:,voxbin(v):voxbin(v+1)),TRtimes,scrubmask(:,2));
+            end
 
-                % Rename
-                movefile('Filtered_4DVolume.nii','epi_prepro.nii')
+            % insert surrogate data into real data at censored time points
+            data(scrubmask(:,2),:) = data_surrogate(scrubmask(:,2),:);
+        elseif runJP14Scrub == 0
+            fprintf(1,'\n\t\t ----- Running bandpass filtering without interpolation ----- \n\n');
         end
+
+        % bandpass filter the masked data
+        data_filtered = rest_IdealFilter(data, cfg.TR, [cfg.HighPass, cfg.LowPass]);
+
+        % put filtered data back with non-brain voxels 
+        data_out = zeros(cfg.tN,numVoxels);
+        data_out(:,data_mask) = data_filtered;
+
+        % reshape back to 4d
+        data_out = data_out';
+        data_out = reshape(data_out,dim);
+
+        % write nifti
+        FiltOut = 'epi_filtered.nii';
+        write(hdr,data_out,FiltOut)
 
     % ------------------------------------------------------------------------------
     % Spatially smooth the data
     % ------------------------------------------------------------------------------
         switch cfg.smoothing
             case 'after'
-                cd(outdir)
-
                 fprintf('\n\t\t ----- Spatial smoothing ----- \n\n');
 
-                SmoothIn = 'epi_prepro.nii';
+                SmoothIn = FiltOut;
+                SmoothEPI(SmoothIn,cfg.kernel,cfg.tN)
+                movefile(['s',SmoothIn],'epi_prepro.nii')
 
-                str = [cfg.afnidir,'3dBlurInMask -input ',SmoothIn,' -FWHM ',num2str(cfg.kernel),' -mask ',cfg.preprodir,cfg.BrainMask,' -prefix smoothed'];
-                system(str);
-                % convert to nifti
-                system([cfg.afnidir,'3dAFNItoNIFTI smoothed+tlrc']);
-                % delete afni outputs
-                delete('smoothed+tlrc*')
-                % rename output file
-                movefile('smoothed.nii',['s',SmoothIn])
+                % str = [cfg.afnidir,'3dBlurInMask -input ',SmoothIn,' -FWHM ',num2str(cfg.kernel),' -mask ',cfg.preprodir,cfg.BrainMask,' -prefix smoothed'];
+                % system(str);
+                % % convert to nifti
+                % system([cfg.afnidir,'3dAFNItoNIFTI smoothed*']);
+                % % rename output file
+                % movefile('smoothed.nii','epi_prepro.nii')
+
+                % % delete afni outputs
+                % delete('*.BRIK')
+                % delete('*.HEAD')
+
             case 'none'
                 fprintf('\n\t\t !!!! Skipping spatial smoothing !!!! \n\n');
-                % do nothing
+                % Simply rename the filtered epi to epi_prepro.nii so that the final output file is always the same file name
+                movefile(FiltOut,'epi_prepro.nii')
+            case 'before'
+                movefile(FiltOut,'epi_prepro.nii')
+        end
+
+    % ------------------------------------------------------------------------------
+    % Put ICA-AROMA output back in ICA dir
+    % ------------------------------------------------------------------------------
+        if runICA == 1
+            % Move back
+            movefile([cfg.preprodir,cfg.CleanIn],ICA_outdir)
         end
 
     fprintf('\n\t\t ----- Noise correction complete ----- \n\n');
