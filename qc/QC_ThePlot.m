@@ -8,114 +8,85 @@ clear all; close all; clc
 % ------------------------------------------------------------------------------
 % Add paths - edit this section
 % ------------------------------------------------------------------------------
-WhichMASSIVE = 'M3';
-switch WhichMASSIVE
-    case 'M2'
-		funcdir = '/gpfs/M2Home/projects/Monash076/Linden/scripts/rs-fMRI/func/';
-		addpath(funcdir)
-		funcdir1 = '/gpfs/M2Home/projects/Monash076/Linden/scripts/Func/';
-		addpath(funcdir1)
-    case 'M3'
-		funcdir = '/home/lindenmp/kg98/Linden/Scripts/rs-fMRI/func/';
-		addpath(funcdir)
-		funcdir1 = '/home/lindenmp/kg98/Linden/Scripts/Func/';
-		addpath(funcdir1)
-end
+funcdir = '/home/lindenmp/kg98/Linden/Scripts/rs-fMRI/func/';
+addpath(funcdir)
 
 % ------------------------------------------------------------------------------
 % Set string switches
 % ------------------------------------------------------------------------------
-Projects = {'OCDPG','UCLA','NYU_2','M3_COBRE','M3_UCLA','M3_NAMIC'};
-WhichProject = Projects{4};
+Projects = {'Beijing_Zang','UCLA','OCDPG','NYU_2'};
+WhichProject = Projects{1};
 
-WhichNoise = 'sICA-AROMA+2P';
+noiseOptions = {'24P+8P',...
+				'24P+8P+4GSR',...
+				'24P+aCC',...
+				'24P+aCC+4GSR',...
+				'ICA-AROMA+2P',...
+				'ICA-AROMA+2P+GSR',...
+				'24P+8P+4GSR+SpikeReg',...
+				'24P+4P+2GSR+JP14Scrub'};
+
+noiseOptionsNames = {'24HMP+8Phys',...
+					'24HMP+8Phys+4GSR',...
+					'24HMP+aCompCor',...
+					'24HMP+aCompCor+4GSR',...
+					'ICA-AROMA+2Phys',...
+					'ICA-AROMA+2Phys+GSR',...
+					'24HMP+8Phys+4GSR+SpikeReg',...
+					'24HMP+4Phys+2GSR+JP14Scrub'};
+
+numPrePro = length(noiseOptions);
 
 % ------------------------------------------------------------------------------
 % Set project variables
 % ------------------------------------------------------------------------------
+% parentdir = '~/Dropbox/Work/ResProjects/';
+parentdir = '/home/lindenmp/kg98_scratch/Linden/ResProjects/';
 switch WhichProject
 	case 'OCDPG'
-		projdir = '/gpfs/M2Home/projects/Monash076/Linden/OCDPG/';
-		sublist = [projdir,'OCDPG.txt'];
+		projdir = [parentdir,'rfMRI_denoise/OCDPG/'];
+		sublist = [projdir,'M3_OCDPGe.csv'];
 		datadir = [projdir,'data/'];
-		preprostr = '/rfMRI/prepro/';
-		t1str = '/t1/';
-
-		EPI = 'epi_prepro.nii';
-		EPIdvars = 'idbwrdatepi.nii';
-		movParams = 'rp_datepi.txt';
-		t1name = 'ct1.nii';
-		gmMask = ['wc1',t1name];
-		wmMask = ['wc2',t1name];
-		csfMask = ['wc3',t1name];
+        preprostr = '/func/prepro/';
+        t1str = '/anat/';
 
 		TR = 2.5;
 	case 'UCLA'
-		projdir = '/gpfs/M2Home/projects/Monash076/Linden/UCLA/';
-		sublist = [projdir,'UCLA.txt'];
+		projdir = [parentdir,'rfMRI_denoise/UCLA/'];
+		sublist = [projdir,'UCLA.csv'];
 		datadir = [projdir,'data/'];
-        preprostr = '/rfMRI/prepro/';
-		t1str = '/t1/';
-
-		EPI = 'epi_prepro.nii';
-		EPIdvars = 'idbwrdatepi.nii';
-		movParams = 'rp_datepi.txt';
-		t1name = 'ct1.nii';
-		gmMask = ['wc1',t1name];
-		wmMask = ['wc2',t1name];
-		csfMask = ['wc3',t1name];
+        preprostr = '/func/prepro/';
+        t1str = '/anat/';
 
 		TR = 2;
 	case 'NYU_2'
-		projdir = '/gpfs/M2Home/projects/Monash076/Linden/NYU_2/';
-		sublist = [projdir,'NYU_2.txt'];
+		projdir = [parentdir,'rfMRI_denoise/NYU_2/'];
+		sublist = [projdir,'NYU_2.csv'];
 		datadir = [projdir,'data/'];
-		preprostr = '/session_1/rest_1/prepro/';
-		% preprostr = '/session_1/rest_2/prepro/';
-		% preprostr = '/session_2/rest_1/prepro/';
-		t1str = '/t1/';
-
-		EPI = 'epi_prepro.nii';
-		EPIdvars = 'idbwrdatrest.nii';
-		movParams = 'rp_datrest.txt';
-		t1name = 'anat.nii';
-		gmMask = ['wc1',t1name];
-		wmMask = ['wc2',t1name];
-		csfMask = ['wc3',t1name];
+		% Baseline data directory string
+		% Note, we use the baseline data to calculate motion
+		preprostr = '/session_1/func_1/prepro/';
+		% preprostr = '/session_1/func_2/prepro/';
+		% preprostr = '/session_2/func_1/prepro/';
+        t1str = '/session_1/anat_1/';
+	
+		TR = 2;
+	case 'COBRE'
+		projdir = [parentdir,'rfMRI_denoise/COBRE/'];
+		sublist = [projdir,'COBRE.csv'];
+		datadir = [projdir,'data/'];
+        preprostr = '/func/prepro/';
+        t1str = '/anat/';
 
 		TR = 2;
-	case 'M3_COBRE'
-		projdir = '/home/lindenmp/kg98/Linden/ResProjects/SCZ_HCTSA/COBRE/';
-		sublist = [projdir,'COBRE_SubjectIDs.txt'];
+	case 'Beijing_Zang'
+		projdir = [parentdir,'rfMRI_denoise/Beijing_Zang/'];
+		sublist = [projdir,'Beijing_Zang.csv'];
 		datadir = [projdir,'data/'];
-		preprostr = '/session_1/rest_1/prepro/';
-		t1str = '/session_1/anat_1/';
-
-		EPI = 'epi_prepro.nii';
-		EPIdvars = 'idbwrdatrest.nii';
-		movParams = 'rp_datrest.txt';
-		t1name = 'cmprage.nii';
-		gmMask = ['wc1',t1name];
-		wmMask = ['wc2',t1name];
-		csfMask = ['wc3',t1name];
+        preprostr = '/func/prepro/';
+        t1str = '/anat/';
 
 		TR = 2;
-	case 'M3_UCLA'
-		projdir = '/home/lindenmp/kg98/Linden/ResProjects/SCZ_HCTSA/UCLA/';
-		sublist = [projdir,'UCLA_SubjectIDs.txt'];
-		datadir = [projdir,'data/'];
-		preprostr = '/func/prepro/';
-		t1str = '/anat/';
-
-		TR = 2;
-	case 'M3_NAMIC'
-		projdir = '/home/lindenmp/kg98/Linden/ResProjects/SCZ_HCTSA/NAMIC/';
-		sublist = [projdir,'NAMIC_SubjectIDs.txt'];
-		datadir = [projdir,'data/'];
-		preprostr = '/func/prepro/';
-		t1str = '/anat/';
-
-		TR = 3;
 end
 
 % ------------------------------------------------------------------------------
@@ -145,96 +116,106 @@ ParticipantIDs = ParticipantIDs{1};
 numSubs = length(ParticipantIDs);
 
 % ------------------------------------------------------------------------------
-% Jenkinson's mean FD
+% Subject list
 % ------------------------------------------------------------------------------
-fprintf(1, 'Loading Jenkinson''s mean FD metric\n');
-[~,mov,fdJenk,fdJenk_m] = GetExcludeForSample(datadir,ParticipantIDs,preprostr);
+fprintf(1, 'Loading metadata...\n');
+metadata = readtable(sublist);
+
+% ------------------------------------------------------------------------------
+% Exclusion and censoring stuff
+% ------------------------------------------------------------------------------
+[metadata.exclude,metadata.mov,metadata.fdJenk,metadata.fdJenk_m,metadata.fdPower,metadata.fdPower_m,metadata.dvars,metadata.JP12ScrubMask,metadata.JP14ScrubMask] = GetExcludeForSample(datadir,metadata.ParticipantID,TR,preprostr);
 fprintf(1, 'done\n');
 
 % compute number of volumes using the length of fdJenk
 % note, this is assumed to be same for all subjects!
-numVols = length(fdJenk{1});
+numVols = length(metadata.fdJenk{1});
+
+% compute numsubs
+numSubs = size(metadata,1);
 
 % ------------------------------------------------------------------------------
 % Sort descending by mean rms displacement per subject
 % ------------------------------------------------------------------------------
-[srt,idx] = sort(fdJenk_m,'descend');
-
-fdPower = cell(numSubs,1);
-dvars = cell(numSubs,1);
+% [srt,idx] = sort(metadata.fdJenk_m,'descend');
+[srt,idx] = sort(metadata.fdPower_m,'descend');
 
 % ------------------------------------------------------------------------------
-% Loop over subjects in order of descending movement issues
+% Loop over noise correction methods
 % ------------------------------------------------------------------------------
-for i = 1:numSubs
-	fprintf(1,'Processing subject %u/%u: %s\n',i,numSubs,ParticipantIDs{idx(i)})
+for n = 1:numPrePro
+	WhichNoise = noiseOptions{n};
+	WhichNoiseName = noiseOptionsNames{n};
+	fprintf(1, '\nProcessing data: %s\n',WhichNoise);
 
-	preprodir = [datadir,ParticipantIDs{idx(i)},preprostr];
-	cleandir = [preprodir,WhichNoise,'/'];
-	t1dir = [datadir,ParticipantIDs{idx(i)},t1str];
+	% ------------------------------------------------------------------------------
+	% Loop over subjects in order of descending movement issues
+	% ------------------------------------------------------------------------------
+	for i = 1:numSubs
+	% for i = [1,numSubs] % this will just do the highest and lowest motion subject
+		fprintf(1,'\tProcessing subject %u/%u: %s\n',i,numSubs,metadata.ParticipantID{idx(i)})
 
-	if ismember('M3_UCLA',WhichProject,'rows') | ismember('M3_NAMIC',WhichProject,'rows')
+		preprodir = [datadir,metadata.ParticipantID{idx(i)},preprostr,WhichNoise,'/'];
+		t1dir = [datadir,metadata.ParticipantID{idx(i)},t1str];
+
 		EPI = 'epi_prepro.nii';
-		EPIdvars = ['idbwrdat',ParticipantIDs{idx(i)},'_task-rest_bold.nii'];
-		movParams = ['rp_dat',ParticipantIDs{idx(i)},'_task-rest_bold.txt'];
-		t1name = [ParticipantIDs{idx(i)},'_T1w.nii'];
-		gmMask = ['wc1',t1name];
-		wmMask = ['wc2',t1name];
-		csfMask = ['wc3',t1name];
+		t1name = [metadata.ParticipantID{idx(i)},'_T1w.nii'];
+		gmMask = ['gm50_bin.nii'];
+		wmMask = ['wbc2c',t1name(1:end-4),'_e1.nii'];
+
+	    filesToCheck = {{EPI}, ...
+	                    {gmMask,wmMask}};
+
+	    dirsOfFiles = {preprodir, ...
+	                    t1dir};
+
+        % Check if the epi_prepro.nii exists at all, if it doesnt, then the subject was processed
+        % (this will happen if they were excluded according to optimized scrubbing procedures)
+        if exist([dirsOfFiles{1},filesToCheck{1}{1},'.gz']) == 2 | exist([dirsOfFiles{1},filesToCheck{1}{1}]) == 2
+
+		    for j = 1:length(filesToCheck)
+		        for k = 1:length(filesToCheck{j})
+		            if exist([dirsOfFiles{j},filesToCheck{j}{k},'.gz']) == 2
+		                fprintf(1, '\t\tDecompressing %s\n',filesToCheck{j}{k});
+		                gunzip([dirsOfFiles{j},filesToCheck{j}{k},'.gz'],dirsOfFiles{j})
+		                delete([dirsOfFiles{j},filesToCheck{j}{k},'.gz'])
+		            elseif exist([dirsOfFiles{j},filesToCheck{j}{k},'.gz']) == 0
+		                fprintf(1, '\t\tNo need to decompress %s\n',filesToCheck{j}{k});
+		            end
+		        end
+		    end
+
+		    fprintf(1, '\t\tDrawing figure...\n');
+			% ------------------------------------------------------------------------------
+			% GetTSCompartment
+			% ------------------------------------------------------------------------------
+		    fsldir = '/usr/local/fsl/5.0.9/fsl/bin/'; % M3
+			% fsldir = '/usr/share/fsl/5.0/bin/'; % local macbook
+			[ts_compartment,key_compartment] = GetTSCompartment(fsldir,[preprodir,EPI],[t1dir,gmMask],[t1dir,wmMask]);
+			% normalise
+			ts_compartment = BF_NormalizeMatrix(ts_compartment,'maxmin');
+
+			% ------------------------------------------------------------------------------
+			% ThePlot
+			% ------------------------------------------------------------------------------
+			% Threshold for flagging problem volumes
+			ThePlot([metadata.ParticipantID{idx(i)},' / ',WhichNoiseName],metadata.mov{idx(i)},metadata.fdPower{idx(i)},metadata.JP14ScrubMask{idx(i)},metadata.fdJenk{idx(i)},metadata.dvars{idx(i)},ts_compartment,key_compartment,TR)
+			
+			fig = gcf;
+			set(fig,'PaperPositionMode','Auto')
+			print(fig,[num2str(i),'_',metadata.ParticipantID{idx(i)},'_',WhichNoise,'.bmp'],'-dbmp')
+			close all
+
+			% Recompress files
+		    for j = 1:length(filesToCheck)
+		        for k = 1:length(filesToCheck{j})
+		            fprintf(1, '\t\tRecompressing %s\n',filesToCheck{j}{k});
+		            gzip([dirsOfFiles{j},filesToCheck{j}{k}],dirsOfFiles{j})
+		            delete([dirsOfFiles{j},filesToCheck{j}{k}])
+		        end
+		    end
+	    else
+	    	fprintf(1, '\t\tData not present for %s / %s. Skipping...\n', metadata.ParticipantID{idx(i)}, WhichNoise);
+	    end
 	end
-
-    % Decompress files
-    filesToCheck = {EPI, ...
-                    EPIdvars, ...
-                    gmMask, ...
-                    wmMask, ...
-                    csfMask};
-
-    dirsOfFiles = {cleandir, ...
-                    preprodir, ...
-                    t1dir, ...
-                    t1dir, ...
-                    t1dir};
-
-    for j = 1:length(filesToCheck)
-        if exist([dirsOfFiles{j},filesToCheck{j},'.gz']) == 2
-            fprintf(1, '\t\t Decompressing %s\n',filesToCheck{j});
-            gunzip([dirsOfFiles{j},filesToCheck{j},'.gz'],dirsOfFiles{j})
-            delete([dirsOfFiles{j},filesToCheck{j},'.gz'])
-        elseif exist([dirsOfFiles{j},filesToCheck{j},'.gz']) == 0
-            fprintf(1, '\t\t No need to decompress %s\n',filesToCheck{j});
-        end
-    end
-
-	% Get fdPower
-	fdPower{idx(i)} = GetFDPower(mov{idx(i)});
-
-	% Compute DVARS
-	dvars{idx(i)} = GetDVARS([preprodir,EPIdvars],[t1dir,gmMask]);
-	
-	% GetTSCompartment
-    fsldir = '/usr/local/fsl/5.0.9/fsl/bin/'; % M3
-    % fsldir = '/usr/local/fsl/5.0.9/bin/'; % M2
-	% fsldir = '/usr/share/fsl/5.0/bin/'; % local macbook
-	[ts_compartment,key_compartment] = GetTSCompartment(fsldir,[cleandir,EPI],[t1dir,gmMask],[t1dir,wmMask],[t1dir,csfMask]);
-	% normalise
-	ts_compartment = BF_NormalizeMatrix(ts_compartment,'maxmin');
-
-	% ------------------------------------------------------------------------------
-	% ThePlot
-	% ------------------------------------------------------------------------------
-	% Threshold for flagging problem volumes
-	ThePlot(ParticipantIDs{idx(i)},mov{idx(i)},fdPower{idx(i)},fdJenk{idx(i)},dvars{idx(i)}/10,ts_compartment,key_compartment,TR)
-	
-	fig = gcf;
-	set(fig,'PaperPositionMode','Auto')
-	print(fig,[num2str(i),'_',ParticipantIDs{idx(i)},'.bmp'],'-dbmp')
-	close all
-
-	% Recompress files
-    for j = 1:length(filesToCheck)
-        fprintf(1, '\t\t Recompressing %s\n',filesToCheck{j});
-        gzip([dirsOfFiles{j},filesToCheck{j}],dirsOfFiles{j})
-        delete([dirsOfFiles{j},filesToCheck{j}])
-    end
 end
