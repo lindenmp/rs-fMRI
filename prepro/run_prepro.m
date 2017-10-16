@@ -723,32 +723,22 @@ function [] = run_prepro(WhichProject,WhichSessScan,subject,smoothing,discard,sl
         if runTS == 1
             cd(cfg.outdir)
             
-            % Parcellation file for time series extraction
-            if ismember('M2',cfg.WhichMASSIVE,'rows')
-                str = '/gpfs/M2Home/projects/Monash076/Linden/';
-            elseif ismember('M3',cfg.WhichMASSIVE,'rows')
-                str = '/home/lindenmp/kg98/Linden/';
-            end
-            
-            cfg.parcFiles = {[str,'ROIs/Gordon/Parcels_MNI_222.nii'],...
-                            [str,'ROIs/Power/Power.nii'],...
-                            [str,'ROIs/TriStri/TriStri.nii'],...
-                            [str,'ROIs/DiMartino/SphereParc02.nii']};
+            cfg.parcFiles = {[cfg.parentdir,'ROIs/Gordon/Parcels_MNI_222.nii'],...
+                            [cfg.parentdir,'ROIs/Power/Power.nii'],...
+                            [cfg.parentdir,'ROIs/TriStri/TriStri.nii'],...
+                            [cfg.parentdir,'ROIs/DiMartino/SphereParc02.nii'],...
+                            [cfg.parentdir,'ROIs/HCP/MMP_in_MNI_asym_222_continuousLabels.nii'],...
+                            [cfg.parentdir,'ROIs/AAL/AAL_2mm/raal.nii']};
 
             cfg.parcWeightGM = {'yes',...
                                 'yes',...
                                 'no',...
-                                'no'};
+                                'no',...
+                                'yes',...
+                                'yes'};
 
             % Set input image for time series extraction
-            switch cfg.smoothing
-                case {'before','none'}
-                    % If smoothing was done before noise correction:
-                    cfg.ExtractIn = 'epi_prepro.nii';
-                case 'after'
-                    % If it was done after:
-                    cfg.ExtractIn = 'sepi_prepro.nii';
-            end
+            cfg.ExtractIn = 'epi_prepro.nii';
 
             % Initialise roi time series variable
             cfg.roiTS = [];
@@ -784,11 +774,6 @@ function [] = run_prepro(WhichProject,WhichSessScan,subject,smoothing,discard,sl
     % Compress base & t1 outputs
     % ------------------------------------------------------------------------------
     fprintf('\n\t\t ----- Compressing base outputs ----- \n\n');
-    cd(cfg.rawdir)
-    gzip('*.nii')
-    pause(5)
-    delete('*.nii')   
-
     cd(cfg.preprodir)
     gzip('*.nii')
     pause(5)
@@ -798,5 +783,12 @@ function [] = run_prepro(WhichProject,WhichSessScan,subject,smoothing,discard,sl
     gzip('*.nii')
     pause(5)
     delete('*.nii')
+
+    if runBase == 1
+        cd(cfg.rawdir)
+        gzip('*.nii')
+        pause(5)
+        delete('*.nii')
+    end
     fprintf('\n\t\t ----- Finished. ----- \n\n');
 end
