@@ -1,4 +1,4 @@
-function [ts_compartment,key_compartment] = GetTSCompartment(fsldir,rsData,gmMask,wmMask,csfMask,maskThr)
+function [ts_compartment,key_compartment] = GetTSCompartment(fsldir,rsData,gmMask,wmMask)
 %% GetTSCompartment
 	% This function will output a 2d time series matrix (Voxels x Time) for processed resting state data
 	% Rows of the matrix are grouped by tissue compartments (grey matter, white matter, csf)
@@ -14,7 +14,6 @@ function [ts_compartment,key_compartment] = GetTSCompartment(fsldir,rsData,gmMas
 	% rsData - location and name of processed resting state data. e.g., /path/to/dir/epi_prepro.nii
 	% gmMask - location and name of grey matter probability mask. e.g., /path/to/dir/crwc1t1.nii
 	% wmMask - location and name of white matter probability mask. e.g., /path/to/dir/crwc2t1.nii
-	% csfMask - location and name of csf probability mask. e.g., /path/to/dir/crwc3t1.nii
 	% maskThr - (optional) value between 0 and 1 that is used to threshold and binarise the tissue maps. default = 0.50
 	% 
 	% -------
@@ -25,11 +24,10 @@ function [ts_compartment,key_compartment] = GetTSCompartment(fsldir,rsData,gmMas
 	% key_compartment - vector denoting which compartment a given voxel belongs to. may be used for plotting
 		% 1 = gm
 		% 2 = wm
-		% 3 = csf
 
-	if nargin < 6
-		maskThr = 0.50;
-	end
+	% if nargin < 6
+	% 	maskThr = 0.50;
+	% end
 
 	% ------------------------------------------------------------------------------
 	% set FSL environments 
@@ -46,20 +44,28 @@ function [ts_compartment,key_compartment] = GetTSCompartment(fsldir,rsData,gmMas
 	[~,ts] = read(rsData);
 
 	% ------------------------------------------------------------------------------
-	% Threshold tissue masks
+	% Load in tissue masks
 	% ------------------------------------------------------------------------------
-    system([fsldir,'fslmaths ',gmMask,' -thr ',num2str(maskThr),' -bin gm_temp']);
-    system([fsldir,'fslmaths ',wmMask,' -thr ',num2str(maskThr),' -bin wm_temp']);
-    system([fsldir,'fslmaths ',csfMask,' -thr ',num2str(maskThr),' -bin csf_temp']);
-	
-	% ------------------------------------------------------------------------------
-	% Load in thresholded tissue masks
-	% ------------------------------------------------------------------------------
-	[~,gm] = read('gm_temp.nii');
-	[~,wm] = read('wm_temp.nii');
-	[~,csf] = read('csf_temp.nii');
+	[~,gm] = read(gmMask);
+	[~,wm] = read(wmMask);
 
-	delete('gm_temp.nii','wm_temp.nii','csf_temp.nii')
+	% Binarise just incase binary masks weren't input
+	gm(gm > 0) = 1;
+	wm(wm > 0) = 1;
+
+	% % ------------------------------------------------------------------------------
+	% % Threshold tissue masks
+	% % ------------------------------------------------------------------------------
+	% system([fsldir,'fslmaths ',gmMask,' -thr ',num2str(maskThr),' -bin gm_temp']);
+	% system([fsldir,'fslmaths ',wmMask,' -thr ',num2str(maskThr),' -bin wm_temp']);
+
+	% % ------------------------------------------------------------------------------
+	% % Load in thresholded tissue masks
+	% % ------------------------------------------------------------------------------
+	% [~,gm] = read('gm_temp.nii');
+	% [~,wm] = read('wm_temp.nii');
+
+	% delete('gm_temp.nii','wm_temp.nii')
 
 	% ------------------------------------------------------------------------------
 	% Reshape in 2d time series matrix
@@ -80,14 +86,11 @@ function [ts_compartment,key_compartment] = GetTSCompartment(fsldir,rsData,gmMas
 	wm = reshape(wm,[],1);
 	wm = wm'; wm = logical(wm);
 
-	csf = reshape(csf,[],1);
-	csf = csf'; csf = logical(csf);
-
 	% ------------------------------------------------------------------------------
 	% Remove overlap between tissue masks to avoid duplicate voxels in ts
 	% ------------------------------------------------------------------------------
 	% create overlap vector
-	overlap = [gm; wm; csf];
+	overlap = [gm; wm];
 	overlap = sum(overlap);
 
 	if numel(unique(overlap)) > 2
@@ -95,15 +98,14 @@ function [ts_compartment,key_compartment] = GetTSCompartment(fsldir,rsData,gmMas
 
 		gm(overlap) = 0;
 		wm(overlap) = 0;
-		csf(overlap) = 0;
 	end
 
 	% ------------------------------------------------------------------------------
 	% Generate 2d ts matrix orgasinised by tissue compartments
 	% ------------------------------------------------------------------------------
-	ts_compartment = [ts(:,gm) ts(:,wm) ts(:,csf)];
+	ts_compartment = [ts(:,gm) ts(:,wm)];
 
 	% create index variable that denotes tissue compartment of each row in ts_comparment
-	key_compartment = [ones(1,sum(gm == 1)), ones(1,sum(wm == 1)) + 1, ones(1,sum(csf == 1)) + 2];
+	key_compartment = [ones(1,sum(gm == 1)) - 0.5, ones(1,sum(wm == 1))];
 
 end
