@@ -660,17 +660,20 @@ function [] = run_prepro(WhichProject,WhichSessScan,subject,smoothing,discard,sl
     % If you only want to run one then just use something like: noiseOptions = {'24P+aCC'};
     
     % All pipelines
-    % noiseOptions = {'6P','6P+2P','6P+2P+GSR','24P','24P+8P','24P+8P+4GSR','24P+8P+SpikeReg','24P+8P+4GSR+SpikeReg','12P+aCC','24P+aCC','12P+aCC50','24P+aCC50','24P+aCC+4GSR','24P+aCC50+4GSR','24P+aCC+SpikeReg','24P+aCC+4GSR+SpikeReg','ICA-AROMA+2P','ICA-AROMA+2P+SpikeReg','ICA-AROMA+GSR','ICA-AROMA+2P+GSR','ICA-AROMA+8P','ICA-AROMA+4GSR','ICA-AROMA+8P+4GSR'};
-    % In cases where all pipelines aren't run and compared, we favour ICA-AROMA+2P 
-    noiseOptions = {'ICA-AROMA+2P','ICA-AROMA+2P+GSR'};
+    noiseOptions = {'6P','6P+2P','6P+2P+GSR','24P','24P+8P','24P+8P+4GSR','12P+aCC','24P+aCC','12P+aCC50','24P+aCC50','24P+aCC+4GSR','24P+aCC50+4GSR','ICA-AROMA+2P','ICA-AROMA+2P+GSR','ICA-AROMA+8P','ICA-AROMA+8P+4GSR','24P+8P+4GSR+SpikeReg'};
+    % noiseOptions = {'24P+4P+2GSR+JP14Scrub'};
+    % noiseOptions = {'ICA-AROMA+2P','ICA-AROMA+2P+GSR'};
+
+    % If subject was not marked for exclusion for scrubbing, then append the JP14 pipelines
+    if ~cfg.exclude
+        fprintf(1, '\n\t\t Adding JP14 pipelines \n\n');
+        noiseOptions2Append = {'24P+4P+2GSR+JP14Scrub'};
+        noiseOptions = [noiseOptions,noiseOptions2Append];
+    end
 
     % Loop over noise correction options
     for i = 1:length(noiseOptions)
 
-        % Incase you want to test different things, use suffix variable to manually name output directory
-        % set to cfg.suffix = ''; if no suffix is needed
-        cfg.suffix = '';
-        
         % Set noise correction
         cfg.removeNoise = noiseOptions{i};
 
@@ -684,37 +687,41 @@ function [] = run_prepro(WhichProject,WhichSessScan,subject,smoothing,discard,sl
 
         % define inputs to noise correction
         switch cfg.smoothing
-            case 'before'
-                % If we run smoothing BEFORE noise correction, then the input file is the smoothed gm epi from prepro_base
-                cfg.CleanIn = cfg.outEPI{2};
-                % and, the nuisance inputs are the tissue-specific smoothed wm and csf epi images
-                cfg.NuisanceIn_wm = cfg.outEPI{4};
-                cfg.NuisanceIn_csf = cfg.outEPI{5};
             case {'after','none'}
-                % If we run smoothing AFTER noise correction, then the input file is unsmoothed epi from prepro_base
-                cfg.CleanIn = cfg.outEPI{1};
-                % and, the nuisance inputs are the same image
-                cfg.NuisanceIn_wm = cfg.outEPI{1};
-                cfg.NuisanceIn_csf = cfg.outEPI{1};
+                if any(~cellfun('isempty',strfind({cfg.removeNoise},'JP14Scrub'))) == 0
+                    % If we run smoothing AFTER noise correction, then the input file is unsmoothed epi from prepro_base
+                    cfg.CleanIn = cfg.outEPI{1};
+                    % and, the nuisance inputs are the same image
+                    cfg.NuisanceIn_wm = cfg.outEPI{1};
+                    cfg.NuisanceIn_csf = cfg.outEPI{1};
+                elseif any(~cellfun('isempty',strfind({cfg.removeNoise},'JP14Scrub'))) == 1
+                    % If Power's scrubbing then its the power equivalent instead
+                    cfg.CleanIn = cfg.outEPI{3};
+                    cfg.NuisanceIn_wm = cfg.outEPI{3};
+                    cfg.NuisanceIn_csf = cfg.outEPI{3};
+                end
+            case 'before'
+                if any(~cellfun('isempty',strfind({cfg.removeNoise},'JP14Scrub'))) == 0
+                    % If we run smoothing BEFORE noise correction, then the input file is smoothed epi from prepro_base
+                    cfg.CleanIn = cfg.outEPI{2};
+                    % and, the nuisance inputs are the same image
+                    cfg.NuisanceIn_wm = cfg.outEPI{2};
+                    cfg.NuisanceIn_csf = cfg.outEPI{2};
+                elseif any(~cellfun('isempty',strfind({cfg.removeNoise},'JP14Scrub'))) == 1
+                    % If Power's scrubbing then its the power equivalent instead
+                    cfg.CleanIn = cfg.outEPI{4};
+                    cfg.NuisanceIn_wm = cfg.outEPI{4};
+                    cfg.NuisanceIn_csf = cfg.outEPI{4};
+                end
         end
 
         % ------------------------------------------------------------------------------
         % run prepro_noise
-        runNoise = 1;
         % ------------------------------------------------------------------------------
-        if runNoise == 1
-            % cfg.runReg controls whether nuisance signals are extracted and regressed out of the EPI (1) or just extracted (0)
-            % cfg.runReg = 0 is useful is users want to model the nuisance signals at the level of the first level GLM
-            cfg.runReg = 1;
-            [cfg.noiseTS,cfg.outdir] = prepro_noise(cfg);
-        elseif runNoise == 0
-            if cfg.CleanIn(1) == 's'
-                cfg.outdir = [cfg.preprodir,'s',cfg.removeNoise,cfg.suffix,'/'];
-            else
-                cfg.outdir = [cfg.preprodir,cfg.removeNoise,cfg.suffix,'/'];
-            end
-            cfg.noiseTS = dlmread([cfg.outdir,'noiseTS.txt']);
-        end
+        % cfg.runReg controls whether nuisance signals are extracted and regressed out of the EPI (1) or just extracted (0)
+        % cfg.runReg = 0 is useful is users want to model the nuisance signals at the level of the first level GLM
+        cfg.runReg = 1;
+        [cfg.noiseTS,cfg.outdir,cfg.noiseTSz] = prepro_noise(cfg);
 
         % ------------------------------------------------------------------------------
         % extract time series
