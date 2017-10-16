@@ -42,17 +42,18 @@ end
 hold on
 
 theStyle = '-';
-theLineWidth = 1;
+lineWidth = 2;
+lineWidthMinor = 1;
 
 if alsoScatter
     plot(xData,yData,'.k');
 end
 
 for k = 1:numThresholds-1
-    plot(xThresholds(k:k+1),ones(2,1)*yMeans(k),'LineStyle',theStyle,'LineWidth',theLineWidth,'Color',[theColor])
-    plot(xThresholds(k:k+1),ones(2,1)*(yMeans(k)+yStds(k)),'LineStyle',':','LineWidth',theLineWidth,'Color',[theColor])
-    plot(xThresholds(k:k+1),ones(2,1)*(yMeans(k)-yStds(k)),'LineStyle',':','LineWidth',theLineWidth,'Color',[theColor])
-    plot(mean(xThresholds(k:k+1)),yMeans(k),'o','MarkerSize',5,'LineStyle',theStyle,'LineWidth',theLineWidth,'Color',[theColor])
+    plot(xThresholds(k:k+1),ones(2,1)*yMeans(k),'LineStyle',theStyle,'LineWidth',lineWidth,'Color',[theColor])
+    plot(xThresholds(k:k+1),ones(2,1)*(yMeans(k)+yStds(k)),'LineStyle',':','LineWidth',lineWidthMinor,'Color',[theColor])
+    plot(xThresholds(k:k+1),ones(2,1)*(yMeans(k)-yStds(k)),'LineStyle',':','LineWidth',lineWidthMinor,'Color',[theColor])
+    plot(mean(xThresholds(k:k+1)),yMeans(k),'o','MarkerSize',5,'LineStyle',theStyle,'LineWidth',lineWidth,'Color',[theColor])
 end
 
 % ylim([-0.3 .3])

@@ -1,7 +1,5 @@
 function [] = TheBarChart(data,data_std,makeFigure,extraParams)
-%% TheBarChart: simple bar chart. only made it a function coz i was calling it a few times within a single script..
 % Linden Parkes, BMH, 2016
-
 
 	% ------------------------------------------------------------------------------
 	% set default args
@@ -156,7 +154,7 @@ function [] = TheBarChart(data,data_std,makeFigure,extraParams)
 	if length(data) == 1 || length(data) == 2
 		% Plot bar chart 1 above 0 point on y-axis
 		if size(data{1},2) == 1
-			for i = 1:numel(data{1})
+			for i = 1:size(data{1},1)
 				bar(i,data{1}(i),'FaceColor',theColors{i},'LineStyle',theLines{i},'LineWidth',2);
 			end
 		elseif size(data{1},2) == 3
@@ -202,7 +200,10 @@ function [] = TheBarChart(data,data_std,makeFigure,extraParams)
 	ax.XTickLabelRotation = XTickLabelRot;
 	ax.XLim = (xLimits);
 	ax.YTickLabelRotation = YTickLabelRot;
-	if yLimits(2) <= 1
+	if yLimits(2) <= 0.5
+		ax.YTick = ([yLimits(1):0.5:yLimits(2)]);
+		% ax.YTick = ([yLimits(1):0.1:yLimits(2)]);
+	elseif yLimits(2) <= 1
 		ax.YTick = ([yLimits(1):0.5:yLimits(2)]);
 	elseif yLimits(2) <= 20
 		ax.YTick = ([yLimits(1):10:yLimits(2)]);
@@ -228,11 +229,14 @@ function [] = TheBarChart(data,data_std,makeFigure,extraParams)
 	% add text
 	TextRotation = 0;
 
-	if yLimits(2) <= 1
-		strprec = '%0.2f';
-	elseif yLimits(2) > 1
-		strprec = '%0.1f';
-	end
+	% if yLimits(2) <= 0.5
+	% 	strprec = '%0.3f';
+	% elseif yLimits(2) <= 1 & yLimits(2) > 0.5
+	% 	strprec = '%0.2f';
+	% elseif yLimits(2) > 1
+	% 	strprec = '%0.1f';
+	% end
+	strprec = '%0.2f';
 
 	if addText == true
 		if length(data) == 1 || length(data) == 2

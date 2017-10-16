@@ -95,6 +95,8 @@ if makeFigure
 end
 hold on; box('on');
 
+lwidth = 2;
+
 % ------------------------------------------------------------------------------
 % Add kernel distribution
 % ------------------------------------------------------------------------------
@@ -117,8 +119,8 @@ if doveTail
         % keepR = (x>=min(dataCell{i}) & x<=max(dataCell{i}));
         x = x(keepR);
         f = f(keepR);
-        plot(customOffset+i+f*offsetRange/2,x,'-','color',theColors{i},'LineWidth',2)
-        plot(customOffset+i-f*offsetRange/2,x,'-','color',theColors{i},'LineWidth',2)
+        plot(customOffset+i+f*offsetRange/2,x,'-','color',theColors{i},'LineWidth',lwidth)
+        plot(customOffset+i-f*offsetRange/2,x,'-','color',theColors{i},'LineWidth',lwidth)
 
         % Plot top and bottom
         plot(customOffset+i+[-f(1),+f(1)]*offsetRange/2,min(x)*ones(2,1),'-','color',theColors{i},'LineWidth',0.1)
@@ -161,12 +163,17 @@ for i = 1:numGroups
         brightColor = theColors{i};
     end
 
-    plot([customOffset + i - offsetRange/2,customOffset + i + offsetRange/2],nanmean(dataCell{i})*ones(2,1),'-',...
-                            'color',brightColor,'LineWidth',2)
+    % plot([customOffset + i - offsetRange/2,customOffset + i + offsetRange/2],nanmean(dataCell{i})*ones(2,1),'-',...
+                            % 'color',brightColor,'LineWidth',lwidth)
     % plot([customOffset + i - offsetRange/2,customOffset + i + offsetRange/2],(nanmean(dataCell{i})-nanstd(dataCell{i}))*ones(2,1),'--',...
-                            % 'color',brightColor,'LineWidth',2)
+                            % 'color',brightColor,'LineWidth',lwidth)
     % plot([customOffset + i - offsetRange/2,customOffset + i + offsetRange/2],(nanmean(dataCell{i})+nanstd(dataCell{i}))*ones(2,1),'--',...
-                            % 'color',brightColor,'LineWidth',2)
+                            % 'color',brightColor,'LineWidth',lwidth)
+    % plot([customOffset + i - offsetRange/2,customOffset + i + offsetRange/2],nanmedian(abs(dataCell{i}))*ones(2,1),'-',...
+                            % 'color',brightColor,'LineWidth',lwidth)
+    plot([customOffset + i - offsetRange/2,customOffset + i + offsetRange/2],nanmedian(dataCell{i})*ones(2,1),'-',...
+                            'color',brightColor,'LineWidth',lwidth)
+
 end
 
 % ------------------------------------------------------------------------------
@@ -175,5 +182,6 @@ end
 if add0Line
     plot([0:numGroups+1],zeros(1,numGroups+2),':','Color','k')
 end
+
 
 end

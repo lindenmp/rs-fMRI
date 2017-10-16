@@ -1,5 +1,5 @@
 %% ThePlot:
-function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compartment,TR,movThr,fdPowerThr,fdJenkThr,dvarsThr)
+function [] = ThePlot(plotTitle,mov,fdPower,ScrubMask,fdJenk,dvars,ts_compartment,key_compartment,TR,movThr,fdPowerThr,fdJenkThr,dvarsThr)
 
 	% This function plots a series of movement traces over top of a plot of timeseries as
 	% as in Power (2016), called 'ThePlot'
@@ -9,7 +9,7 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
 	% ------
 	% INPUTS
 	% ------
-	% subject			- a string identifying the subject being plotted.
+	% plotTitle			- a string.
 	% 					Note, this is just for naming the output .png file
 	% mov 				- an numVols*6 matrix containing movement parameters extracted from SPM8's realignment
 	% fdPower			- an numVols*1 vector containing Power's framewise displacement (see GetFDPower.m)
@@ -21,7 +21,7 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
 	% key_compartment 	- a vector denoting which compartment a voxel belongs to (see GetTSCompartment.m)
 	% 
 	% TR 				- Integer representing EPI acquisition time in seconds. This is used to estimate the amount
-	% 					time, in minutes, would remain following volume censoring and to mark subjects for exclusion
+	% 					time, in minutes, would remain following volume censoring and to mark plotTitles for exclusion
 	% 					if <4 minutes remain
 	% 
 	% movThr 			- cut off for movement parameters. default = 2
@@ -36,20 +36,20 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
 	% Linden Parkes, Brain & Mental Health Laboratory, 2016
 	% ------------------------------------------------------------------------------	
 
-	if nargin < 9
+	if nargin < 10
 		movThr = 2;
 	end
 
-	if nargin < 10
+	if nargin < 11
 		fdPowerThr = 0.2;
 	end
 
-	if nargin < 11
+	if nargin < 12
 		fdJenkThr = 0.25;
 	end
 
-	if nargin < 12
-		dvarsThr = 3;
+	if nargin < 13
+		dvarsThr = 20; % 2% signal change
 	end
 
 	% threshold for exclusion in minutes
@@ -61,8 +61,8 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
 	% Plot
 	% ------------------------------------------------------------------------------
 	FSize = 10;
-	h1 = figure('color','w', 'units', 'centimeters', 'pos', [0 0 21 29.7], 'name',['ThePlot: ',subject]); box('on'); movegui(h1,'center');
-	h2 = suptitle(['ThePlot: ',subject]);
+	h1 = figure('color','w', 'units', 'centimeters', 'pos', [0 0 21 29.7], 'name',['ThePlot: ',plotTitle]); box('on'); movegui(h1,'center');
+	h2 = suptitle(plotTitle);
     pos = get(h2,'Position');
     set(h2,'Position',[pos(1)*1, pos(2)*0.5, pos(3)*1]);
 
@@ -71,10 +71,10 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
 	% ------------------------------------------------------------------------------
 	sp1 = subplot(6,2,1);
     pos1 = get(sp1,'Position');
-	plot(mov(:,1));
+	plot(mov(:,1),'LineWidth',1.5);
 	hold on
-	plot(mov(:,2),'g');
-	plot(mov(:,3),'r');
+	plot(mov(:,2),'g','LineWidth',1.5);
+	plot(mov(:,3),'r','LineWidth',1.5);
 	title('translation','fontweight','bold')
 	ylabel('mm')
 	legend({'x','y','z'},'Orientation','horizontal','Location','best')
@@ -98,10 +98,10 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
 
 	sp2 = subplot(6,2,3);
     pos2 = get(sp2,'Position');
-	plot(mov(:,4));
+	plot(mov(:,4),'LineWidth',1.5);
 	hold on
-	plot(mov(:,5),'g');
-	plot(mov(:,6),'r');
+	plot(mov(:,5),'g','LineWidth',1.5);
+	plot(mov(:,6),'r','LineWidth',1.5);
 	title('rotation','fontweight','bold');
 	ylabel('mm')
 	legend({'pitch','roll','yaw'},'Orientation','horizontal','Location','best')
@@ -122,12 +122,12 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
 	% ------------------------------------------------------------------------------
 	sp3 = subplot(6,2,5);
     pos3 = get(sp3,'Position');
-	plot(fdJenk)
+	plot(fdJenk,'LineWidth',1.5);
 	hold on
 	title('fdJenk','fontweight','bold')
 	ylabel('mm')
 	xlim([1 numVols])
-	ylim([0 max(fdJenk)+(max(fdJenk)*.10)])
+	ylim([0 max(fdJenk)+(max(fdJenk)*.25)])
     set(sp3,'XTickLabel','');
 	set(gca,'FontSize',FSize)
 
@@ -138,7 +138,7 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
 	numCVols = numVols - size(spikereg,2); % number of volumes - number of spike regressors (columns)
 	NTime = (numCVols * TR)/60; % Compute length, in minutes, of time series data left after censoring
 	
-	str1 = ['Mean = ',num2str(fdJenk_m,'%0.2f'),'mm. Supra threshold spikes = ',num2str(fdJenkPerc,'%0.1f'),'%.'];
+	str1 = ['Mean = ',num2str(fdJenk_m,'%0.2f'),'mm. Supra threshold spikes = ',num2str(fdJenkPerc,'%0.1f'),'%. '];
 	if NTime < thresh;
 		% if less than threshold, mark for exclusion
 		str2 = [num2str(NTime,'%0.0f'),' mins of uncensored data. Exclude: YES'];
@@ -147,7 +147,7 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
 	end
 	
 	yLimits = ylim;
-	text(round(numVols*.05),yLimits(2) - yLimits(2)*.2,{str1,str2},... 
+	text(round(numVols*.05),yLimits(2) - yLimits(2)*.15,[str1,str2],... 
 					'HorizontalAlignment','left',...
 					'VerticalAlignment','middle',...
 					'Color','black',...
@@ -155,7 +155,7 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
 
 	% overlay threshold line
 	if max(fdJenk) > fdJenkThr
-		line([0 numVols],[fdJenkThr fdJenkThr],'LineStyle','--','Color','k')
+		line([0 numVols],[fdJenkThr fdJenkThr],'LineStyle','--','Color','k','LineWidth',1.5);
 	end
 
 	% ------------------------------------------------------------------------------
@@ -163,23 +163,22 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
 	% ------------------------------------------------------------------------------
 	sp4 = subplot(6,2,7);
     pos4 = get(sp4,'Position');
-	plot(fdPower)
+	plot(fdPower,'LineWidth',1.5);
 	hold on
 	title('fdPower','fontweight','bold')
 	ylabel('mm')
 	xlim([1 numVols])
-	ylim([0 max(fdPower)+(max(fdPower)*.10)])
+	ylim([0 max(fdPower)+(max(fdPower)*.25)])
     set(sp4,'XTickLabel','');
 	set(gca,'FontSize',FSize)
 
 	% Add text to plot
 	fdPower_m = mean(fdPower); % mean FD
 	fdPowerPerc = sum(fdPower > fdPowerThr) / numVols * 100; % spike percentage
-	ScrubMask = GetScrubMask(fdPower,dvars,fdPowerThr,dvarsThr,'no');
 	numCVols = numVols - sum(ScrubMask); % number of volumes - number of spike regressors (columns)
 	NTime = (numCVols * TR)/60; % Compute length, in minutes, of time series data left after censoring
 
-	str1 = ['Mean = ',num2str(fdPower_m,'%0.2f'),'mm. Supra threshold spikes = ',num2str(fdPowerPerc,'%0.1f'),'%.'];
+	str1 = ['Mean = ',num2str(fdPower_m,'%0.2f'),'mm. Supra threshold spikes = ',num2str(fdPowerPerc,'%0.1f'),'%. '];
 	if NTime < thresh;
 		% if less than threshold, mark for exclusion
 		str2 = [num2str(NTime,'%0.0f'),' mins of uncensored data. Exclude: YES'];
@@ -188,7 +187,7 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
 	end
 	
 	yLimits = ylim;
-	text(round(numVols*.05),yLimits(2) - yLimits(2)*.2,{str1,str2},... 
+	text(round(numVols*.05),yLimits(2) - yLimits(2)*.15,[str1,str2],... 
 					'HorizontalAlignment','left',...
 					'VerticalAlignment','middle',...
 					'Color','black',...
@@ -196,15 +195,18 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
 
 	% overlay threshold line
 	if max(fdPower) > fdPowerThr
-		line([0 numVols],[fdPowerThr fdPowerThr],'LineStyle','--','Color','k')
+		line([0 numVols],[fdPowerThr fdPowerThr],'LineStyle','--','Color','k','LineWidth',1.5);
 	end
 
 	% ------------------------------------------------------------------------------
 	% DVARS
 	% ------------------------------------------------------------------------------
+	dvars = dvars/10;
+	dvarsThr = dvarsThr/10;
+
 	sp5 = subplot(6,2,9);
     pos5 = get(sp5,'Position');
-	plot(dvars)
+	plot(dvars,'LineWidth',1.5);
 	title('dvars','fontweight','bold')
 	ylabel('rms signal change')
 	xlim([1 numVols])
@@ -214,7 +216,7 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
 
 	% overlay threshold line
 	if max(dvars) > dvarsThr
-		line([0 numVols],[dvarsThr dvarsThr],'LineStyle','--','Color','k')
+		line([0 numVols],[dvarsThr dvarsThr],'LineStyle','--','Color','k','LineWidth',1.5);
 	end
 
 	% ------------------------------------------------------------------------------
@@ -226,9 +228,10 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
 	colormap(gray)
 	caxis([0 1])
 	title('Time Series','fontweight','bold')
-	ylabel('CSF  |  WHITE  |  GREY')
+	ylabel('WHITE                            GREY') % Laziness for the win...
 	xlabel('time (volumes)')
-	colorbar
+	sp6_1 = colorbar;
+    pos6_1 = get(sp6_1,'Position');
 	set(gca,'FontSize',FSize)
 
 	sp7 = subplot(6,2,12);
@@ -236,6 +239,8 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
 	imagesc(key_compartment')
     set(sp7,'YTickLabel','','XTickLabel','','TickLength',[0,0]);
 	set(gca,'FontSize',FSize)
+	colormap(gray)
+	caxis([0 1])
 
     % ------------------------------------------------------------------------------
     % Sizing
@@ -248,5 +253,6 @@ function [] = ThePlot(subject,mov,fdPower,fdJenk,dvars,ts_compartment,key_compar
     set(sp5,'Position',[pos5(1)*.6, pos5(2)*1.125, pos5(3)*2.5, pos5(4)*1]);
     
     set(sp6,'Position',[pos6(1)*.6, pos6(2)*0.35, pos6(3)*2.5, pos6(4)*2]);
+    set(sp6_1,'Position',[pos6_1(1)*2.325, pos6_1(2)*.85, pos6_1(3)*1, pos6_1(4)*1]);
     set(sp7,'Position',[pos7(1)*.08, pos7(2)*0.35, pos7(3)*.07, pos7(4)*2]);
 end
