@@ -1,5 +1,5 @@
 %% GetExcludeForSample: 
-function [exclude,mov,fdJenk,fdJenk_m] = GetExcludeForSample(datadir,ParticipantIDs,str,mname)
+function [exclude,mov,fdJenk,fdJenk_m,fdPower,fdPower_m,dvars,JP12ScrubMask,JP14ScrubMask] = GetExcludeForSample(datadir,ParticipantIDs,TR,str,mname)
 	% ------------------------------------------------------------------------------
 	% This script uses the movement parameters generate during SPM8's realignment
 	% to calculate framewise displacement according to two methods, (1) Power and
@@ -31,11 +31,11 @@ function [exclude,mov,fdJenk,fdJenk_m] = GetExcludeForSample(datadir,Participant
 	% Linden Parkes, Brain & Mental Health Laboratory, 2016
 	% ------------------------------------------------------------------------------
 
-	if nargin < 3
+	if nargin < 4
 		str = '';
 	end
 
-	if nargin < 4
+	if nargin < 5
 		mname = 'rp*txt';
 	end
 
@@ -49,7 +49,15 @@ function [exclude,mov,fdJenk,fdJenk_m] = GetExcludeForSample(datadir,Participant
 	fdJenk = cell(numSubs,1);
 	fdJenk_m = zeros(numSubs,1);
 
-	exclude = zeros(numSubs,2);
+	fdPower = cell(numSubs,1);
+	fdPower_m = zeros(numSubs,1);
+
+	dvars = cell(numSubs,1);
+
+	JP12ScrubMask = cell(numSubs,1);
+	JP14ScrubMask = cell(numSubs,1);
+
+	exclude = zeros(numSubs,5);
 
 	% ------------------------------------------------------------------------------
 	% Loop
@@ -62,8 +70,8 @@ function [exclude,mov,fdJenk,fdJenk_m] = GetExcludeForSample(datadir,Participant
 		% Load in movement parameters from realignment
 		% ------------------------------------------------------------------------------
 		workdir = [datadir,ParticipantIDs{i},str];
-	    mfile = dir([workdir,mname]);
-	    mov{i} = dlmread([workdir,mfile(1).name]);
+	    mfile = dir([workdir,'raw_mov/',mname]);
+	    mov{i} = dlmread([workdir,'raw_mov/',mfile(1).name]);
 
 	    [pathstr,name,ext] = fileparts(mfile.name);
 	    if ismember('.par',ext,'rows')
@@ -71,31 +79,53 @@ function [exclude,mov,fdJenk,fdJenk_m] = GetExcludeForSample(datadir,Participant
 	    	mov{i} = mov{i}(:,[4:6,1:3]);
 	    end
 
+		numVols = size(mov{i},1);
+
 	    % ------------------------------------------------------------------------------
-		% Compute fd (Jenkinson2002) (used by Satterthwaite2012)
+		% Compute fd Jenkinson (used by Satterthwaite2012)
 	    % ------------------------------------------------------------------------------
+		% Threshold for detecting 'spikes'
+		fdJenkThr = 0.25;
+
 		% Get FD
 		fdJenk{i} = GetFDJenk(mov{i});
 
 		% Calculate mean
 		fdJenk_m(i) = mean(fdJenk{i});
 
-	    % ------------------------------------------------------------------------------
-	    % Initial, gross movement exclusion
-	    % ------------------------------------------------------------------------------
-		% 1) Exclude on mean rms displacement
- 			% Calculate whether subject has suprathreshold mean movement
-			% If the mean of displacement is greater than 0.55 mm (Sattethwaite), then exclude
-			if fdJenk_m(i) > 0.55
-				exclude(i,1) = 1;
-			else
-				exclude(i,1) = 0;
-			end	
+		% ------------------------------------------------------------------------------
+		% Compute fd Power
+		% ------------------------------------------------------------------------------
+		% Threshold for flagging problem volumes
+		fdPowerThr = 0.2;
+
+		% Get FD
+		fdPower{i} = GetFDPower(mov{i});
+
+		% Calculate mean
+		fdPower_m(i) = mean(fdPower{i});
 
 		% ------------------------------------------------------------------------------
-		% Stringent, multi criteria exclusion
+		% Get DVARS
 		% ------------------------------------------------------------------------------
-		% 1) Exclude on mean rms displacement
+	    % Get dvars
+	    dvars{i} = dlmread([workdir,'dvars.txt']);
+
+	    % ------------------------------------------------------------------------------
+	    % 1) Initial, gross movement exclusion
+	    % ------------------------------------------------------------------------------
+		% Calculate whether subject has suprathreshold mean movement
+		% If the mean of displacement is greater than 0.55 mm (Sattethwaite), then exclude
+		if fdJenk_m(i) > 0.55
+			exclude(i,1) = 1;
+		else
+			exclude(i,1) = 0;
+		end	
+
+		% ------------------------------------------------------------------------------
+		% 2) Stringent, multi criteria exclusion
+		% ------------------------------------------------------------------------------
+		% 2.1) Exclude on mean rms displacement
 			% Calculate whether subject has suprathreshold mean movement
 			% If the mean of displacement is greater than 0.2 mm (Ciric), then exclude
 			if fdJenk_m(i) > 0.2
@@ -104,11 +134,8 @@ function [exclude,mov,fdJenk,fdJenk_m] = GetExcludeForSample(datadir,Participant
 				x = 0;
 			end	
 
-		% 2) Exclude on proportion of spikes
-			% Threshold for detecting 'spikes'
-			fdJenkThr = 0.25;
+		% 2.2) Exclude on proportion of spikes
 			% Calculate whether subject has >20% suprathreshold spikes
-			numVols = size(mov,1)-1;
 			fdJenkThrPerc = round(numVols * 0.20);
 			% If the number of volumes that exceed fdJenkThr are greater than %20, then exclude
 			if sum(fdJenk{i} > fdJenkThr) > fdJenkThrPerc
@@ -117,7 +144,7 @@ function [exclude,mov,fdJenk,fdJenk_m] = GetExcludeForSample(datadir,Participant
 				y = 0;
 			end
 
-		% 3) Exclude on large spikes (>5mm)
+		% 2.3) Exclude on large spikes (>5mm)
 			if any(fdJenk{i} > 5)
 				z = 1;
 			else
@@ -130,6 +157,43 @@ function [exclude,mov,fdJenk,fdJenk_m] = GetExcludeForSample(datadir,Participant
 		else
 			exclude(i,2) = 0;
 		end
+
+	    % ------------------------------------------------------------------------------
+	    % 3) Spike Regression
+	    % ------------------------------------------------------------------------------
+		% threshold for exclusion in minutes
+		thresh = 4;
+
+        % generate spike regressors
+        spikereg = GetSpikeRegressors(fdJenk{i},fdJenkThr);
+
+		% number of volumes - number of spike regressors (columns)
+		numCVols = numVols - size(spikereg,2);
+
+		% Compute length, in minutes, of time series data left after censoring
+		NTime = (numCVols * TR)/60;
+
+		% if less than threshold, mark for exclusion
+		if NTime < thresh
+			exclude(i,3) = 1;
+		else
+			exclude(i,3) = 0;
+		end
+
+	    % ------------------------------------------------------------------------------
+	    % 4) JP12 Scrubbing
+	    % ------------------------------------------------------------------------------
+	    dvarsThr = 30;
+		% scrubProximal = 'yes';
+		scrubProximal = 'no';
+		[JP12ScrubMask{i}, exclude(i,4)] = JP12_GetScrubMask(fdPower{i},dvars{i},TR,fdPowerThr,dvarsThr,scrubProximal);
+
+	    % ------------------------------------------------------------------------------
+	    % 5) JP14 Scrubbing
+	    % ------------------------------------------------------------------------------
+	    dvarsThr = 20;
+		[scrubmask_temp, exclude(i,5)] = JP14_GetScrubMask(fdPower{i},dvars{i},TR,fdPowerThr,dvarsThr);
+		JP14ScrubMask{i} = scrubmask_temp(:,2);	    
 
 	    n = numel(msg);
 	    fprintf(repmat('\b',1,n));
