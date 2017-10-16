@@ -10,7 +10,7 @@ function [QCFCVec,NaNFilter,QCFC_PropSig,QCFC_PropSigUnc,QCFC_AbsMed,QCFC_DistDe
 	% Filter out NaNs:
 	NaNFilter = ~isnan(QCFCVec);
 	if ~any(NaNFilter)
-	    error('\tFATAL: No data left after filtering NaNs!');
+	    error('FATAL: No data left after filtering NaNs!');
 	elseif any(NaNFilter)
 		fprintf(1, '\tDetected %u bad ROIs: Removed %u NaN samples from data \n', sum(sum(isnan(QCFC)) == size(QCFC,1)),sum(~NaNFilter));
 	    QCFCVec = QCFCVec(NaNFilter);
@@ -23,7 +23,9 @@ function [QCFCVec,NaNFilter,QCFC_PropSig,QCFC_PropSigUnc,QCFC_AbsMed,QCFC_DistDe
 	QCFC_PropSigUnc = round(sum(P<0.05) / numel(P) * 100,2);
 
 	% Find absolute median
-	QCFC_AbsMed = median(abs(QCFCVec));
+	QCFC_AbsMed = nanmedian(abs(QCFCVec));
 
 	% Find nodewise correlation between distance and QC-FC
 	[QCFC_DistDep,QCFC_DistDep_Pval] = corr(ROIDistVec(NaNFilter),QCFCVec,'type','Spearman');
+
+end
