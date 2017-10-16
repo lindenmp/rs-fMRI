@@ -1,43 +1,36 @@
 %% run_prepro: 
 % Copyright (C) 2017, Linden Parkes <lindenparkes@gmail.com>,
 
-function [] = run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject,smoothing,discard,slicetime,despike,detr,intnorm)
-    cfg.WhichMASSIVE = WhichMASSIVE;
+function [] = run_prepro(WhichProject,WhichSessScan,subject,smoothing,discard,slicetime,despike,detr,intnorm)
     cfg.WhichProject = WhichProject;
     cfg.WhichSessScan = WhichSessScan;
     cfg.subject = subject;
     % preprocessing options
     if nargin < 5
-        cfg.smoothing = 'after';
-    else
-        cfg.smoothing = smoothing;
-    end
-
-    if nargin < 6
         cfg.discard = 1;
     else
         cfg.discard = discard;
     end
 
-    if nargin < 7
+    if nargin < 6
         cfg.slicetime = 1;
     else
         cfg.slicetime = slicetime;
     end
 
-    if nargin < 8
-        cfg.despike = 1;
+    if nargin < 7
+        cfg.despike = 0;
     else
         cfg.despike = despike;
     end
 
-    if nargin < 9
+    if nargin < 8
         cfg.detr = 1;
     else
         cfg.detr = detr;
     end
 
-    if nargin < 10
+    if nargin < 9
         cfg.intnorm = 1;
     else
         cfg.intnorm = intnorm;
@@ -49,50 +42,32 @@ function [] = run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject,smoothi
     cfg.DateTime = datetime('now');
 
     % ------------------------------------------------------------------------------
-    % Add paths - edit this section
-    % Note, M2 and M3 refer to different clusters on MASSIVE.
-    % Our lab has projects on both clusters, which necessitates switching between.
+    % Parent dir
     % ------------------------------------------------------------------------------
-    switch cfg.WhichMASSIVE
-        case 'M2'
-            % where the prepro scripts are
-            cfg.scriptdir = '/gpfs/M2Home/projects/Monash076/Linden/scripts/rs-fMRI/prepro/';
-            addpath(cfg.scriptdir)
-            cfg.funcdir = '/gpfs/M2Home/projects/Monash076/Linden/scripts/rs-fMRI/func/';
-            addpath(cfg.funcdir)
+    cfg.parentdir = '/home/lindenmp/kg98/Linden/';
+    cfg.parentdir_scratch = '/home/lindenmp/kg98_scratch/Linden/';
 
-            % where spm is
-            cfg.spmdir = '/usr/local/spm8/matlab2014a.r5236/';
-            addpath(cfg.spmdir)
+    % ------------------------------------------------------------------------------
+    % Add paths - edit this section
+    % ------------------------------------------------------------------------------
+    % where the prepro scripts are
+    cfg.scriptdir = [cfg.parentdir,'Scripts/rs-fMRI/prepro/'];
+    addpath(cfg.scriptdir)
+    cfg.funcdir = [cfg.parentdir,'Scripts/rs-fMRI/func/'];
+    addpath(cfg.funcdir)
 
-            % set FSL environments 
-            cfg.fsldir = '/usr/local/fsl/5.0.9/bin/';
-            setenv('FSLDIR',cfg.fsldir(1:end-4));
-            setenv('FSLOUTPUTTYPE','NIFTI');
-            setenv('LD_LIBRARY_PATH',[getenv('PATH'),getenv('LD_LIBRARY_PATH'),':/usr/lib/fsl/5.0'])
+    % where spm is
+    cfg.spmdir = '/usr/local/spm8/matlab2015b.r6685/';
+    addpath(cfg.spmdir)
 
-            % where ICA-AROMA scripts are
-            cfg.scriptdir_ICA = '/gpfs/M2Home/projects/Monash076/Linden/scripts/Software/ICA-AROMA-master/';
-        case 'M3'
-            % where the prepro scripts are
-            cfg.scriptdir = '/home/lindenmp/kg98/Linden/Scripts/rs-fMRI/prepro/';
-            addpath(cfg.scriptdir)
-            cfg.funcdir = '/home/lindenmp/kg98/Linden/Scripts/rs-fMRI/func/';
-            addpath(cfg.funcdir)
+    % set FSL environments 
+    cfg.fsldir = '/usr/local/fsl/5.0.9/fsl/bin/';
+    setenv('FSLDIR',cfg.fsldir(1:end-4));
+    setenv('FSLOUTPUTTYPE','NIFTI');
+    setenv('LD_LIBRARY_PATH',[getenv('PATH'),getenv('LD_LIBRARY_PATH'),':/usr/lib/fsl/5.0'])
 
-            % where spm is
-            cfg.spmdir = '/usr/local/spm8/matlab2015b.r6685/';
-            addpath(cfg.spmdir)
-
-            % set FSL environments 
-            cfg.fsldir = '/usr/local/fsl/5.0.9/fsl/bin/';
-            setenv('FSLDIR',cfg.fsldir(1:end-4));
-            setenv('FSLOUTPUTTYPE','NIFTI');
-            setenv('LD_LIBRARY_PATH',[getenv('PATH'),getenv('LD_LIBRARY_PATH'),':/usr/lib/fsl/5.0'])
-
-            % where ICA-AROMA scripts are
-            cfg.scriptdir_ICA = '/home/lindenmp/kg98/Linden/Scripts/Software/ICA-AROMA-master/';
-    end
+    % where ICA-AROMA scripts are
+    cfg.scriptdir_ICA = [cfg.parentdir,'Scripts/Software/ICA-AROMA-master/'];
 
     % ANTs
     cfg.antsdir = '/usr/local/ants/1.9.v4/bin/';
@@ -104,11 +79,19 @@ function [] = run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject,smoothi
     % ------------------------------------------------------------------------------
     % Set project settings and parameters
     % Use WhichProject if you're juggling multiple datasets
+            % cfg.order = [1:1:cfg.numSlices]; % ascending
+            % cfg.order = [cfg.numSlices:-1:1]; % descending
+            % cfg.order = [1:2:cfg.numSlices,2:2:cfg.numSlices]; % interleaved
+            % cfg.order = [2:2:cfg.numSlices, 1:2:cfg.numSlices-1]; %interleave alt
+            % Reference slice for slice timing acquisition. See SlicetimeEPI.m for guidance on how to define. 
+            % cfg.refSlice = round(cfg.numSlices/2); % use for sequential order (e.g., ascending or descending)
+            % cfg.refSlice = cfg.numSlices-1; % use for interleaved order
+            % cfg.refSlice = cfg.numSlices; % use for interleaved alt order
     % ------------------------------------------------------------------------------
     switch cfg.WhichProject
-        case 'M3_OCDPG'
+        case 'OCDPG'
             % Where the subjects' directories are
-            cfg.datadir = '/home/lindenmp/kg98/Linden/ResProjects/OCDPG/data/';
+            cfg.datadir = [cfg.parentdir_scratch,'ResProjects/rfMRI_denoise/OCDPG/data/'];
 
             switch cfg.WhichSessScan
                 case 'Sess1_Scan1'
@@ -135,112 +118,39 @@ function [] = run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject,smoothi
             cfg.N = 189; 
             % Repetition time of acquistion in secs
             cfg.TR = 2.5;
-            % Desired voxel dimension (in mm) of analysis after spatial normalization
-            cfg.voxdim = 2;
             % Number of slices in EPI volumes.
             cfg.numSlices = 44;
             % Vector defining acquisition order of EPI slices (necessary for slice-timing correction.
             % See help of slicetime_epis.m for guidance on how to define)
-            % cfg.order = [1:1:cfg.numSlices]; % ascending
-            % cfg.order = [cfg.numSlices:-1:1]; % descending
             cfg.order = [1:2:cfg.numSlices,2:2:cfg.numSlices]; % interleaved
-            % cfg.order = [2:2:cfg.numSlices, 1:2:cfg.numSlices-1]; %interleave alt
             % Reference slice for slice timing acquisition. See SlicetimeEPI.m for guidance on how to define. 
-            % cfg.refSlice = round(numSlices/2)); % use for sequential order (e.g., ascending or descending)
             cfg.refSlice = cfg.numSlices-1; % use for interleaved order
-            % cfg.refSlice = cfg.numSlices; % use for interleaved alt order
 
             % Scalar value indicating spatial smoothing kernal size in mm. 
-            cfg.kernel = 4;
+            cfg.kernel = 6;
             % Low-pass cut-off for bandpass filter in Hz (e.g., .08) 
             cfg.LowPass = 0.08;
             % Hi-pass cut-off for bandpass filter in Hz (e.g., .008)
             cfg.HighPass = 0.008;
-            
-            % Select whether to run certain functions in 4D or 3D mode.
-                % Note that BOTH options assume the files are stored in 4D.
-                % I have found that SPM sometimes does not handle loading in 4D files 
-                % that consist of lots of volumes - e.g., in multiband cases or very long sequences (400+ volumes).
-                % In which case, using the '3D' option will take your 4D file, split it up, do something, then concatenate back.
-                % If you've just got a fairly typical fMRI run, leave as '4D'
-            cfg.WhichNii = '4D';
-        case 'OCDPG'
-            % Where the subjects' directories are
-            cfg.datadir = '/gpfs/M2Home/projects/Monash076/Linden/OCDPG/data/';
-
-            switch cfg.WhichSessScan
-                case 'Sess1_Scan1'
-                    % where the unprocessed EPI 4d file is
-                    cfg.rawdir = [cfg.datadir,cfg.subject,'/rfMRI/'];
-                    % Directory where the t1 is
-                    cfg.t1dir = [cfg.datadir,cfg.subject,'/t1/']; 
-            end
-            
-            % where the processed epi 4d files will be output to from prepro_base
-            cfg.preprodir = [cfg.rawdir,'prepro/'];
-
-            % file name of EPI 4d file
-            cfg.EPI = 'epi.nii';
-            % name of t1 file.
-            cfg.t1name = 't1.nii';
-
-            % the path and filename of the template in MNI space to which everything
-            % will be normalized
-            cfg.mni_template = [cfg.spmdir,'templates/T1.nii'];    
-
-            % preprocessing settings
-            % length of time series (no. vols)
-            cfg.N = 189; 
-            % Repetition time of acquistion in secs
-            cfg.TR = 2.5;
-            % Desired voxel dimension (in mm) of analysis after spatial normalization
-            cfg.voxdim = 2;
-            % Number of slices in EPI volumes.
-            cfg.numSlices = 44;
-            % Vector defining acquisition order of EPI slices (necessary for slice-timing correction.
-            % See help of slicetime_epis.m for guidance on how to define)
-            % cfg.order = [1:1:cfg.numSlices]; % ascending
-            % cfg.order = [cfg.numSlices:-1:1]; % descending
-            cfg.order = [1:2:cfg.numSlices,2:2:cfg.numSlices]; % interleaved
-            % cfg.order = [2:2:cfg.numSlices, 1:2:cfg.numSlices-1]; %interleave alt
-            % Reference slice for slice timing acquisition. See SlicetimeEPI.m for guidance on how to define. 
-            % cfg.refSlice = round(numSlices/2)); % use for sequential order (e.g., ascending or descending)
-            cfg.refSlice = cfg.numSlices-1; % use for interleaved order
-            % cfg.refSlice = cfg.numSlices; % use for interleaved alt order
-
-            % Scalar value indicating spatial smoothing kernal size in mm. 
-            cfg.kernel = 8;
-            % Low-pass cut-off for bandpass filter in Hz (e.g., .08) 
-            cfg.LowPass = 0.08;
-            % Hi-pass cut-off for bandpass filter in Hz (e.g., .008)
-            cfg.HighPass = 0.008;
-            
-            % Select whether to run certain functions in 4D or 3D mode.
-                % Note that BOTH options assume the files are stored in 4D.
-                % I have found that SPM sometimes does not handle loading in 4D files 
-                % that consist of lots of volumes - e.g., in multiband cases or very long sequences (400+ volumes).
-                % In which case, using the '3D' option will take your 4D file, split it up, do something, then concatenate back.
-                % If you've just got a fairly typical fMRI run, leave as '4D'
-            cfg.WhichNii = '4D';
         case 'UCLA'
             % Where the subjects' directories are
-            cfg.datadir = '/gpfs/M2Home/projects/Monash076/Linden/UCLA/data/';
+            cfg.datadir = [cfg.parentdir_scratch,'ResProjects/rfMRI_denoise/UCLA/data/'];
 
             switch cfg.WhichSessScan
                 case 'Sess1_Scan1'
                     % where the unprocessed EPI 4d file is
-                    cfg.rawdir = [cfg.datadir,cfg.subject,'/rfMRI/'];
+                    cfg.rawdir = [cfg.datadir,cfg.subject,'/func/'];
                     % Directory where the t1 is
-                    cfg.t1dir = [cfg.datadir,cfg.subject,'/t1/']; 
+                    cfg.t1dir = [cfg.datadir,cfg.subject,'/anat/']; 
             end
 
             % where the processed epi 4d files will be output to from prepro_base
             cfg.preprodir = [cfg.rawdir,'prepro/']; 
             
             % file name of EPI 4d file
-            cfg.EPI = 'epi.nii';
+            cfg.EPI = [cfg.subject,'_task-rest_bold.nii'];
             % name of t1 file.
-            cfg.t1name = 't1.nii';
+            cfg.t1name = [cfg.subject,'_T1w.nii'];
 
             % the path and filename of the template in MNI space to which everything
             % will be normalized
@@ -251,49 +161,37 @@ function [] = run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject,smoothi
             cfg.N = 152; 
             % Repetition time of acquistion in secs
             cfg.TR = 2;
-            % Desired voxel dimension (in mm) of analysis after spatial normalization
-            cfg.voxdim = 2;
             % Number of slices in EPI volumes.
             cfg.numSlices = 34;
             % Vector defining acquisition order of EPI slices (necessary for slice-timing correction.
             % See help of slicetime_epis.m for guidance on how to define)
-            % cfg.order = [1:1:cfg.numSlices]; % ascending
-            % cfg.order = [cfg.numSlices:-1:1]; % descending
             cfg.order = [1:2:cfg.numSlices,2:2:cfg.numSlices]; % interleaved
             % Reference slice for slice timing acquisition. See SlicetimeEPI.m for guidance on how to define. 
-            % refSlice = round(numSlices/2)); % use for sequential order (e.g., ascending or descending)
             cfg.refSlice = cfg.numSlices-1; % use for interleaved order
+           
             % Scalar value indicating spatial smoothing kernal size in mm. 
-            cfg.kernel = 8;
+            cfg.kernel = 6;
             % Low-pass cut-off for bandpass filter in Hz (e.g., .08) 
             cfg.LowPass = 0.08;
             % Hi-pass cut-off for bandpass filter in Hz (e.g., .008)
             cfg.HighPass = 0.008;
-            
-            % Select whether to run certain functions in 4D or 3D mode.
-                % Note that BOTH options assume the files are stored in 4D.
-                % I have found that SPM sometimes does not handle loading in 4D files 
-                % that consist of lots of volumes - e.g., in multiband cases or very long sequences (400+ volumes).
-                % In which case, using the '3D' option will take your 4D file, split it up, do something, then concatenate back.
-                % If you've just got a fairly typical fMRI run, leave as '4D'
-            cfg.WhichNii = '4D';
         case 'NYU_2'
             % Where the subjects' directories are
-            cfg.datadir = '/gpfs/M2Home/projects/Monash076/Linden/NYU_2/data/';
+            cfg.datadir = [cfg.parentdir_scratch,'ResProjects/rfMRI_denoise/NYU_2/data/'];
             
             % where the unprocessed EPI 4d file is
             % cfg.WhichSessScan = 'Sess1_Scan1';
             switch cfg.WhichSessScan
                 case 'Sess1_Scan1'
                     % where the unprocessed EPI 4d file is
-                    cfg.rawdir = [cfg.datadir,cfg.subject,'/session_1/rest_1/'];
+                    cfg.rawdir = [cfg.datadir,cfg.subject,'/session_1/func_1/'];
                     % Directory where the t1 is
                     cfg.t1dir = [cfg.datadir,cfg.subject,'/session_1/anat_1/']; 
                 case 'Sess1_Scan2'
-                    cfg.rawdir = [cfg.datadir,cfg.subject,'/session_1/rest_2/'];
+                    cfg.rawdir = [cfg.datadir,cfg.subject,'/session_1/func_2/'];
                     cfg.t1dir = [cfg.datadir,cfg.subject,'/session_1/anat_1/']; 
                 case 'Sess2_Scan1'
-                    cfg.rawdir = [cfg.datadir,cfg.subject,'/session_2/rest_1/'];
+                    cfg.rawdir = [cfg.datadir,cfg.subject,'/session_2/func_1/'];
                     cfg.t1dir = [cfg.datadir,cfg.subject,'/session_2/anat_1/']; 
             end
 
@@ -301,9 +199,9 @@ function [] = run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject,smoothi
             cfg.preprodir = [cfg.rawdir,'prepro/'];
             
             % file name of EPI 4d file
-            cfg.EPI = 'rest.nii';
+            cfg.EPI = [cfg.subject,'_task-rest_bold.nii'];
             % name of t1 file.
-            cfg.t1name = 'anat.nii';
+            cfg.t1name = [cfg.subject,'_T1w.nii'];
 
             % the path and filename of the template in MNI space to which everything
             % will be normalized
@@ -314,57 +212,39 @@ function [] = run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject,smoothi
             cfg.N = 180; 
             % Repetition time of acquistion in secs
             cfg.TR = 2;
-            % Desired voxel dimension (in mm) of analysis after spatial normalization
-            cfg.voxdim = 2;
             % Number of slices in EPI volumes.
             cfg.numSlices = 33;
             % Vector defining acquisition order of EPI slices (necessary for slice-timing correction.
             % See help of slicetime_epis.m for guidance on how to define)
-            % cfg.order = [1:1:cfg.numSlices]; % ascending
-            % cfg.order = [cfg.numSlices:-1:1]; % descending
             cfg.order = [1:2:cfg.numSlices,2:2:cfg.numSlices]; % interleaved
-            % cfg.order = [2:2:cfg.numSlices, 1:2:cfg.numSlices-1]; %interleave alt
             % Reference slice for slice timing acquisition. See SlicetimeEPI.m for guidance on how to define. 
-            % cfg.refSlice = round(numSlices/2)); % use for sequential order (e.g., ascending or descending)
             cfg.refSlice = cfg.numSlices-1; % use for interleaved order
-            % cfg.refSlice = cfg.numSlices; % use for interleaved alt order
 
             % Scalar value indicating spatial smoothing kernal size in mm. 
-            cfg.kernel = 8;
+            cfg.kernel = 6;
             % Low-pass cut-off for bandpass filter in Hz (e.g., .08) 
             cfg.LowPass = 0.08;
             % Hi-pass cut-off for bandpass filter in Hz (e.g., .008)
             cfg.HighPass = 0.008;
-            
-            % Select whether to run certain functions in 4D or 3D mode.
-                % Note that BOTH options assume the files are stored in 4D.
-                % I have found that SPM sometimes does not handle loading in 4D files 
-                % that consist of lots of volumes - e.g., in multiband cases or very long sequences (400+ volumes).
-                % In which case, using the '3D' option will take your 4D file, split it up, do something, then concatenate back.
-                % If you've just got a fairly typical fMRI run, leave as '4D'
-            cfg.WhichNii = '4D';
-        case 'GoC'
+        case 'COBRE'
             % Where the subjects' directories are
-            cfg.datadir = '/projects/kg98/kristina/GenofCog/data/';
+            cfg.datadir = [cfg.parentdir_scratch,'ResProjects/rfMRI_denoise/COBRE/data/'];
 
-             switch cfg.WhichSessScan
+            switch cfg.WhichSessScan
                 case 'Sess1_Scan1'
                     % where the unprocessed EPI 4d file is
-                    cfg.rawdir = [cfg.datadir,cfg.subject,'/rfMRI/'];
+                    cfg.rawdir = [cfg.datadir,cfg.subject,'/func/'];
                     % Directory where the t1 is
-                    cfg.t1dir = [cfg.datadir,cfg.subject,'/t1/']; 
+                    cfg.t1dir = [cfg.datadir,cfg.subject,'/anat/']; 
             end
 
-
             % where the processed epi 4d files will be output to from prepro_base
-            cfg.preprodir = [cfg.rawdir,'prepro/'];
+            cfg.preprodir = [cfg.rawdir,'prepro/']; 
+            
             % file name of EPI 4d file
-            cfg.EPI = 'epi.nii';
-
-            % Directory where the t1 is
-            cfg.t1dir = [cfg.datadir,cfg.subject,'/t1/']; 
+            cfg.EPI = [cfg.subject,'_task-rest_bold.nii'];
             % name of t1 file.
-            cfg.t1name = 't1.nii';
+            cfg.t1name = [cfg.subject,'_T1w.nii'];
 
             % the path and filename of the template in MNI space to which everything
             % will be normalized
@@ -372,38 +252,69 @@ function [] = run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject,smoothi
 
             % preprocessing settings
             % length of time series (no. vols)
-            cfg.N = 620; 
+            cfg.N = 150; 
             % Repetition time of acquistion in secs
-            cfg.TR = 0.754;
-            % Desired voxel dimension (in mm) of analysis after spatial normalization
-            cfg.voxdim = 2;
+            cfg.TR = 2;
             % Number of slices in EPI volumes.
-            cfg.numSlices = [];
+            cfg.numSlices = 33;
             % Vector defining acquisition order of EPI slices (necessary for slice-timing correction.
             % See help of slicetime_epis.m for guidance on how to define)
-            % cfg.order = [1:1:cfg.numSlices]; % ascending
-            % cfg.order = [cfg.numSlices:-1:1]; % descending
-            cfg.order = []; % interleaved
+            cfg.order = [1:2:cfg.numSlices,2:2:cfg.numSlices]; % interleaved
             % Reference slice for slice timing acquisition. See SlicetimeEPI.m for guidance on how to define. 
-            % cfg.refSlice = round(numSlices/2)); % use for sequential order (e.g., ascending or descending)
-            cfg.refSlice = []; % use for interleaved order
+            cfg.refSlice = cfg.numSlices-1; % use for interleaved order
+            
             % Scalar value indicating spatial smoothing kernal size in mm. 
-            cfg.kernel = 8;
+            cfg.kernel = 6;
             % Low-pass cut-off for bandpass filter in Hz (e.g., .08) 
             cfg.LowPass = 0.08;
             % Hi-pass cut-off for bandpass filter in Hz (e.g., .008)
             cfg.HighPass = 0.008;
-
-            % Select whether to run certain functions in 4D or 3D mode.
-                % Note that BOTH options assume the files are stored in 4D.
-                % I have found that SPM sometimes does not handle loading in 4D files 
-                % that consist of lots of volumes - e.g., in multiband cases or very long sequences (400+ volumes).
-                % In which case, using the '3D' option will take your 4D file, split it up, do something, then concatenate back.
-                % If you've just got a fairly typical fMRI run, leave as '4D'
-            cfg.WhichNii = '3D';
-        case 'M3_COBRE'
+        case 'Beijing_Zang'
             % Where the subjects' directories are
-            cfg.datadir = '/home/lindenmp/kg98/Linden/ResProjects/SCZ_HCTSA/COBRE/data/';
+            cfg.datadir = [cfg.parentdir_scratch,'ResProjects/rfMRI_denoise/Beijing_Zang/data/'];
+
+            switch cfg.WhichSessScan
+                case 'Sess1_Scan1'
+                    % where the unprocessed EPI 4d file is
+                    cfg.rawdir = [cfg.datadir,cfg.subject,'/func/'];
+                    % Directory where the t1 is
+                    cfg.t1dir = [cfg.datadir,cfg.subject,'/anat/']; 
+            end
+
+            % where the processed epi 4d files will be output to from prepro_base
+            cfg.preprodir = [cfg.rawdir,'prepro/']; 
+            
+            % file name of EPI 4d file
+            cfg.EPI = [cfg.subject,'_task-rest_bold.nii'];
+            % name of t1 file.
+            cfg.t1name = [cfg.subject,'_T1w.nii'];
+
+            % the path and filename of the template in MNI space to which everything
+            % will be normalized
+            cfg.mni_template = [cfg.spmdir,'templates/T1.nii'];    
+
+            % preprocessing settings
+            % length of time series (no. vols)
+            cfg.N = 225; 
+            % Repetition time of acquistion in secs
+            cfg.TR = 2;
+            % Number of slices in EPI volumes.
+            cfg.numSlices = 33;
+            % Vector defining acquisition order of EPI slices (necessary for slice-timing correction.
+            % See help of slicetime_epis.m for guidance on how to define)
+            cfg.order = [1:2:cfg.numSlices,2:2:cfg.numSlices]; % interleaved
+            % Reference slice for slice timing acquisition. See SlicetimeEPI.m for guidance on how to define. 
+            cfg.refSlice = cfg.numSlices-1; % use for interleaved order
+            
+            % Scalar value indicating spatial smoothing kernal size in mm. 
+            cfg.kernel = 6;
+            % Low-pass cut-off for bandpass filter in Hz (e.g., .08) 
+            cfg.LowPass = 0.08;
+            % Hi-pass cut-off for bandpass filter in Hz (e.g., .008)
+            cfg.HighPass = 0.008;
+        case 'COBRE_HCTSA'
+            % Where the subjects' directories are
+            cfg.datadir = [cfg.parentdir,'ResProjects/SCZ_HCTSA/COBRE/data/'];
 
             switch cfg.WhichSessScan
                 case 'Sess1_Scan1'
@@ -430,35 +341,23 @@ function [] = run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject,smoothi
             cfg.N = 150; 
             % Repetition time of acquistion in secs
             cfg.TR = 2;
-            % Desired voxel dimension (in mm) of analysis after spatial normalization
-            cfg.voxdim = 2;
             % Number of slices in EPI volumes.
             cfg.numSlices = 33;
             % Vector defining acquisition order of EPI slices (necessary for slice-timing correction.
             % See help of slicetime_epis.m for guidance on how to define)
-            % cfg.order = [1:1:cfg.numSlices]; % ascending
-            % cfg.order = [cfg.numSlices:-1:1]; % descending
             cfg.order = [1:2:cfg.numSlices,2:2:cfg.numSlices]; % interleaved
             % Reference slice for slice timing acquisition. See SlicetimeEPI.m for guidance on how to define. 
-            % refSlice = round(numSlices/2)); % use for sequential order (e.g., ascending or descending)
             cfg.refSlice = cfg.numSlices-1; % use for interleaved order
+
             % Scalar value indicating spatial smoothing kernal size in mm. 
             cfg.kernel = 8;
             % Low-pass cut-off for bandpass filter in Hz (e.g., .08) 
             cfg.LowPass = 10^6;
             % Hi-pass cut-off for bandpass filter in Hz (e.g., .008)
             cfg.HighPass = 0.008;
-            
-            % Select whether to run certain functions in 4D or 3D mode.
-                % Note that BOTH options assume the files are stored in 4D.
-                % I have found that SPM sometimes does not handle loading in 4D files 
-                % that consist of lots of volumes - e.g., in multiband cases or very long sequences (400+ volumes).
-                % In which case, using the '3D' option will take your 4D file, split it up, do something, then concatenate back.
-                % If you've just got a fairly typical fMRI run, leave as '4D'
-            cfg.WhichNii = '4D';
-        case 'M3_UCLA'
+        case 'UCLA_HCTSA'
             % Where the subjects' directories are
-            cfg.datadir = '/home/lindenmp/kg98/Linden/ResProjects/SCZ_HCTSA/UCLA/data/';
+            cfg.datadir = [cfg.parentdir,'ResProjects/SCZ_HCTSA/UCLA/data/'];
 
             switch cfg.WhichSessScan
                 case 'Sess1_Scan1'
@@ -485,35 +384,23 @@ function [] = run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject,smoothi
             cfg.N = 152; 
             % Repetition time of acquistion in secs
             cfg.TR = 2;
-            % Desired voxel dimension (in mm) of analysis after spatial normalization
-            cfg.voxdim = 2;
             % Number of slices in EPI volumes.
             cfg.numSlices = 34;
             % Vector defining acquisition order of EPI slices (necessary for slice-timing correction.
             % See help of slicetime_epis.m for guidance on how to define)
-            % cfg.order = [1:1:cfg.numSlices]; % ascending
-            % cfg.order = [cfg.numSlices:-1:1]; % descending
             cfg.order = [1:2:cfg.numSlices,2:2:cfg.numSlices]; % interleaved
             % Reference slice for slice timing acquisition. See SlicetimeEPI.m for guidance on how to define. 
-            % refSlice = round(numSlices/2)); % use for sequential order (e.g., ascending or descending)
             cfg.refSlice = cfg.numSlices-1; % use for interleaved order
+
             % Scalar value indicating spatial smoothing kernal size in mm. 
             cfg.kernel = 8;
             % Low-pass cut-off for bandpass filter in Hz (e.g., .08) 
             cfg.LowPass = 10^6;
             % Hi-pass cut-off for bandpass filter in Hz (e.g., .008)
             cfg.HighPass = 0.008;
-            
-            % Select whether to run certain functions in 4D or 3D mode.
-                % Note that BOTH options assume the files are stored in 4D.
-                % I have found that SPM sometimes does not handle loading in 4D files 
-                % that consist of lots of volumes - e.g., in multiband cases or very long sequences (400+ volumes).
-                % In which case, using the '3D' option will take your 4D file, split it up, do something, then concatenate back.
-                % If you've just got a fairly typical fMRI run, leave as '4D'
-            cfg.WhichNii = '4D';
-        case 'M3_NAMIC'
+        case 'NAMIC_HCTSA'
             % Where the subjects' directories are
-            cfg.datadir = '/home/lindenmp/kg98/Linden/ResProjects/SCZ_HCTSA/NAMIC/data/';
+            cfg.datadir = [cfg.parentdir,'ResProjects/SCZ_HCTSA/NAMIC/data/'];
 
             switch cfg.WhichSessScan
                 case 'Sess1_Scan1'
@@ -540,38 +427,230 @@ function [] = run_prepro(WhichMASSIVE,WhichProject,WhichSessScan,subject,smoothi
             cfg.N = 200; 
             % Repetition time of acquistion in secs
             cfg.TR = 3;
-            % Desired voxel dimension (in mm) of analysis after spatial normalization
-            cfg.voxdim = 2;
             % Number of slices in EPI volumes.
             cfg.numSlices = 39;
             % Vector defining acquisition order of EPI slices (necessary for slice-timing correction.
             % See help of slicetime_epis.m for guidance on how to define)
-            % cfg.order = [1:1:cfg.numSlices]; % ascending
-            % cfg.order = [cfg.numSlices:-1:1]; % descending
             cfg.order = [1:2:cfg.numSlices,2:2:cfg.numSlices]; % interleaved
             % Reference slice for slice timing acquisition. See SlicetimeEPI.m for guidance on how to define. 
-            % refSlice = round(numSlices/2)); % use for sequential order (e.g., ascending or descending)
             cfg.refSlice = cfg.numSlices-1; % use for interleaved order
+
             % Scalar value indicating spatial smoothing kernal size in mm. 
             cfg.kernel = 8;
             % Low-pass cut-off for bandpass filter in Hz (e.g., .08) 
             cfg.LowPass = 10^6;
             % Hi-pass cut-off for bandpass filter in Hz (e.g., .008)
             cfg.HighPass = 0.008;
+        case 'conc_TMS_FMRI'
+            % Where the subjects' directories are
+            cfg.datadir = '/home/lindenmp/kg98/Morrowj/PROJECTS/conc_TMS_FMRI/rawdata/';
+
+            switch cfg.WhichSessScan
+                case 'FUp_Scan1'
+                    % where the unprocessed EPI 4d file is
+                    cfg.rawdir = [cfg.datadir,cfg.subject,'/func/'];
+                    cfg.preprodir = [cfg.rawdir,'prepro_FUp1/'];
+                    cfg.EPI = [cfg.subject,'_task-FUP1_bold.nii'];
+
+                    % Directory where the t1 is
+                    cfg.t1dir = [cfg.datadir,cfg.subject,'/anat_FUp/']; % DLPFC, SFG and SHAM 
+                    cfg.t1name = [cfg.subject,'_FUP_T1w.nii'];
+                case 'FUp_Scan2'
+                    % where the unprocessed EPI 4d file is
+                    cfg.rawdir = [cfg.datadir,cfg.subject,'/func/'];
+                    cfg.preprodir = [cfg.rawdir,'prepro_FUp2/'];
+                    cfg.EPI = [cfg.subject,'_task-FUP2_bold.nii'];
+
+                    % Directory where the t1 is
+                    cfg.t1dir = [cfg.datadir,cfg.subject,'/anat_FUp/']; % TPJ
+                    cfg.t1name = [cfg.subject,'_FUP_T1w.nii'];
+                case 'FDown_Scan1'
+                    % where the unprocessed EPI 4d file is
+                    cfg.rawdir = [cfg.datadir,cfg.subject,'/func/'];
+                    cfg.preprodir = [cfg.rawdir,'prepro_FDown1/'];
+                    cfg.EPI = [cfg.subject,'_task-FDOWN1_bold.nii'];
+
+                    % Directory where the t1 is
+                    cfg.t1dir = [cfg.datadir,cfg.subject,'/anat_FDown/']; % TPJ
+                    cfg.t1name = [cfg.subject,'_FDOWN_T1w.nii'];
+                    cfg.t14norm = [cfg.subject,'_FUP_T1w.nii.gz'];
+                case 'FDown_Scan2'
+                    % where the unprocessed EPI 4d file is
+                    cfg.rawdir = [cfg.datadir,cfg.subject,'/func/'];
+                    cfg.preprodir = [cfg.rawdir,'prepro_FDown2/'];
+                    cfg.EPI = [cfg.subject,'_task-FDOWN2_bold.nii'];
+
+                    % Directory where the t1 is
+                    cfg.t1dir = [cfg.datadir,cfg.subject,'/anat_FDown/']; % TPJ
+                    cfg.t1name = [cfg.subject,'_FDOWN_T1w.nii'];
+                    cfg.t14norm = [cfg.subject,'_FUP_T1w.nii.gz'];
+            end
             
-            % Select whether to run certain functions in 4D or 3D mode.
-                % Note that BOTH options assume the files are stored in 4D.
-                % I have found that SPM sometimes does not handle loading in 4D files 
-                % that consist of lots of volumes - e.g., in multiband cases or very long sequences (400+ volumes).
-                % In which case, using the '3D' option will take your 4D file, split it up, do something, then concatenate back.
-                % If you've just got a fairly typical fMRI run, leave as '4D'
-            cfg.WhichNii = '4D';
+            % the path and filename of the template in MNI space to which everything
+            % will be normalized
+            cfg.mni_template = [cfg.spmdir,'templates/T1.nii'];    
+
+            % preprocessing settings
+            % length of time series (no. vols)
+            cfg.N = 186; 
+            % Repetition time of acquistion in secs
+            cfg.TR = 2.76;
+            % Number of slices in EPI volumes.
+            cfg.numSlices = 44;
+            % Vector defining acquisition order of EPI slices (necessary for slice-timing correction.
+            % See help of slicetime_epis.m for guidance on how to define)
+            cfg.order = [1:2:cfg.numSlices,2:2:cfg.numSlices]; % interleaved
+            % Reference slice for slice timing acquisition. See SlicetimeEPI.m for guidance on how to define. 
+            cfg.refSlice = cfg.numSlices-1; % use for interleaved order
+
+            % Scalar value indicating spatial smoothing kernal size in mm. 
+            cfg.kernel = 6;
+            % Low-pass cut-off for bandpass filter in Hz (e.g., .08) 
+            cfg.LowPass = 0.08;
+            % Hi-pass cut-off for bandpass filter in Hz (e.g., .008)
+            cfg.HighPass = 0.008;            
+        case 'Activebrains_pre'
+            % Where the subjects' directories are
+            cfg.datadir = '/scratch/kg98/IreneEsteban/Activebrains_pre/data/';
+
+            switch cfg.WhichSessScan
+                case 'Sess1_Scan1'
+                    % where the unprocessed EPI 4d file is
+                    cfg.rawdir = [cfg.datadir,cfg.subject,'/func/'];
+                    % Directory where the t1 is
+                    cfg.t1dir = [cfg.datadir,cfg.subject,'/anat/']; 
+            end
+            
+            % where the processed epi 4d files will be output to from prepro_base
+            cfg.preprodir = [cfg.rawdir,'prepro/'];
+
+            % file name of EPI 4d file
+            cfg.EPI = [cfg.subject,'_task-rest_bold.nii'];
+            % name of t1 file.
+            cfg.t1name = [cfg.subject,'_T1w.nii'];
+
+            % the path and filename of the template in MNI space to which everything
+            % will be normalized
+            cfg.mni_template = [cfg.spmdir,'templates/T1.nii'];    
+
+            % preprocessing settings
+            % length of time series (no. vols)
+            cfg.N = 160; 
+            % Repetition time of acquistion in secs
+            cfg.TR = 2;
+            % Number of slices in EPI volumes.
+            cfg.numSlices = 35;
+            % Vector defining acquisition order of EPI slices (necessary for slice-timing correction.
+            % See help of slicetime_epis.m for guidance on how to define)
+            cfg.order = [cfg.numSlices:-1:1]; % descending
+            % Reference slice for slice timing acquisition. See SlicetimeEPI.m for guidance on how to define. 
+            cfg.refSlice = round(cfg.numSlices/2); % use for sequential order (e.g., ascending or descending)
+
+            % Scalar value indicating spatial smoothing kernal size in mm. 
+            cfg.kernel = 6;
+            % Low-pass cut-off for bandpass filter in Hz (e.g., .08) 
+            cfg.LowPass = 0.08;
+            % Hi-pass cut-off for bandpass filter in Hz (e.g., .008)
+            cfg.HighPass = 0.008;
+        case 'TBS_fMRI'
+            % Where the subjects' directories are
+            cfg.datadir = [cfg.parentdir_scratch,'ResProjects/TBS_fMRI/data/'];
+
+            switch cfg.WhichSessScan
+                case 'Sess1_Scan1'
+                    % where the unprocessed EPI 4d file is
+                    cfg.rawdir = [cfg.datadir,cfg.subject,'/func_1/'];
+                    % Directory where the t1 is
+                    cfg.t1dir = [cfg.datadir,cfg.subject,'/anat/']; 
+                case 'Sess1_Scan2'
+                    % where the unprocessed EPI 4d file is
+                    cfg.rawdir = [cfg.datadir,cfg.subject,'/func_2/'];
+                    % Directory where the t1 is
+                    cfg.t1dir = [cfg.datadir,cfg.subject,'/anat/']; 
+            end
+
+            % where the processed epi 4d files will be output to from prepro_base
+            cfg.preprodir = [cfg.rawdir,'prepro/']; 
+            
+            % file name of EPI 4d file
+            cfg.EPI = [cfg.subject,'_task-rest_bold.nii'];
+            % name of t1 file.
+            cfg.t1name = [cfg.subject,'_T1w.nii'];
+
+            % the path and filename of the template in MNI space to which everything
+            % will be normalized
+            cfg.mni_template = [cfg.spmdir,'templates/T1.nii'];    
+
+            % preprocessing settings
+            % length of time series (no. vols)
+            cfg.N = 193; 
+            % Repetition time of acquistion in secs
+            cfg.TR = 2.46;
+
+            % Number of slices in EPI volumes.
+            cfg.numSlices = 44;
+            % Vector defining acquisition order of EPI slices (necessary for slice-timing correction.
+            % See help of slicetime_epis.m for guidance on how to define)
+            cfg.order = [1:2:cfg.numSlices,2:2:cfg.numSlices]; % interleaved
+            % Reference slice for slice timing acquisition. See SlicetimeEPI.m for guidance on how to define. 
+            cfg.refSlice = cfg.numSlices-1; % use for interleaved order
+           
+            % Scalar value indicating spatial smoothing kernal size in mm. 
+            cfg.kernel = 6;
+            % Low-pass cut-off for bandpass filter in Hz (e.g., .08) 
+            cfg.LowPass = 10^6;
+            % Hi-pass cut-off for bandpass filter in Hz (e.g., .008)
+            cfg.HighPass = 0.008;
+    end
+
+    % ------------------------------------------------------------------------------
+    % conc_TMS_FMRI
+    % ------------------------------------------------------------------------------
+    if ismember('conc_TMS_FMRI',cfg.WhichProject,'rows')
+        if exist(cfg.t1dir) == 0
+            fprintf(1,'\t\t Initialising t1dir\n')
+            mkdir(cfg.t1dir)
+        elseif exist(cfg.t1dir) == 7
+            fprintf(1,'\t\t Cleaning and re-initialising t1dir\n')
+            rmdir(cfg.t1dir,'s')
+            mkdir(cfg.t1dir)
+        end
+
+        fprintf(1,'\t\t Copying t1\n')
+        copyfile([cfg.datadir,cfg.subject,'/anat/',cfg.t1name,'*'],cfg.t1dir)
+
+        if ismember('FDown_Scan1',cfg.WhichSessScan,'rows') | ismember('FDown_Scan2',cfg.WhichSessScan,'rows')
+            fprintf(1,'\t\t Copying face down t1 as well...\n')
+            copyfile([cfg.datadir,cfg.subject,'/anat/',cfg.t14norm,'*'],cfg.t1dir)
+        end
     end
 
     % ------------------------------------------------------------------------------
     % run prepro_base
+    runBase = 1;
     % ------------------------------------------------------------------------------
-    [cfg.tN,cfg.gm,cfg.wm,cfg.csf,cfg.epiBrainMask,cfg.t1BrainMask,cfg.BrainMask,cfg.gmmask,cfg.wmmask,cfg.csfmask,cfg.dvars,cfg.dvarsExtract,cfg.outEPI] = prepro_base(cfg);
+    if runBase == 1
+        [cfg.tN,cfg.gm,cfg.wm,cfg.csf,cfg.epiBrainMask,cfg.t1BrainMask,cfg.BrainMask,cfg.gmmask,cfg.wmmask,cfg.csfmask,cfg.dvars,cfg.dvarsExtract,cfg.fdThr,cfg.dvarsThr,cfg.exclude,cfg.outEPI] = prepro_base(cfg);
+    elseif runBase == 0
+        % assumes 6P has been run
+        temp = load([cfg.preprodir,'/6P/cfg.mat']);
+        cfg.tN = temp.cfg.tN;
+        cfg.gm = temp.cfg.gm;
+        cfg.wm = temp.cfg.wm;
+        cfg.csf = temp.cfg.csf;
+        cfg.epiBrainMask = temp.cfg.epiBrainMask;
+        cfg.t1BrainMask = temp.cfg.t1BrainMask;
+        cfg.BrainMask = temp.cfg.BrainMask;
+        cfg.gmmask = temp.cfg.gmmask;
+        cfg.wmmask = temp.cfg.wmmask;
+        cfg.csfmask = temp.cfg.csfmask;
+        cfg.dvars = temp.cfg.dvars;
+        cfg.dvarsExtract = temp.cfg.dvarsExtract;
+        cfg.fdThr = temp.cfg.fdThr;
+        cfg.dvarsThr = temp.cfg.dvarsThr;
+        cfg.exclude = temp.cfg.exclude;
+        cfg.outEPI = temp.cfg.outEPI;
+    end
 
     % ------------------------------------------------------------------------------
     % noise correction and time series
