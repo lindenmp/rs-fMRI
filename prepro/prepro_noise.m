@@ -147,27 +147,21 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
     % If they are, decompress.
     % They will all be recompressed once again after run_prepro.m completes
     % ------------------------------------------------------------------------------
-        filesToCheck = {cfg.CleanIn, ...
-                        cfg.NuisanceIn_wm, ...
-                        cfg.NuisanceIn_csf, ...
-                        cfg.wmmask, ...
-                        cfg.csfmask, ...
-                        cfg.BrainMask};
+        filesToCheck = {{cfg.CleanIn,cfg.NuisanceIn_wm,cfg.NuisanceIn_csf,cfg.BrainMask}, ...
+                        [cfg.wm,cfg.csf,cfg.gmmask]};
 
         dirsOfFiles = {cfg.preprodir, ...
-                        cfg.preprodir, ...
-                        cfg.preprodir, ...
-                        cfg.t1dir, ...
-                        cfg.t1dir, ...
-                        cfg.preprodir};
+                        cfg.t1dir};
 
         for i = 1:length(filesToCheck)
-            if exist([dirsOfFiles{i},filesToCheck{i},'.gz']) == 2
-                fprintf(1, '\t\t Decompressing %s\n',filesToCheck{i});
-                gunzip([dirsOfFiles{i},filesToCheck{i},'.gz'],dirsOfFiles{i})
-                delete([dirsOfFiles{i},filesToCheck{i},'.gz'])
-            elseif exist([dirsOfFiles{i},filesToCheck{i},'.gz']) == 0
-                fprintf(1, '\t\t No need to decompress %s\n',filesToCheck{i});
+            for j = 1:length(filesToCheck{i})
+                if exist([dirsOfFiles{i},filesToCheck{i}{j},'.gz']) == 2
+                    fprintf(1, '\t\t Decompressing %s\n',filesToCheck{i}{j});
+                    gunzip([dirsOfFiles{i},filesToCheck{i}{j},'.gz'],dirsOfFiles{i})
+                    delete([dirsOfFiles{i},filesToCheck{i}{j},'.gz'])
+                elseif exist([dirsOfFiles{i},filesToCheck{i}{j},'.gz']) == 0
+                    fprintf(1, '\t\t No need to decompress %s\n',filesToCheck{i}{j});
+                end
             end
         end
 
@@ -251,6 +245,7 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
     
                 if cfg.runReg == 1
                     str = ['python2.7 ',cfg.scriptdir_ICA,'ICA_AROMA.py -in ',cfg.preprodir,cfg.CleanIn,' -out ',ICA_outdir,' -mc ',cfg.preprodir,'raw_mov/rp*.txt -m ',cfg.preprodir,cfg.BrainMask,' -tr ',num2str(cfg.TR)];
+                    % str = ['python2.7 ',cfg.scriptdir_ICA,'ICA_AROMA.py -in ',cfg.preprodir,cfg.CleanIn,' -out ',ICA_outdir,' -mc ',cfg.preprodir,'rp*.txt -m ',cfg.preprodir,cfg.BrainMask,' -tr ',num2str(cfg.TR)];
                     system(str);
 
                     % unzip
@@ -269,6 +264,7 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
 
                 elseif cfg.runReg == 0
                     str = ['python2.7 ',cfg.scriptdir_ICA,'ICA_AROMA.py -in ',cfg.preprodir,cfg.CleanIn,' -out ',ICA_outdir,' -mc ',cfg.preprodir,'raw_mov/rp*.txt -m ',cfg.preprodir,cfg.BrainMask,' -tr ',num2str(cfg.TR),' -den no'];
+                    % str = ['python2.7 ',cfg.scriptdir_ICA,'ICA_AROMA.py -in ',cfg.preprodir,cfg.CleanIn,' -out ',ICA_outdir,' -mc ',cfg.preprodir,'rp*.txt -m ',cfg.preprodir,cfg.BrainMask,' -tr ',num2str(cfg.TR),' -den no'];
                     system(str);
                 end
 
@@ -299,6 +295,8 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
         % read in motion
         mfile = dir([cfg.preprodir,'raw_mov/rp*.txt']);
         mov = dlmread([cfg.preprodir,'raw_mov/',mfile(1).name]);
+        % mfile = dir([cfg.preprodir,'rp*.txt']);
+        % mov = dlmread([cfg.preprodir,mfile(1).name]);
 
     % ------------------------------------------------------------------------------
     % 2) Physiological time series
@@ -341,6 +339,8 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
             % Note correlation to WM will likely be 0.1-0.2 higher than in Power et al., because Power uses the ribbon only to get GM (ribbon is better)
             str = [cfg.fsldir,'fslmeants -i ',cfg.preprodir,cfg.CleanIn,' -o gmTS.txt -m ',cfg.t1dir,cfg.gmmask];
             system(str);             
+
+            clear hdr data
         end
 
     % ------------------------------------------------------------------------------
@@ -555,6 +555,8 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
             % write out noiseTS incase people want to model nuisance at SPM
             dlmwrite('noiseTS.txt',noiseTS,'delimiter','\t','precision','%.6f');
             dlmwrite('noiseTSz.txt',noiseTSz,'delimiter','\t','precision','%.6f');
+            
+            clear hdr data data_out
         elseif cfg.runReg == 0
             fprintf(1,'\n\t\t ----- Skipping nuisance regression ----- \n\n');
         end
@@ -594,7 +596,7 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
             scrubmask = logical(dlmread([cfg.preprodir,'JP14_ScrubMask.txt']));
             TRtimes = ([1:cfg.tN]')*cfg.TR;
 
-            voxbinsize = 500;
+            voxbinsize = 100;
             voxbin = 1:voxbinsize:size(data,2);
             voxbin = [voxbin size(data,2)];
 
@@ -612,11 +614,12 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
         end
 
         % bandpass filter the masked data
-        data_filtered = rest_IdealFilter(data, cfg.TR, [cfg.HighPass, cfg.LowPass]);
+        data = rest_IdealFilter(data, cfg.TR, [cfg.HighPass, cfg.LowPass]);
 
         % put filtered data back with non-brain voxels 
         data_out = zeros(cfg.tN,numVoxels);
-        data_out(:,data_mask) = data_filtered;
+        data_out(:,data_mask) = data;
+        clear data
 
         % reshape back to 4d
         data_out = data_out';
@@ -625,6 +628,7 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
         % write nifti
         FiltOut = 'epi_filtered.nii';
         write(hdr,data_out,FiltOut)
+        clear hdr data data_out
 
     % ------------------------------------------------------------------------------
     % Spatially smooth the data
@@ -637,7 +641,8 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
                 SmoothEPI(SmoothIn,cfg.kernel,cfg.tN)
                 movefile(['s',SmoothIn],'epi_prepro.nii')
 
-                % str = [cfg.afnidir,'3dBlurInMask -input ',SmoothIn,' -FWHM ',num2str(cfg.kernel),' -mask ',cfg.preprodir,cfg.BrainMask,' -prefix smoothed'];
+                % % str = [cfg.afnidir,'3dBlurInMask -input ',SmoothIn,' -FWHM ',num2str(cfg.kernel),' -mask ',cfg.preprodir,cfg.BrainMask,' -prefix smoothed'];
+                % str = [cfg.afnidir,'3dBlurInMask -input ',SmoothIn,' -FWHM ',num2str(cfg.kernel),' -prefix smoothed'];
                 % system(str);
                 % % convert to nifti
                 % system([cfg.afnidir,'3dAFNItoNIFTI smoothed*']);
@@ -662,6 +667,21 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
         if runICA == 1
             % Move back
             movefile([cfg.preprodir,cfg.CleanIn],ICA_outdir)
+        end
+
+    % ------------------------------------------------------------------------------
+    % Delete intermediate files
+    % ------------------------------------------------------------------------------
+        filesToCheck = {'epi_clean.nii', ...
+                        'epi_filtered.nii'};
+
+        for i = 1:length(filesToCheck)
+            if exist(filesToCheck{i}) == 2
+                fprintf(1, '\t\t Deleting %s\n',filesToCheck{i});
+                delete(filesToCheck{i})
+            elseif exist(filesToCheck{i}) == 0
+                fprintf(1, '\t\t No need to delete %s\n',filesToCheck{i});
+            end
         end
 
     fprintf('\n\t\t ----- Noise correction complete ----- \n\n');

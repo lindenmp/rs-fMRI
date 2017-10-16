@@ -152,6 +152,10 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
             movefile([cfg.t1dir,fname.name],[cfg.datadir,cfg.subject])
         end
 
+        if isfield(cfg, 't14norm')
+            movefile([cfg.t1dir,cfg.t14norm,'*'],[cfg.datadir,cfg.subject])
+        end
+
         delete([cfg.t1dir,'*'])
 
         movefile([cfg.datadir,cfg.subject,'/',cfg.t1name],cfg.t1dir)
@@ -159,6 +163,10 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
             movefile([cfg.datadir,cfg.subject,'/',fname.name],cfg.t1dir)
         end
         clear fname
+
+        if isfield(cfg, 't14norm')
+            movefile([cfg.datadir,cfg.subject,'/',cfg.t14norm,'*'],cfg.t1dir)
+        end
         
         cd(cfg.t1dir);
 
@@ -346,6 +354,7 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
             data(isnan(data)) = 0;
             write(hdr,data,meanEPI)
         end
+        clear hdr data
 
     % ------------------------------------------------------------------------------
     % Spatial normalisation
@@ -494,6 +503,8 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
         gmmask = 'gm50_bin.nii';
         system([cfg.fsldir,'fslmaths ',gm,' -thr .50 -bin ',gmmask]);
 
+        clear hdr data data_temp
+
     % ------------------------------------------------------------------------------
     % 4D intensity normalisation
     % ------------------------------------------------------------------------------
@@ -544,6 +555,8 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
             % get FD Power
             mfile = dir([cfg.preprodir,'raw_mov/rp*.txt']);
             mov = dlmread([cfg.preprodir,'raw_mov/',mfile(1).name]);
+            % mfile = dir([cfg.preprodir,'rp*.txt']);
+            % mov = dlmread([cfg.preprodir,mfile(1).name]);
             fd = GetFDPower(mov);
             dlmwrite('fdPower.txt',fd)
             
@@ -566,6 +579,8 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
             DetrendOut = IntNormOut;
         end
 
+        clear hdr data data_out
+
     % ------------------------------------------------------------------------------
     % Spatially smooth the data
     % ------------------------------------------------------------------------------
@@ -574,21 +589,25 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
 
         SmoothIn = DetrendOut;
 
-        % Whole brain
-        % system([cfg.afnidir,'3dBlurInMask -input ',SmoothIn,' -FWHM ',num2str(cfg.kernel),' -mask ',cfg.preprodir,BrainMask,' -prefix sbrain']);
+        % % Whole brain
+        % % system([cfg.afnidir,'3dBlurInMask -input ',SmoothIn,' -FWHM ',num2str(cfg.kernel),' -mask ',cfg.preprodir,BrainMask,' -prefix sbrain']);
+        % system([cfg.afnidir,'3dBlurInMask -input ',SmoothIn,' -FWHM ',num2str(cfg.kernel),' -prefix sbrain']);
         % % convert to nifti
         % system([cfg.afnidir,'3dAFNItoNIFTI sbrain*']);
         % % rename output file
         % movefile('sbrain.nii',['s',SmoothIn])
+
         SmoothEPI(SmoothIn,cfg.kernel,tN)
 
         if ~exclude
             % % Also smoothed the JP14 detrended data
-            % system([cfg.afnidir,'3dBlurInMask -input jp14',SmoothIn,' -FWHM ',num2str(cfg.kernel),' -mask ',cfg.preprodir,BrainMask,' -prefix jp14sbrain']);
+            % % system([cfg.afnidir,'3dBlurInMask -input jp14',SmoothIn,' -FWHM ',num2str(cfg.kernel),' -mask ',cfg.preprodir,BrainMask,' -prefix jp14sbrain']);
+            % system([cfg.afnidir,'3dBlurInMask -input jp14',SmoothIn,' -FWHM ',num2str(cfg.kernel),' -prefix jp14sbrain']);
             % % convert to nifti
             % system([cfg.afnidir,'3dAFNItoNIFTI jp14sbrain*']);
             % % rename output file
             % movefile('jp14sbrain.nii',['sjp14',SmoothIn])
+
             SmoothEPI(['jp14',SmoothIn],cfg.kernel,tN)
         end
 
