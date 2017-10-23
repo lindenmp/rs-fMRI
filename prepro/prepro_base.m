@@ -104,6 +104,29 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
             delete([cfg.t1name,'.gz'])
         end
 
+        % Extra t1 (conc_TMS_fMRI project only)
+        [~,name,ext] = fileparts(cfg.t14norm);
+        switch ext
+            case '.gz'
+                cfg.t14norm = name;
+        end
+        
+        if exist(cfg.t14norm) == 0
+            if exist([cfg.t14norm,'.gz']) == 2
+                runDecompt1 = 1;
+            elseif exist([cfg.t14norm,'.gz']) == 0
+                fprintf(1, 'Warning: raw t14norm not found!\n');
+            end
+        elseif exist(cfg.t14norm) == 2;
+            runDecompt1 = 0;
+        end
+
+        if runDecompt1 == 1
+            fprintf(1, '\t\t Decompressing t14norm...\n');
+            gunzip([cfg.t14norm,'.gz'])
+            delete([cfg.t14norm,'.gz'])
+        end
+
         % EPI
         cd(cfg.rawdir);
         % Check extension of cfg.EPI
@@ -142,7 +165,7 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
     % The results are probabilistic brain images where higher values in voxels
     % represent a greater chance that a given voxel is a given tissue type
     % ------------------------------------------------------------------------------
-        fprintf(1, '\n\t\t ----- Segmenting T1 ----- \n\n');
+        fprintf(1, '\n\t\t ----- Processing T1 ----- \n\n');
         cd([cfg.datadir,cfg.subject])
 
         % Clean and reinitialise T1 dir
@@ -174,6 +197,22 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
         outname = ['c',cfg.t1name];
         system([cfg.fsldir,'robustfov -i ',cfg.t1name,' -r ',outname]);
         cfg.t1name = outname;
+
+        % N4 Bias field correction w/ ANTs
+        outname = ['N4',cfg.t1name];
+        system([cfg.antsdir,'N4BiasFieldCorrection -d 3 -i ',cfg.t1name,' -c [100x100x100x100,0.000001] -o ',outname]);
+        cfg.t1name = outname;
+
+        % Do fDown T1 if it exists (conc_TMS_fMRI project only)
+        if isfield(cfg, 't14norm')
+            outname = ['c',cfg.t14norm];
+            system([cfg.fsldir,'robustfov -i ',cfg.t14norm,' -r ',outname]);
+            cfg.t14norm = outname;
+
+            outname = ['N4',cfg.t14norm];
+            system([cfg.antsdir,'N4BiasFieldCorrection -d 3 -i ',cfg.t14norm,' -c [100x100x100x100,0.000001] -o ',outname]);
+            cfg.t14norm = outname;
+        end
 
         % Tissue segment T1 with SPM
         SegmentT1([cfg.t1dir,cfg.t1name],cfg.spmdir,0,0);
@@ -377,12 +416,22 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
             csf_temp{i} = [cfg.t1dir,csf{i}];
         end
 
-        SpatialNormalisationANTs([cfg.preprodir,RealignOut(1:end-4)],tN,[cfg.preprodir,meanEPI],...
-            [cfg.t1dir,cfg.t1name],...
-            [cfg.t1dir,gm],...
-            wm_temp,...
-            csf_temp,...
-            cfg.mni_template,cfg.antsdir,cfg.funcdir)
+        if isfield(cfg, 't14norm')
+            SpatialNormalisationANTs([cfg.preprodir,RealignOut(1:end-4)],tN,[cfg.preprodir,meanEPI],...
+                [cfg.t1dir,cfg.t1name],...
+                [cfg.t1dir,gm],...
+                wm_temp,...
+                csf_temp,...
+                cfg.mni_template,cfg.antsdir,cfg.funcdir,...
+                [cfg.t1dir,cfg.t14norm])
+        else ~isfield(cfg, 't14norm')
+            SpatialNormalisationANTs([cfg.preprodir,RealignOut(1:end-4)],tN,[cfg.preprodir,meanEPI],...
+                [cfg.t1dir,cfg.t1name],...
+                [cfg.t1dir,gm],...
+                wm_temp,...
+                csf_temp,...
+                cfg.mni_template,cfg.antsdir,cfg.funcdir)
+        end
 
         % Merge warped cfg.EPI
         system([cfg.fsldir,'fslmerge -t w',RealignOut,' w',RealignOut(1:end-4),'_*.nii']);
