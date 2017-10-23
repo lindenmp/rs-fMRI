@@ -180,20 +180,20 @@ function [exclude,mov,fdJenk,fdJenk_m,fdPower,fdPower_m,dvars,JP12ScrubMask,JP14
 			exclude(i,3) = 0;
 		end
 
-	    % ------------------------------------------------------------------------------
-	    % 4) JP12 Scrubbing
-	    % ------------------------------------------------------------------------------
-	    dvarsThr = 30;
+		% ------------------------------------------------------------------------------
+		% 4) JP12 Scrubbing
+		% ------------------------------------------------------------------------------
+		dvarsThr = 30;
 		% scrubProximal = 'yes';
 		scrubProximal = 'no';
 		[JP12ScrubMask{i}, exclude(i,4)] = JP12_GetScrubMask(fdPower{i},dvars{i},TR,fdPowerThr,dvarsThr,scrubProximal);
 
-	    % ------------------------------------------------------------------------------
-	    % 5) JP14 Scrubbing
-	    % ------------------------------------------------------------------------------
-	    dvarsThr = 20;
+		% ------------------------------------------------------------------------------
+		% 5) JP14 Scrubbing
+		% ------------------------------------------------------------------------------
+		dvarsThr = 20;
 		[scrubmask_temp, exclude(i,5)] = JP14_GetScrubMask(fdPower{i},dvars{i},TR,fdPowerThr,dvarsThr);
-		JP14ScrubMask{i} = scrubmask_temp(:,2);	    
+		JP14ScrubMask{i} = scrubmask_temp(:,2);
 
 	    n = numel(msg);
 	    fprintf(repmat('\b',1,n));
