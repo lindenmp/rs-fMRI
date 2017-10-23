@@ -1,4 +1,4 @@
-function [] = SpatialNormalisationANTs(EPI,N,meanEPI,t1file,gm,wm,csf,mni_template,antsdir,funcdir)
+function [] = SpatialNormalisationANTs(EPI,N,meanEPI,t1file,gm,wm,csf,mni_template,antsdir,funcdir,fUpfile)
 	% This function will perform the following spatial pre-processing steps using ANTs methods
 	% 1 - coregistration of mean EPI to T1
 	% 2 - spatial normalization of T1 to MNI
@@ -31,7 +31,7 @@ function [] = SpatialNormalisationANTs(EPI,N,meanEPI,t1file,gm,wm,csf,mni_templa
 	% fundir 		- path to rfMRI-Func dir 
 	% 				this is only because ANTs includes some scripts which arent part of their binary package, so I store them in the rfMRI-Func dir on GitHub
 	% 
-	% 
+	% fUpfile		- (optional) path to an addition T1 acquired face up which should be input if t1file was acquired face down.  
 	%               
 	% -------
 	% OUTPUTS
@@ -43,6 +43,9 @@ function [] = SpatialNormalisationANTs(EPI,N,meanEPI,t1file,gm,wm,csf,mni_templa
 
 	ANTsCall = 'antsRegistrationSyN.sh';
 	% ANTsCall = 'antsRegistrationSyNQuick.sh'; % a quicker variant of ANTs (fewer iterations)
+
+	ANTsCall2 = 'antsRegistrationSyNFDown.sh';
+	% ANTsCall2 = 'antsRegistrationSyNFDownQuick.sh'; % a quicker variant of ANTs (fewer iterations)
 
 	% ------------------------------------------------------------------------------------
 	% Rigid body coreg of mean epi to native T1 image
@@ -57,6 +60,20 @@ function [] = SpatialNormalisationANTs(EPI,N,meanEPI,t1file,gm,wm,csf,mni_templa
 
 	delete('epi2t1.nii.gz')
 
+	if nargin == 11
+		% ------------------------------------------------------------------------------
+		% Rigid body coreg fDown to fUP
+		% ------------------------------------------------------------------------------
+		movImage = t1file;
+		refImage = fUpfile;
+		output = 'fDown2fUp';
+		transform = 'r';
+
+		system([funcdir,ANTsCall,' -d 3 -m ',movImage,' -f ',refImage,' -t ',transform,' -o ',output]);
+
+		delete('fDown2fUp.nii.gz')
+	end
+
 	% ------------------------------------------------------------------------------
 	% Nonlinear warp of native T1 image to SPM template (i.e., MNI space)
 	% ------------------------------------------------------------------------------
@@ -65,7 +82,11 @@ function [] = SpatialNormalisationANTs(EPI,N,meanEPI,t1file,gm,wm,csf,mni_templa
 	output = 't12MNI';
 	transform = 's';
 
-	system([funcdir,ANTsCall,' -d 3 -m ',movImage,' -f ',refImage,' -t ',transform,' -o ',output]);
+	if nargin < 11
+		system([funcdir,ANTsCall,' -d 3 -m ',movImage,' -f ',refImage,' -t ',transform,' -o ',output]);
+	elseif nargin == 11
+		system([funcdir,ANTsCall2,' -d 3 -m ',movImage,' -f ',refImage,' -t ',transform,' -o ',output]);
+	end
 
 	% unzip normalised T1
 	gunzip([output,'.nii.gz'])
