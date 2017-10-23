@@ -1,5 +1,5 @@
 %% runQCFC: 
-function [QCFCVec,NaNFilter,QCFC_PropSig,QCFC_PropSigUnc,QCFC_AbsMed,QCFC_DistDep,QCFC_DistDep_Pval] = RunQCFC(fdJenk_m,FC,ROIDistVec)
+function [QCFCVec,NaNFilter,QCFC_PropSig,QCFC_PropSigUnc,QCFC_AbsMed,QCFC_DistDep,QCFC_DistDep_Pval,QCFC_AbsMed_exc] = RunQCFC(fdJenk_m,FC,ROIDistVec)
 
 	[QCFC,P] = GetDistCorr(fdJenk_m,FC);
 
@@ -27,5 +27,20 @@ function [QCFCVec,NaNFilter,QCFC_PropSig,QCFC_PropSigUnc,QCFC_AbsMed,QCFC_DistDe
 
 	% Find nodewise correlation between distance and QC-FC
 	[QCFC_DistDep,QCFC_DistDep_Pval] = corr(ROIDistVec(NaNFilter),QCFCVec,'type','Spearman');
+
+	% Optionally get QCFC AbsMed as a function of increasingly stringent exclusion (one participant at a time)
+	% [fd_sorted,idx] = sort(fdJenk_m,'descend');
+	% FC_sorted = FC(:,:,idx);
+
+	% numSubs = length(fd_sorted);
+	% QCFC_AbsMed_exc = [];
+	% for i = 1:numSubs-20
+	% 	[QCFC_temp,~] = GetDistCorr(fd_sorted(i:end),FC_sorted(:,:,i:end));
+	% 	% Flatten QCFC matrix
+	% 	QCFCVec_temp = LP_FlatMat(QCFC_temp);
+
+	% 	% Find absolute median
+	% 	QCFC_AbsMed_exc(i) = nanmedian(abs(QCFCVec_temp));
+	% end
 
 end
