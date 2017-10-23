@@ -588,32 +588,11 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
         cd(cfg.preprodir)
 
         SmoothIn = DetrendOut;
-
-        % % Whole brain
-        % % system([cfg.afnidir,'3dBlurInMask -input ',SmoothIn,' -FWHM ',num2str(cfg.kernel),' -mask ',cfg.preprodir,BrainMask,' -prefix sbrain']);
-        % system([cfg.afnidir,'3dBlurInMask -input ',SmoothIn,' -FWHM ',num2str(cfg.kernel),' -prefix sbrain']);
-        % % convert to nifti
-        % system([cfg.afnidir,'3dAFNItoNIFTI sbrain*']);
-        % % rename output file
-        % movefile('sbrain.nii',['s',SmoothIn])
-
         SmoothEPI(SmoothIn,cfg.kernel,tN)
 
         if ~exclude
-            % % Also smoothed the JP14 detrended data
-            % % system([cfg.afnidir,'3dBlurInMask -input jp14',SmoothIn,' -FWHM ',num2str(cfg.kernel),' -mask ',cfg.preprodir,BrainMask,' -prefix jp14sbrain']);
-            % system([cfg.afnidir,'3dBlurInMask -input jp14',SmoothIn,' -FWHM ',num2str(cfg.kernel),' -prefix jp14sbrain']);
-            % % convert to nifti
-            % system([cfg.afnidir,'3dAFNItoNIFTI jp14sbrain*']);
-            % % rename output file
-            % movefile('jp14sbrain.nii',['sjp14',SmoothIn])
-
             SmoothEPI(['jp14',SmoothIn],cfg.kernel,tN)
         end
-
-        % delete afni outputs
-        % delete('*.BRIK')
-        % delete('*.HEAD')
 
     % ------------------------------------------------------------------------------
     % Outputs
