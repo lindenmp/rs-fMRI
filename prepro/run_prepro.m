@@ -473,7 +473,7 @@ function [] = run_prepro(WhichProject,WhichSessScan,subject,smoothing,discard,sl
                     % Directory where the t1 is
                     cfg.t1dir = [cfg.datadir,cfg.subject,'/anat_FDown/']; % TPJ
                     cfg.t1name = [cfg.subject,'_FDOWN_T1w.nii'];
-                    cfg.t14norm = [cfg.subject,'_FUP_T1w.nii.gz'];
+                    cfg.t14norm = [cfg.subject,'_FUP_T1w.nii'];
                 case 'FDown_Scan2'
                     % where the unprocessed EPI 4d file is
                     cfg.rawdir = [cfg.datadir,cfg.subject,'/func/'];
@@ -483,7 +483,7 @@ function [] = run_prepro(WhichProject,WhichSessScan,subject,smoothing,discard,sl
                     % Directory where the t1 is
                     cfg.t1dir = [cfg.datadir,cfg.subject,'/anat_FDown/']; % TPJ
                     cfg.t1name = [cfg.subject,'_FDOWN_T1w.nii'];
-                    cfg.t14norm = [cfg.subject,'_FUP_T1w.nii.gz'];
+                    cfg.t14norm = [cfg.subject,'_FUP_T1w.nii'];
             end
             
             % the path and filename of the template in MNI space to which everything
