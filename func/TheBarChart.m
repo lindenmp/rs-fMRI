@@ -90,7 +90,8 @@ function [] = TheBarChart(data,data_std,makeFigure,extraParams)
 
 	% Custom plotWidth
 	if ~isfield(extraParams,'plotWidth')
-	    plotWidth = 21; % width of an A4 page
+	    plotWidth = 10.5; % width of an A4 page
+	    % plotWidth = 21; % width of an A4 page
 	else
 	    plotWidth = extraParams.plotWidth;
 	end
