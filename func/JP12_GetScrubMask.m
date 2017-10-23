@@ -28,7 +28,7 @@ function [ScrubMask, exclude] = JP12_GetScrubMask(fd,dvars,TR,fdThr,dvarsThr,scr
 	end
 
 	if nargin < 5
-		dvarsThr = 20;
+		dvarsThr = 30;
 	end
 
 	if nargin < 6;
@@ -50,10 +50,10 @@ function [ScrubMask, exclude] = JP12_GetScrubMask(fd,dvars,TR,fdThr,dvarsThr,scr
 	dvarsMask = dvars > dvarsThr;
 
 	% Combine
-	MaskTemp = fdMask + dvarsMask;
+	tempMask = fdMask + dvarsMask;
 
 	% Find volumes = 2. i.e., when FD OR dvars are suprathreshold (Power 2013)
-	ScrubMask = MaskTemp >= 1;
+	ScrubMask = tempMask >= 1;
 
 	switch scrubProximal
 		case 'yes'
