@@ -139,12 +139,7 @@ function [] = ThePlot(plotTitle,mov,fdPower,ScrubMask,fdJenk,dvars,ts_compartmen
 	NTime = (numCVols * TR)/60; % Compute length, in minutes, of time series data left after censoring
 	
 	str1 = ['Mean = ',num2str(fdJenk_m,'%0.2f'),'mm. Supra threshold spikes = ',num2str(fdJenkPerc,'%0.1f'),'%. '];
-	if NTime < thresh;
-		% if less than threshold, mark for exclusion
-		str2 = [num2str(NTime,'%0.0f'),' mins of uncensored data. Exclude: YES'];
-	elseif NTime >= thresh;
-		str2 = [num2str(NTime,'%0.0f'),' mins of uncensored data. Exclude: NO'];
-	end
+	str2 = [num2str(NTime,'%0.0f'),' mins of uncensored data.'];
 	
 	yLimits = ylim;
 	text(round(numVols*.05),yLimits(2) - yLimits(2)*.15,[str1,str2],... 
@@ -179,12 +174,7 @@ function [] = ThePlot(plotTitle,mov,fdPower,ScrubMask,fdJenk,dvars,ts_compartmen
 	NTime = (numCVols * TR)/60; % Compute length, in minutes, of time series data left after censoring
 
 	str1 = ['Mean = ',num2str(fdPower_m,'%0.2f'),'mm. Supra threshold spikes = ',num2str(fdPowerPerc,'%0.1f'),'%. '];
-	if NTime < thresh;
-		% if less than threshold, mark for exclusion
-		str2 = [num2str(NTime,'%0.0f'),' mins of uncensored data. Exclude: YES'];
-	elseif NTime >= thresh;
-		str2 = [num2str(NTime,'%0.0f'),' mins of uncensored data. Exclude: NO'];
-	end
+	str2 = [num2str(NTime,'%0.0f'),' mins of uncensored data.'];
 	
 	yLimits = ylim;
 	text(round(numVols*.05),yLimits(2) - yLimits(2)*.15,[str1,str2],... 
