@@ -636,23 +636,9 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
         switch cfg.smoothing
             case 'after'
                 fprintf('\n\t\t ----- Spatial smoothing ----- \n\n');
-
                 SmoothIn = FiltOut;
                 SmoothEPI(SmoothIn,cfg.kernel,cfg.tN)
                 movefile(['s',SmoothIn],'epi_prepro.nii')
-
-                % % str = [cfg.afnidir,'3dBlurInMask -input ',SmoothIn,' -FWHM ',num2str(cfg.kernel),' -mask ',cfg.preprodir,cfg.BrainMask,' -prefix smoothed'];
-                % str = [cfg.afnidir,'3dBlurInMask -input ',SmoothIn,' -FWHM ',num2str(cfg.kernel),' -prefix smoothed'];
-                % system(str);
-                % % convert to nifti
-                % system([cfg.afnidir,'3dAFNItoNIFTI smoothed*']);
-                % % rename output file
-                % movefile('smoothed.nii','epi_prepro.nii')
-
-                % % delete afni outputs
-                % delete('*.BRIK')
-                % delete('*.HEAD')
-
             case 'none'
                 fprintf('\n\t\t !!!! Skipping spatial smoothing !!!! \n\n');
                 % Simply rename the filtered epi to epi_prepro.nii so that the final output file is always the same file name
