@@ -1,7 +1,7 @@
 %% run_prepro: 
 % Copyright (C) 2017, Linden Parkes <lindenparkes@gmail.com>,
 
-function [] = run_prepro(WhichProject,WhichSessScan,subject,smoothing,discard,slicetime,despike,detr,intnorm)
+function [] = run_prepro(WhichProject,WhichSessScan,subject,smoothing,discard,slicetime,despike,detr,intnorm,bandpass)
     cfg.WhichProject = WhichProject;
     cfg.WhichSessScan = WhichSessScan;
     cfg.subject = subject;
@@ -34,6 +34,12 @@ function [] = run_prepro(WhichProject,WhichSessScan,subject,smoothing,discard,sl
         cfg.intnorm = 1;
     else
         cfg.intnorm = intnorm;
+    end
+
+    if nargin < 10
+        cfg.runBandpass = 1;
+    else
+        cfg.runBandpass = bandpass;
     end
 
     % ------------------------------------------------------------------------------
