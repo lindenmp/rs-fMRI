@@ -576,6 +576,8 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
 
         elseif cfg.intnorm == 0
             IntNormOut = IntNormIn;
+            dvarsExtract = NaN;
+            dvars = NaN;
         end
 
     % ------------------------------------------------------------------------------
@@ -603,27 +605,33 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
             % ------------------------------------------------------------------------------
             % Scrubbing (Power et al., 2014. NeuroImage) 
             % ------------------------------------------------------------------------------
-            % get FD Power
-            mfile = dir([cfg.preprodir,'raw_mov/rp*.txt']);
-            mov = dlmread([cfg.preprodir,'raw_mov/',mfile(1).name]);
-            % mfile = dir([cfg.preprodir,'rp*.txt']);
-            % mov = dlmread([cfg.preprodir,mfile(1).name]);
-            fd = GetFDPower(mov);
-            dlmwrite('fdPower.txt',fd)
-            
-            % Create Power temporal mask
-            fdThr = 0.2;
-            dvarsThr = 20;
-            [scrubmask, exclude] = JP14_GetScrubMask(fd,dvars,cfg.TR,fdThr,dvarsThr);
-            dlmwrite('JP14_ScrubMask.txt',scrubmask)
+            if cfg.intnorm == 1 & cfg.runBandpass == 1
+                % get FD Power
+                mfile = dir([cfg.preprodir,'raw_mov/rp*.txt']);
+                mov = dlmread([cfg.preprodir,'raw_mov/',mfile(1).name]);
+                % mfile = dir([cfg.preprodir,'rp*.txt']);
+                % mov = dlmread([cfg.preprodir,mfile(1).name]);
+                fd = GetFDPower(mov);
+                dlmwrite('fdPower.txt',fd)
+                
+                % Create Power temporal mask
+                fdThr = 0.2;
+                dvarsThr = 20;
+                [scrubmask, exclude] = JP14_GetScrubMask(fd,dvars,cfg.TR,fdThr,dvarsThr);
+                dlmwrite('JP14_ScrubMask.txt',scrubmask)
 
-            % Detrend including censor mask
-            if ~exclude
-                [data_out,~] = JP14_demean_detrend(data,~scrubmask(:,2));
-                data_out = reshape(data_out,dim);
-                write(hdr,data_out,['jp14',DetrendOut])
-            elseif exclude
-                fprintf(1, '\t\t WARNING! There was not enough uncensored time points to perform scrubbing.\n');
+                % Detrend including censor mask
+                if exclude == 0
+                    [data_out,~] = JP14_demean_detrend(data,~scrubmask(:,2));
+                    data_out = reshape(data_out,dim);
+                    write(hdr,data_out,['jp14',DetrendOut])
+                elseif exclude == 1
+                    fprintf(1, '\t\t WARNING! There was not enough uncensored time points to perform scrubbing.\n');
+                end
+            else
+                fdThr = NaN;
+                dvarsThr = NaN;
+                exclude = NaN;
             end
 
         elseif cfg.detr == 0
@@ -641,8 +649,10 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
         SmoothIn = DetrendOut;
         SmoothEPI(SmoothIn,cfg.kernel,tN)
 
-        if ~exclude
-            SmoothEPI(['jp14',SmoothIn],cfg.kernel,tN)
+        if cfg.intnorm == 1 & cfg.runBandpass == 1
+            if exclude == 0
+                SmoothEPI(['jp14',SmoothIn],cfg.kernel,tN)
+            end
         end
 
     % ------------------------------------------------------------------------------
@@ -650,9 +660,12 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
     % ------------------------------------------------------------------------------
         outEPI{1} = SmoothIn;
         outEPI{2} = ['s',SmoothIn];
-        if ~exclude
-            outEPI{3} = ['jp14',SmoothIn];
-            outEPI{4} = ['sjp14',SmoothIn];
+
+        if cfg.intnorm == 1 & cfg.runBandpass == 1
+            if exclude == 0
+                outEPI{3} = ['jp14',SmoothIn];
+                outEPI{4} = ['sjp14',SmoothIn];
+            end
         end
 
     fprintf('\n\t\t ----- Base preprocessing complete ----- \n\n');
