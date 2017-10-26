@@ -1,27 +1,33 @@
 %% GetDerivatives: function description
-function [out] = GetDerivatives(ts,getSquares)
+function [out] = GetDerivatives(ts,detr,getSquares)
 
      % This function computes the temporal derivates (i.e., backwards differences)
      % as well as the squares of a set of nuissance regressors
      %
      % Linden Parkes, Brain & Mental Health Laboratory, 2016
      % ------------------------------------------------------------------------------
-
+     
      if nargin < 2
+          detr = 1;
+     end
+
+     if nargin < 3
           getSquares = 1;
      end
 
      % detrend
-     ts_detr = detrend(ts);
+     if detr == 1
+          ts = detrend(ts);
+     end
 
      % temporal derivatives
      ts_diff = [
-               zeros(1,size(ts_detr,2));
-               diff(ts_detr)
+               zeros(1,size(ts,2));
+               diff(ts)
                ];
 
      % concatenate
-     x = [ts_detr ts_diff];
+     x = [ts ts_diff];
 
      if getSquares == 1
           % squared
