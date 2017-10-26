@@ -459,14 +459,18 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
             % Get expansions for motion
             if any(strmatch('24P',cfg.removeNoiseSplit,'exact')) == 1
                 fprintf(1,'\t\t Getting derivatives and squares \n');
-                noiseTS = GetDerivatives(mov);
+                noiseTS = GetDerivatives(mov,cfg.detr);
             elseif any(strmatch('12P',cfg.removeNoiseSplit,'exact')) == 1
                 fprintf(1,'\t\t Getting derivatives only \n');
-                noiseTS = GetDerivatives(mov,0);
+                noiseTS = GetDerivatives(mov,cfg.detr,0);
             else
                 % Otherwise, just detrend (note, detrending done as part of GetDerivatives.m)
-                fprintf(1,'\t\t Detrending only \n');
-                noiseTS = detrend(mov);                
+                if cfg.detr == 1
+                    fprintf(1,'\t\t Detrending only \n');
+                    noiseTS = detrend(mov);
+                elseif cfg.detr == 0
+                    noiseTS = mov;
+                end
             end
         % If it was run, then we dont regress out mov params
         elseif runICA == 1
@@ -481,14 +485,16 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
 
             if any(strmatch('8P',cfg.removeNoiseSplit,'exact')) == 1
                 fprintf(1,'\t\t Getting derivatives and squares \n');
-                physTS = GetDerivatives(physTS);
+                physTS = GetDerivatives(physTS,cfg.detr);
             elseif any(strmatch('4P',cfg.removeNoiseSplit,'exact')) == 1
                 fprintf(1,'\t\t Getting derivatives only \n');
-                physTS = GetDerivatives(physTS,0);
+                physTS = GetDerivatives(physTS,cfg.detr,0);
             else
                 % Otherwise, just detrend (note, detrending done as part of GetDerivatives.m)
-                fprintf(1,'\t\t Detrending only \n');
-                physTS = detrend(physTS);                
+                if cfg.detr == 1
+                    fprintf(1,'\t\t Detrending only \n');
+                    physTS = detrend(physTS);
+                end
             end
 
             noiseTS = [noiseTS physTS];
@@ -500,14 +506,16 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
 
             if any(strmatch('4GSR',cfg.removeNoiseSplit,'exact')) == 1
                 fprintf(1,'\t\t Getting derivatives and squares \n');
-                gsTS = GetDerivatives(gsTS);
+                gsTS = GetDerivatives(gsTS,cfg.detr);
             elseif any(strmatch('2GSR',cfg.removeNoiseSplit,'exact')) == 1
                 fprintf(1,'\t\t Getting derivatives only \n');
-                gsTS = GetDerivatives(gsTS,0);
+                gsTS = GetDerivatives(gsTS,cfg.detr,0);
             else
                 % Otherwise, just detrend (note, detrending done as part of GetDerivatives.m)
-                fprintf(1,'\t\t Detrending only \n');
-                gsTS = detrend(gsTS);                
+                if cfg.detr == 1
+                    fprintf(1,'\t\t Detrending only \n');
+                    gsTS = detrend(gsTS);
+                end
             end
 
             noiseTS = [noiseTS gsTS];
