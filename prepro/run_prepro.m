@@ -821,9 +821,6 @@ function [] = run_prepro(WhichProject,WhichSessScan,subject,smoothing,discard,sl
         % ------------------------------------------------------------------------------
         % run prepro_noise
         % ------------------------------------------------------------------------------
-        % cfg.runReg controls whether nuisance signals are extracted and regressed out of the EPI (1) or just extracted (0)
-        % cfg.runReg = 0 is useful is users want to model the nuisance signals at the level of the first level GLM
-        cfg.runReg = 1;
         [cfg.noiseTS,cfg.outdir,cfg.noiseTSz] = prepro_noise(cfg);
 
         % ------------------------------------------------------------------------------
