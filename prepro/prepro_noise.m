@@ -112,12 +112,6 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
     fprintf(1, '\t\t Noise correction: %s \n', cfg.removeNoise);
     fprintf(1, '\t\t Input file: %s \n', cfg.CleanIn);
 
-    if cfg.runReg == 1
-        fprintf(1, '\t\t Nuisance regression: extract and regress \n');
-    elseif cfg.runReg == 0
-        fprintf(1, '\t\t Nuisance regression: extract only \n');
-    end
-
     fprintf('\n\t\t ---------------------------- \n\n');
 
     % ------------------------------------------------------------------------------
@@ -243,30 +237,23 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
                 mkdir(ICA_outdir)
                 cd(ICA_outdir)
     
-                if cfg.runReg == 1
-                    str = ['python2.7 ',cfg.scriptdir_ICA,'ICA_AROMA.py -in ',cfg.preprodir,cfg.CleanIn,' -out ',ICA_outdir,' -mc ',cfg.preprodir,'raw_mov/rp*.txt -m ',cfg.preprodir,cfg.BrainMask,' -tr ',num2str(cfg.TR)];
-                    % str = ['python2.7 ',cfg.scriptdir_ICA,'ICA_AROMA.py -in ',cfg.preprodir,cfg.CleanIn,' -out ',ICA_outdir,' -mc ',cfg.preprodir,'rp*.txt -m ',cfg.preprodir,cfg.BrainMask,' -tr ',num2str(cfg.TR)];
-                    system(str);
+                str = ['python2.7 ',cfg.scriptdir_ICA,'ICA_AROMA.py -in ',cfg.preprodir,cfg.CleanIn,' -out ',ICA_outdir,' -mc ',cfg.preprodir,'raw_mov/rp*.txt -m ',cfg.preprodir,cfg.BrainMask,' -tr ',num2str(cfg.TR)];
+                % str = ['python2.7 ',cfg.scriptdir_ICA,'ICA_AROMA.py -in ',cfg.preprodir,cfg.CleanIn,' -out ',ICA_outdir,' -mc ',cfg.preprodir,'rp*.txt -m ',cfg.preprodir,cfg.BrainMask,' -tr ',num2str(cfg.TR)];
+                system(str);
 
-                    % unzip
-                    system('gunzip -rf denoised_func_data_nonaggr.nii.gz');
+                % unzip
+                system('gunzip -rf denoised_func_data_nonaggr.nii.gz');
 
-                    fprintf(1, '\n\t\t !!!! Overriding inputs for ICA-AROMA !!!! \n\n');
-                    % redefine clean in
-                    CleanInNew = ['ica_',cfg.CleanIn];
-                    cfg.CleanIn = CleanInNew;
-                    % redefine wm/csf files
-                    cfg.NuisanceIn_wm = CleanInNew;
-                    cfg.NuisanceIn_csf = CleanInNew;
+                fprintf(1, '\n\t\t !!!! Overriding inputs for ICA-AROMA !!!! \n\n');
+                % redefine clean in
+                CleanInNew = ['ica_',cfg.CleanIn];
+                cfg.CleanIn = CleanInNew;
+                % redefine wm/csf files
+                cfg.NuisanceIn_wm = CleanInNew;
+                cfg.NuisanceIn_csf = CleanInNew;
 
-                    % rename output file
-                    movefile('denoised_func_data_nonaggr.nii',[cfg.preprodir,cfg.CleanIn])
-
-                elseif cfg.runReg == 0
-                    str = ['python2.7 ',cfg.scriptdir_ICA,'ICA_AROMA.py -in ',cfg.preprodir,cfg.CleanIn,' -out ',ICA_outdir,' -mc ',cfg.preprodir,'raw_mov/rp*.txt -m ',cfg.preprodir,cfg.BrainMask,' -tr ',num2str(cfg.TR),' -den no'];
-                    % str = ['python2.7 ',cfg.scriptdir_ICA,'ICA_AROMA.py -in ',cfg.preprodir,cfg.CleanIn,' -out ',ICA_outdir,' -mc ',cfg.preprodir,'rp*.txt -m ',cfg.preprodir,cfg.BrainMask,' -tr ',num2str(cfg.TR),' -den no'];
-                    system(str);
-                end
+                % rename output file
+                movefile('denoised_func_data_nonaggr.nii',[cfg.preprodir,cfg.CleanIn])
 
                 % Set FSL output back to nifti
                 setenv('FSLOUTPUTTYPE','NIFTI');
@@ -285,8 +272,21 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
                 % move ICA cleaned file
                 movefile(cfg.CleanIn,cfg.preprodir)
             end
+
+            % Compile noise IC time series into a txt file. This isnt necessary for cleaning, since ICA-AROMA does that for us.
+            % But having the noise IC time series on hand can be useful none the less
+
+            % Get list of noise ICs
+            noiseICs = dlmread('classified_motion_ICs.txt');
+            noiseTS_ICA = [];
+            for i = 1:length(noiseICs)
+                noiseTS_ICA(:,i) = dlmread([ICA_outdir,'melodic.ica/report/t',num2str(noiseICs(i)),'.txt']);
+            end
+
             % Change back to primary outdir
             cd(outdir)
+            % write out
+            dlmwrite('noiseTS_ICA.txt',noiseTS_ICA,'delimiter','\t','precision','%.6f');
         end
 
     % ------------------------------------------------------------------------------
@@ -538,121 +538,120 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
     % ------------------------------------------------------------------------------
     % Nuisance regression
     % ------------------------------------------------------------------------------
-        if cfg.runReg == 1
-
-            [hdr,data] = read([cfg.preprodir,cfg.CleanIn]);
-
-            % reshape to 2d
-            dim = size(data);
-            data = reshape(data,[],dim(4));
-
-            if runJP14Scrub == 1
-                fprintf(1,'\n\t\t ----- Running nuisance regression with scrubbing ----- \n\n');
-                % Read in scrubbing mask
-                scrubmask = logical(dlmread([cfg.preprodir,'JP14_ScrubMask.txt']));
-                [data_out zb noiseTSz] = JP14_regress_nuisance(data,noiseTS,~scrubmask(:,2));
-            elseif runJP14Scrub == 0
-                fprintf(1,'\n\t\t ----- Running nuisance regression without scrubbing ----- \n\n');
-                [data_out zb noiseTSz] = JP14_regress_nuisance(data,noiseTS);
-            end
-
-            CleanOut = 'epi_clean.nii';
-            data_out = reshape(data_out,dim);
-            write(hdr,data_out,CleanOut)            
-            
-            % write out noiseTS incase people want to model nuisance at SPM
-            dlmwrite('noiseTS.txt',noiseTS,'delimiter','\t','precision','%.6f');
-            dlmwrite('noiseTSz.txt',noiseTSz,'delimiter','\t','precision','%.6f');
-            
-            clear hdr data data_out
-        elseif cfg.runReg == 0
-            fprintf(1,'\n\t\t ----- Skipping nuisance regression ----- \n\n');
-        end
-
-    % ------------------------------------------------------------------------------
-    % Bandpass filter with REST
-    % ------------------------------------------------------------------------------
-        if cfg.runReg == 1
-            FiltIn = CleanOut;
-        elseif cfg.runReg == 0
-            FiltIn = cfg.CleanIn;
-            copyfile([cfg.preprodir,FiltIn],outdir)
-        end
-
-        % load nifti
-        [hdr,data] = read(FiltIn);
+        [hdr,data] = read([cfg.preprodir,cfg.CleanIn]);
 
         % reshape to 2d
         dim = size(data);
         data = reshape(data,[],dim(4));
-        % Put time on first dimension
-        data = data';
-        numVoxels = size(data,2);
-
-        % load in brain mask
-        [hdr_mask,data_mask] = read([cfg.preprodir,cfg.BrainMask]);
-        data_mask = reshape(data_mask,[],1);
-        data_mask = logical(data_mask);
-
-        % mask out non-brain voxels
-        % Note, we only do this to speed up the interpolation step that is run only for JP14Scrub method
-        data = data(:,data_mask);
 
         if runJP14Scrub == 1
-            fprintf(1,'\n\t\t ----- Running bandpass filtering with interpolation ----- \n\n');
+            fprintf(1,'\n\t\t ----- Running nuisance regression with scrubbing ----- \n\n');
             % Read in scrubbing mask
             scrubmask = logical(dlmread([cfg.preprodir,'JP14_ScrubMask.txt']));
-            TRtimes = ([1:cfg.tN]')*cfg.TR;
-
-            voxbinsize = 100;
-            voxbin = 1:voxbinsize:size(data,2);
-            voxbin = [voxbin size(data,2)];
-
-            data_surrogate = zeros(size(data,1),size(data,2));
-
-            for v = 1:numel(voxbin)-1 % this takes huge RAM if all voxels
-                fprintf(1, 'Processing voxel bin %u/%u\n', v,numel(voxbin)-1);
-                data_surrogate(:,voxbin(v):voxbin(v+1)) = JP14_getTransform(data(:,voxbin(v):voxbin(v+1)),TRtimes,scrubmask(:,2));
-            end
-
-            % insert surrogate data into real data at censored time points
-            data(scrubmask(:,2),:) = data_surrogate(scrubmask(:,2),:);
+            [data_out zb noiseTSz] = JP14_regress_nuisance(data,noiseTS,~scrubmask(:,2));
         elseif runJP14Scrub == 0
-            fprintf(1,'\n\t\t ----- Running bandpass filtering without interpolation ----- \n\n');
+            fprintf(1,'\n\t\t ----- Running nuisance regression without scrubbing ----- \n\n');
+            [data_out zb noiseTSz] = JP14_regress_nuisance(data,noiseTS);
         end
 
-        % bandpass filter the masked data
-        data = rest_IdealFilter(data, cfg.TR, [cfg.HighPass, cfg.LowPass]);
-
-        % put filtered data back with non-brain voxels 
-        data_out = zeros(cfg.tN,numVoxels);
-        data_out(:,data_mask) = data;
-        clear data
-
-        % reshape back to 4d
-        data_out = data_out';
+        CleanOut = 'epi_clean.nii';
         data_out = reshape(data_out,dim);
-
-        % write nifti
-        FiltOut = 'epi_filtered.nii';
-        write(hdr,data_out,FiltOut)
+        write(hdr,data_out,CleanOut)            
+        
+        % write out noiseTS incase people want to model nuisance at SPM
+        dlmwrite('noiseTS.txt',noiseTS,'delimiter','\t','precision','%.6f');
+        dlmwrite('noiseTSz.txt',noiseTSz,'delimiter','\t','precision','%.6f');
+        
         clear hdr data data_out
+
+    % ------------------------------------------------------------------------------
+    % Bandpass filter with REST
+    % ------------------------------------------------------------------------------
+        if cfg.runBandpass == 1
+            FiltIn = CleanOut;
+            
+            % load nifti
+            [hdr,data] = read(FiltIn);
+
+            % reshape to 2d
+            dim = size(data);
+            data = reshape(data,[],dim(4));
+            % Put time on first dimension
+            data = data';
+            numVoxels = size(data,2);
+
+            % load in brain mask
+            [hdr_mask,data_mask] = read([cfg.preprodir,cfg.BrainMask]);
+            data_mask = reshape(data_mask,[],1);
+            data_mask = logical(data_mask);
+
+            % mask out non-brain voxels
+            % Note, we only do this to speed up the interpolation step that is run only for JP14Scrub method
+            data = data(:,data_mask);
+
+            if runJP14Scrub == 1
+                fprintf(1,'\n\t\t ----- Running bandpass filtering with interpolation ----- \n\n');
+                % Read in scrubbing mask
+                scrubmask = logical(dlmread([cfg.preprodir,'JP14_ScrubMask.txt']));
+                TRtimes = ([1:cfg.tN]')*cfg.TR;
+
+                voxbinsize = 100;
+                voxbin = 1:voxbinsize:size(data,2);
+                voxbin = [voxbin size(data,2)];
+
+                data_surrogate = zeros(size(data,1),size(data,2));
+
+                for v = 1:numel(voxbin)-1 % this takes huge RAM if all voxels
+                    fprintf(1, 'Processing voxel bin %u/%u\n', v,numel(voxbin)-1);
+                    data_surrogate(:,voxbin(v):voxbin(v+1)) = JP14_getTransform(data(:,voxbin(v):voxbin(v+1)),TRtimes,scrubmask(:,2));
+                end
+
+                % insert surrogate data into real data at censored time points
+                data(scrubmask(:,2),:) = data_surrogate(scrubmask(:,2),:);
+            elseif runJP14Scrub == 0
+                fprintf(1,'\n\t\t ----- Running bandpass filtering without interpolation ----- \n\n');
+            end
+
+            % bandpass filter the masked data
+            data = rest_IdealFilter(data, cfg.TR, [cfg.HighPass, cfg.LowPass]);
+
+            % put filtered data back with non-brain voxels 
+            data_out = zeros(cfg.tN,numVoxels);
+            data_out(:,data_mask) = data;
+            clear data
+
+            % reshape back to 4d
+            data_out = data_out';
+            data_out = reshape(data_out,dim);
+
+            % write nifti
+            FiltOut = 'epi_filtered.nii';
+            write(hdr,data_out,FiltOut)
+            clear hdr data data_out
+        elseif cfg.runBandpass == 0
+            fprintf(1,'\n\t\t ----- Skipping bandpass filtering ----- \n\n');
+        end
 
     % ------------------------------------------------------------------------------
     % Spatially smooth the data
     % ------------------------------------------------------------------------------
+        if cfg.runBandpass == 1
+            SmoothIn = FiltOut;
+        elseif cfg.runBandpass == 0
+            SmoothIn = CleanOut;
+        end
+
         switch cfg.smoothing
             case 'after'
                 fprintf('\n\t\t ----- Spatial smoothing ----- \n\n');
-                SmoothIn = FiltOut;
                 SmoothEPI(SmoothIn,cfg.kernel,cfg.tN)
                 movefile(['s',SmoothIn],'epi_prepro.nii')
             case 'none'
                 fprintf('\n\t\t !!!! Skipping spatial smoothing !!!! \n\n');
                 % Simply rename the filtered epi to epi_prepro.nii so that the final output file is always the same file name
-                movefile(FiltOut,'epi_prepro.nii')
+                movefile(SmoothIn,'epi_prepro.nii')
             case 'before'
-                movefile(FiltOut,'epi_prepro.nii')
+                movefile(SmoothIn,'epi_prepro.nii')
         end
 
     % ------------------------------------------------------------------------------
