@@ -105,26 +105,28 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
         end
 
         % Extra t1 (conc_TMS_fMRI project only)
-        [~,name,ext] = fileparts(cfg.t14norm);
-        switch ext
-            case '.gz'
-                cfg.t14norm = name;
-        end
-        
-        if exist(cfg.t14norm) == 0
-            if exist([cfg.t14norm,'.gz']) == 2
-                runDecompt1 = 1;
-            elseif exist([cfg.t14norm,'.gz']) == 0
-                fprintf(1, 'Warning: raw t14norm not found!\n');
+        if isfield(cfg, 't14norm')
+            [~,name,ext] = fileparts(cfg.t14norm);
+            switch ext
+                case '.gz'
+                    cfg.t14norm = name;
             end
-        elseif exist(cfg.t14norm) == 2;
-            runDecompt1 = 0;
-        end
+        
+            if exist(cfg.t14norm) == 0
+                if exist([cfg.t14norm,'.gz']) == 2
+                    runDecompt1 = 1;
+                elseif exist([cfg.t14norm,'.gz']) == 0
+                    fprintf(1, 'Warning: raw t14norm not found!\n');
+                end
+            elseif exist(cfg.t14norm) == 2;
+                runDecompt1 = 0;
+            end
 
-        if runDecompt1 == 1
-            fprintf(1, '\t\t Decompressing t14norm...\n');
-            gunzip([cfg.t14norm,'.gz'])
-            delete([cfg.t14norm,'.gz'])
+            if runDecompt1 == 1
+                fprintf(1, '\t\t Decompressing t14norm...\n');
+                gunzip([cfg.t14norm,'.gz'])
+                delete([cfg.t14norm,'.gz'])
+            end
         end
 
         % EPI
