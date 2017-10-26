@@ -763,12 +763,11 @@ function [] = run_prepro(WhichProject,WhichSessScan,subject,smoothing,discard,sl
     % If you only want to run one then just use something like: noiseOptions = {'24P+aCC'};
     
     % All pipelines
-    noiseOptions = {'6P','6P+2P','6P+2P+GSR','24P','24P+8P','24P+8P+4GSR','12P+aCC','24P+aCC','12P+aCC50','24P+aCC50','24P+aCC+4GSR','24P+aCC50+4GSR','ICA-AROMA+2P','ICA-AROMA+2P+GSR','ICA-AROMA+8P','ICA-AROMA+8P+4GSR','24P+8P+4GSR+SpikeReg'};
-    % noiseOptions = {'24P+4P+2GSR+JP14Scrub'};
-    % noiseOptions = {'ICA-AROMA+2P','ICA-AROMA+2P+GSR'};
+    % noiseOptions = {'6P','6P+2P','6P+2P+GSR','24P','24P+8P','24P+8P+4GSR','12P+aCC','24P+aCC','12P+aCC50','24P+aCC50','24P+aCC+4GSR','24P+aCC50+4GSR','ICA-AROMA+2P','ICA-AROMA+2P+GSR','ICA-AROMA+8P','ICA-AROMA+8P+4GSR','24P+8P+4GSR+SpikeReg'};
+    noiseOptions = {'ICA-AROMA+2P','ICA-AROMA+2P+GSR'};
 
     % If subject was not marked for exclusion for scrubbing, then append the JP14 pipelines
-    if ~cfg.exclude
+    if cfg.exclude == 0 & cfg.intnorm == 1 & cfg.runBandpass == 1
         fprintf(1, '\n\t\t Adding JP14 pipelines \n\n');
         noiseOptions2Append = {'24P+4P+2GSR+JP14Scrub'};
         noiseOptions = [noiseOptions,noiseOptions2Append];
