@@ -10,131 +10,121 @@ clear all; close all; clc
 % ------------------------------------------------------------------------------
 % Set string switches
 % ------------------------------------------------------------------------------
-Projects = {'OCDPG','UCLA','NYU_2','GoC','M3_COBRE','M3_UCLA','M3_NAMIC'};
+Projects = {'Beijing_Zang','UCLA','OCDPG','NYU_2','COBRE','COBRE_HCTSA','UCLA_HCTSA','NAMIC_HCTSA','ML_SNS'};
 WhichProject = Projects{2};
 
 WhichParc = 'Gordon'; % 'Gordon' 'Power'
 
-if ismember('OCDPG',WhichProject,'rows') | ismember('UCLA',WhichProject,'rows')
+if ismember('OCDPG',WhichProject,'rows') | ismember('UCLA',WhichProject,'rows') | ismember('COBRE',WhichProject,'rows')
 	WhichSplit = 'Diagnostic'; % 'Motion' 'Diagnostic'
+	% WhichSplit = 'Motion'; % 'Motion' 'Diagnostic'
 	% Note, this only effect the NBS parts of the script.
 	% 'Group' variable ALWAYS represents case-control (e.g., 1 = HC, 2 = patients)
+elseif ismember('Beijing_Zang',WhichProject,'rows')
+	WhichSplit = 'Motion'; % Only motion for Beijing
 end
 
 % ------------------------------------------------------------------------------
 % Set logical switches
 % ------------------------------------------------------------------------------
-% This ensures only 2 groups are analysed per project
-% note, healthies assumed to be group 1 and patient group 1 is assumed to be group 2
-% note, the OCDPG project has 3 groups.
-excludeGroup = true;
-
-% NOTE: only run one or the other. Both CANNOT be set to true
-% NOTE: does not work for M3 projects right now ('M3_*')
-runScrub = false;
-runSR = false;
-if runScrub & runSR
-    error('FATAL: Scrubbing and spike regression cannot be run concurrently. Choose one only!');
-end
-
-runPlot = true;
-runBigPlots = false;
-runNBSPlots = false;
-runTPlots = false;
-runGSRPlots = false;
-runGroupPlots = false; % can only be true if runBigPlots is also true
-if ~runBigPlots & runGroupPlots
-	runBigPlots = true
-end
+runPlot = false;
 runOverlapPlots = false;
 
 fprintf(1, 'Running rfMRI QC.\n\tDataset: %s\n\tParcelation: %s\n',WhichProject,WhichParc);
-if ismember('OCDPG',WhichProject,'rows') | ismember('UCLA',WhichProject,'rows')
+if ismember('OCDPG',WhichProject,'rows') | ismember('UCLA',WhichProject,'rows') | ismember('COBRE',WhichProject,'rows')
 	fprintf(1,'\tNBS: %s\n',WhichSplit);
-end
-
-if runScrub | runSR
-	fprintf(1, '\tVolume censoring: yes\n');
 end
 
 % ------------------------------------------------------------------------------
 % Set project variables
 % ------------------------------------------------------------------------------
+parentdir = '~/Dropbox/Work/ResProjects/';
+% parentdir = '/home/lindenmp/kg98_scratch/Linden/ResProjects/';
 switch WhichProject
 	case 'OCDPG'
-		projdir = '~/Dropbox/Work/ResProjects/rfMRI_denoise/OCDPG/';
+		projdir = [parentdir,'rfMRI_denoise/OCDPG/'];
 		sublist = [projdir,'OCDPGe.csv'];
 		datadir = [projdir,'data/'];
-		preprostr = '/rfMRI/prepro/';
+        preprostr = '/func/prepro/';
 
 		TR = 2.5;
-
-		nbsdir = '~/Dropbox/Work/ResProjects/rfMRI_denoise/OCDPG/NBS_tDOF/';
 	case 'UCLA'
-		projdir = '~/Dropbox/Work/ResProjects/rfMRI_denoise/UCLA/';
+		projdir = [parentdir,'rfMRI_denoise/UCLA/'];
 		sublist = [projdir,'UCLA.csv'];
 		datadir = [projdir,'data/'];
-        preprostr = '/rfMRI/prepro/';
+        preprostr = '/func/prepro/';
 
 		TR = 2;
-
-		% nbsdir = '~/Dropbox/Work/ResProjects/rfMRI_denoise/UCLA/NBS_tDOF/';
-		% nbsdir = '~/Dropbox/Work/ResProjects/rfMRI_denoise/UCLA/NBS_tDOF_scrub/';
-		nbsdir = '~/Dropbox/Work/ResProjects/rfMRI_denoise/UCLA/NBS_tDOF_spikeReg/';
 	case 'NYU_2'
-		projdir = '~/Dropbox/Work/ResProjects/rfMRI_denoise/NYU_2/';
+		projdir = [parentdir,'rfMRI_denoise/NYU_2/'];
 		sublist = [projdir,'NYU_2.csv'];
 		datadir = [projdir,'data/'];
 		% Baseline data directory string
 		% Note, we use the baseline data to calculate motion
-		preprostr = '/session_1/rest_1/prepro/';
-		% preprostr = '/session_1/rest_2/prepro/';
-		% preprostr = '/session_2/rest_1/prepro/';
+		preprostr = '/session_1/func_1/prepro/';
+		% preprostr = '/session_1/func_2/prepro/';
+		% preprostr = '/session_2/func_1/prepro/';
 	
 		TR = 2;
-	case 'GoC'
-		projdir = '~/Dropbox/Work/ResProjects/rfMRI_denoise/goc_qc/';
-		sublist = [projdir,'goc_qc.csv'];
+	case 'COBRE'
+		projdir = [parentdir,'rfMRI_denoise/COBRE/'];
+		sublist = [projdir,'COBRE.csv'];
 		datadir = [projdir,'data/'];
-		preprostr = '/';
-	
-		TR = 0.754;
-	case 'M3_COBRE'
-		projdir = '~/Dropbox/Work/ResProjects/SCZ_HCTSA/COBRE/';
+        preprostr = '/func/prepro/';
+
+		TR = 2;
+	case 'Beijing_Zang'
+		projdir = [parentdir,'rfMRI_denoise/Beijing_Zang/'];
+		sublist = [projdir,'Beijing_Zang.csv'];
+		datadir = [projdir,'data/'];
+        preprostr = '/func/prepro/';
+
+		TR = 2;
+	case 'COBRE_HCTSA'
+		projdir = [parentdir,'SCZ_HCTSA/COBRE/'];
 		sublist = [projdir,'COBRE.csv'];
 		datadir = [projdir,'data/'];
 		preprostr = '/session_1/rest_1/prepro/';
 	
 		TR = 2;
-	case 'M3_UCLA'
-		projdir = '~/Dropbox/Work/ResProjects/SCZ_HCTSA/UCLA/';
+	case 'UCLA_HCTSA'
+		projdir = [parentdir,'SCZ_HCTSA/UCLA/'];
 		sublist = [projdir,'UCLA.csv'];
 		datadir = [projdir,'data/'];
 		preprostr = '/func/prepro/';
 	
 		TR = 2;
-	case 'M3_NAMIC'
-		projdir = '~/Dropbox/Work/ResProjects/SCZ_HCTSA/NAMIC/';
+	case 'NAMIC_HCTSA'
+		projdir = [parentdir,'SCZ_HCTSA/NAMIC/'];
 		sublist = [projdir,'NAMIC.csv'];
 		datadir = [projdir,'data/'];
 		preprostr = '/func/prepro/';
 	
 		TR = 3;
+	case 'ML_SNS'
+		projdir = '/projects/kg98/Michelle/PROJECTS/SNS/'
+		sublist = [projdir,'NAMIC.csv'];
+		datadir = projdir;
+		preprostr = '/func/prepro/';
+
+		TR = 2;
 end
 
 % ------------------------------------------------------------------------------
 % Set parcellation
 % Note, code is not setup to process multiple parcellations concurrently.
 % ------------------------------------------------------------------------------
+ROIDir = '~/Dropbox/Work/ROIs/';
+% ROIDir = '/projects/kg98/Linden/ROIs/';
 switch WhichParc
 	case 'Gordon'
 		Parc = 1;
-		ROI_Coords = dlmread('~/Dropbox/Work/ROIs/Gordon/Gordon_Centroids.txt');
-		fileName = '~/Dropbox/Work/ROIs/Gordon/Community.txt';
+		ROI_Coords = dlmread([ROIDir,'Gordon/Gordon_Centroids.txt']);
+		fileName = [ROIDir,'Gordon/CommunityModified.txt'];
 	case 'Power'
 		Parc = 2;
-		ROI_Coords = dlmread('~/Dropbox/Work/ROIs/Power/Power2011_xyz_MNI.txt');
-		fileName = '~/Dropbox/Work/ROIs/Power/Community.txt';
+		ROI_Coords = dlmread([ROIDir,'Power/Power2011_xyz_MNI.txt']);
+		fileName = [ROIDir,'Power/Community.txt'];
 end
 
 fileID = fopen(fileName);
@@ -145,10 +135,12 @@ ROIStruct = textscan(fileID,'%s'); ROIStruct = ROIStruct{1};
 % Convert text labels to unique integer values
 ROILabels = unique(ROIStruct);
 ROIStructID = zeros(size(ROIStruct));
-for i = 1:length(ROILabels)
+numROIComms = length(ROILabels);
+for i = 1:numROIComms
 	x = find(strcmp(ROIStruct, ROILabels{i}));
 	ROIStructID(x) = i;
 end
+
 
 % ------------------------------------------------------------------------------
 % Load ROI coordinates
@@ -168,63 +160,55 @@ numConnections = numROIs * (numROIs - 1) / 2;
 % ------------------------------------------------------------------------------
 % 							Preprocessing pipelines
 % ------------------------------------------------------------------------------
-if ~runSR & ~runScrub
-	switch WhichProject
-		case {'M3_COBRE','M3_UCLA','M3_NAMIC'}
-			noiseOptions = {'sICA-AROMA+2P',...
-							'sICA-AROMA+2P+GSR'};
-			noiseOptionsNames = {'ICA-AROMA+2Phys',...
-								'ICA-AROMA+2Phys+GSR'};		
-		otherwise
-			noiseOptions = {'6P',...
-							'6P+2P',...
-							'6P+2P+GSR',...
-							'24P',...
-							'24P+8P',...
-							'24P+8P+4GSR',...
-							'24P+aCC',...
-							'24P+aCC+4GSR',...
-							'24P+aCC50',...
-							'24P+aCC50+4GSR',...
-							'12P+aCC',...
-							'12P+aCC50',...
-							'sICA-AROMA+2P',...
-							'sICA-AROMA+2P+GSR',...
-							'sICA-AROMA+8P',...
-							'sICA-AROMA+8P+4GSR'};
-			noiseOptionsNames = {'6HMP',...
-								'6HMP+2Phys',...
-								'6HMP+2Phys+GSR',...
-								'24HMP',...
-								'24HMP+8Phys',...
-								'24HMP+8Phys+4GSR',...
-								'24HMP+aCompCor',...
-								'24HMP+aCompCor+4GSR',...
-								'24HMP+aCompCor50',...
-								'24HMP+aCompCor50+4GSR',...
-								'12HMP+aCompCor',...
-								'12HMP+aCompCor50',...
-								'ICA-AROMA+2Phys',...
-								'ICA-AROMA+2Phys+GSR',...
-								'ICA-AROMA+8Phys',...
-								'ICA-AROMA+8Phys+4GSR'};
-	end
-elseif runScrub | runSR
-	switch WhichProject
-		case {'M3_COBRE','M3_UCLA','M3_NAMIC'}
-			noiseOptions = {'sICA-AROMA+2P',...
-							'sICA-AROMA+2P+GSR'};
-			noiseOptionsNames = {'ICA-AROMA+2Phys',...
-								'ICA-AROMA+2Phys+GSR'};		
-		otherwise
-			% volume censoring
-			noiseOptions = {'24P+8P+4GSR',...
-							'24P+aCC+4GSR',...
-							'sICA-AROMA+2P'};
-			noiseOptionsNames = {'24HMP+8Phys+4GSR',...
-								'24HMP+aCompCor+4GSR',...
-								'ICA-AROMA+2Phys'};
-	end
+switch WhichProject
+	case {'M3_COBRE','M3_UCLA','M3_NAMIC'}
+		noiseOptions = {'sICA-AROMA+2P',...
+						'sICA-AROMA+2P+GSR'};
+		noiseOptionsNames = {'ICA-AROMA+2Phys',...
+							'ICA-AROMA+2Phys+GSR'};
+	case 'ML_SNS'
+		noiseOptions = {'sICA-AROMA+2P'};
+		noiseOptionsNames = {'ICA-AROMA+2Phys'};			
+	otherwise
+		noiseOptions = {'6P',...
+						'6P+2P',...
+						'6P+2P+GSR',...
+						'24P',...
+						'24P+8P',...
+						'24P+8P+4GSR',...
+						'24P+aCC',...
+						'24P+aCC+4GSR',...
+						'24P+aCC50',...
+						'24P+aCC50+4GSR',...
+						'12P+aCC',...
+						'12P+aCC50',...
+						'ICA-AROMA+2P',...
+						'ICA-AROMA+2P+GSR',...
+						'ICA-AROMA+8P',...
+						'ICA-AROMA+8P+4GSR',...
+						'24P+8P+4GSR+SpikeReg',...
+						'24P+8P+4GSR+JP12Scrub',...
+						'24P+4P+2GSR+JP14Scrub'};
+
+		noiseOptionsNames = {'6HMP',...
+							'6HMP+2Phys',...
+							'6HMP+2Phys+GSR',...
+							'24HMP',...
+							'24HMP+8Phys',...
+							'24HMP+8Phys+4GSR',...
+							'24HMP+aCompCor',...
+							'24HMP+aCompCor+4GSR',...
+							'24HMP+aCompCor50',...
+							'24HMP+aCompCor50+4GSR',...
+							'12HMP+aCompCor',...
+							'12HMP+aCompCor50',...
+							'ICA-AROMA+2Phys',...
+							'ICA-AROMA+2Phys+GSR',...
+							'ICA-AROMA+8Phys',...
+							'ICA-AROMA+8Phys+4GSR',...
+							'24HMP+8Phys+4GSR+SpikeReg',...
+							'24HMP+8Phys+4GSR+JP12Scrub',...
+							'24HMP+4Phys+2GSR+JP14Scrub'};
 end
 
 numPrePro = length(noiseOptions);
@@ -232,6 +216,7 @@ numPrePro = length(noiseOptions);
 % ------------------------------------------------------------------------------
 % Subject list
 % ------------------------------------------------------------------------------
+fprintf(1, 'Loading metadata...\n');
 metadata = readtable(sublist);
 % convert participant IDs to strings
 if ~iscellstr(metadata.ParticipantID)
