@@ -15,7 +15,7 @@ addpath(funcdir)
 % Set string switches
 % ------------------------------------------------------------------------------
 Projects = {'Beijing_Zang','UCLA','OCDPG','NYU_2'};
-WhichProject = Projects{1};
+WhichProject = Projects{2};
 
 noiseOptions = {'24P+8P',...
 				'24P+8P+4GSR',...
@@ -93,7 +93,7 @@ end
 % Setup output dir
 % ------------------------------------------------------------------------------
 % Setup output directory
-outdir = ([projdir,'QC_ThePlot']); 
+outdir = ([projdir,'QC_ThePlot_Jenk']); 
 if exist(outdir) == 0
 	fprintf(1,'Initialising outdir\n')
 	mkdir(outdir)
@@ -137,8 +137,8 @@ numSubs = size(metadata,1);
 % ------------------------------------------------------------------------------
 % Sort descending by mean rms displacement per subject
 % ------------------------------------------------------------------------------
-% [srt,idx] = sort(metadata.fdJenk_m,'descend');
-[srt,idx] = sort(metadata.fdPower_m,'descend');
+[srt,idx] = sort(metadata.fdJenk_m,'descend');
+% [srt,idx] = sort(metadata.fdPower_m,'descend');
 
 % ------------------------------------------------------------------------------
 % Loop over noise correction methods
@@ -151,8 +151,8 @@ for n = 1:numPrePro
 	% ------------------------------------------------------------------------------
 	% Loop over subjects in order of descending movement issues
 	% ------------------------------------------------------------------------------
-	for i = 1:numSubs
-	% for i = [1,numSubs] % this will just do the highest and lowest motion subject
+	% for i = 1:numSubs
+	for i = [1,numSubs] % this will just do the highest and lowest motion subject
 		fprintf(1,'\tProcessing subject %u/%u: %s\n',i,numSubs,metadata.ParticipantID{idx(i)})
 
 		preprodir = [datadir,metadata.ParticipantID{idx(i)},preprostr,WhichNoise,'/'];
