@@ -51,28 +51,27 @@ This is desirable because it allows the user to examine how each noise correctio
 The following is a brief summary of what the two scripts do
 
 #### prepro_base.m
-1. Segment T1 using SPM (Generate tissue masks)
+1. Segment T1 using SPM and erode the generated tissue masks
 2. Discard first 4 volumes (optional. set using input argument)
 3. Slice-timing correction (optional. set using input argument)
 4. Despiking (optional. set using input argument)
 5. EPI Realignment
 6. Co-registration of realigned images to native T1
 7. Spatially normalize T1 to MNI template
-8. Application of T1-spatial normalization parameters to coregistered EPIand tissue masks
+8. Application of T1-spatial normalization parameters to coregistered EPI and tissue masks
 9. Mask out non-brain voxels
-10. Linear detrending of realigned EPI time series (uses REST) (optional.set using input argument)
+10. Linear detrending of realigned EPI time series  (optional. set using input argument)
 11. Modal intensity normalisation (to 1000) (optional. set using inputargument)
 12. Spatial smoothing (for ICA-AROMA)
 
 #### prepro_noise.m
 1. Correct noise in EPI output from step 11 `prepro_base` (or output from step 12 in case of ICA-AROMA)
-2. Bandpass filter (includes demeaning)
+2. Bandpass filter
 3. Spatial smoothing (not in case of ICA-AROMA)
 
 #### Basic usage (Matlab)
 
 ```matlab
->> WhichMASSIVE = 'M2';
 >> WhichProject = 'UCLA';
 >> WhichSessScan = 'Sess1_Scan1';
 >> subject = 'sub-10159'; % <-- string containing subject ID
@@ -81,9 +80,8 @@ The following is a brief summary of what the two scripts do
 
 #### Usage (MASSIVE)
 - `$ ./MASSIVE_Job.sh`
-- `$ ./MASSIVE_Job_M3.sh`
 
-This script submits an array slurm job for processing multiple participants at once on M2 or M3.
+This script submits an array slurm job for processing multiple participants at once on M3.
 
 ## qc
 
