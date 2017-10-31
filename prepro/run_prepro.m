@@ -869,28 +869,33 @@ function [] = run_prepro(WhichProject,WhichSessScan,subject,smoothing,discard,sl
         % Compress final outputs
         % ------------------------------------------------------------------------------
         fprintf('\n\t\t ----- Compressing %s outputs ----- \n\n',cfg.removeNoise);
-        cd(cfg.outdir)
-        gzip('*.nii')
-        pause(5)
-        delete('*.nii')
-        fprintf('\n\t\t ----- Finished. ----- \n\n');
+        if any(size(dir([cfg.outdir '*.nii' ]),1))
+            cd(cfg.outdir)
+            gzip('*.nii')
+            pause(5)
+            delete('*.nii')
+        end
     end
 
     % ------------------------------------------------------------------------------
     % Compress base & t1 outputs
     % ------------------------------------------------------------------------------
     fprintf('\n\t\t ----- Compressing base outputs ----- \n\n');
-    cd(cfg.preprodir)
-    gzip('*.nii')
-    pause(5)
-    delete('*.nii')
+    if any(size(dir([cfg.preprodir '*.nii' ]),1)) == 1
+        cd(cfg.preprodir)
+        gzip('*.nii')
+        pause(5)
+        delete('*.nii')
+    end
 
-    cd(cfg.t1dir)
-    gzip('*.nii')
-    pause(5)
-    delete('*.nii')
+    if any(size(dir([cfg.t1dir '*.nii' ]),1)) == 1
+        cd(cfg.t1dir)
+        gzip('*.nii')
+        pause(5)
+        delete('*.nii')
+    end
 
-    if runBase == 1
+    if any(size(dir([cfg.rawdir '*.nii' ]),1)) == 1
         cd(cfg.rawdir)
         gzip('*.nii')
         pause(5)
