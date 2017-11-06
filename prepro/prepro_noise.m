@@ -220,14 +220,16 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
     % ------------------------------------------------------------------------------
         if runICA == 1
 
-            if runJP14Scrub == 1
-                ICA_outdir = [cfg.preprodir,'JP14_ICA-AROMA_output/'];
-            elseif runJP14Scrub == 0
-                ICA_outdir = [cfg.preprodir,'ICA-AROMA_output/'];
-            end
+            % if runJP14Scrub == 1
+            %     ICA_outdir = [cfg.preprodir,'JP14_ICA-AROMA_output/'];
+            % elseif runJP14Scrub == 0
+            %     ICA_outdir = [cfg.preprodir,'ICA-AROMA_output/'];
+            % end
+            ICA_outdir = [cfg.preprodir,'ICA-AROMA_output/'];
 
             % First check if ICA-AROMA has been run already
             if exist(ICA_outdir) == 0
+                fprintf(1, '\n\t\t !!!! Overriding inputs for ICA-AROMA !!!! \n\n');
                 % If it doesn't, run ICA-AROMA
                 
                 % set FSL output to nifti_gz because ICA-AROMA requires it!!!!
@@ -236,32 +238,50 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
                 fprintf(1,'\n\t\t Initialising ICA_outdir\n')
                 mkdir(ICA_outdir)
                 cd(ICA_outdir)
-    
-                str = ['python2.7 ',cfg.scriptdir_ICA,'ICA_AROMA.py -in ',cfg.preprodir,cfg.CleanIn,' -out ',ICA_outdir,' -mc ',cfg.preprodir,'raw_mov/rp*.txt -m ',cfg.preprodir,cfg.BrainMask,' -tr ',num2str(cfg.TR)];
-                % str = ['python2.7 ',cfg.scriptdir_ICA,'ICA_AROMA.py -in ',cfg.preprodir,cfg.CleanIn,' -out ',ICA_outdir,' -mc ',cfg.preprodir,'rp*.txt -m ',cfg.preprodir,cfg.BrainMask,' -tr ',num2str(cfg.TR)];
+
+                str = ['python2.7 ',cfg.scriptdir_ICA,'ICA_AROMA.py -in ',cfg.preprodir,cfg.CleanIn,' -out ',ICA_outdir,' -mc ',cfg.preprodir,'raw_mov/rp*.txt -m ',cfg.preprodir,cfg.BrainMask,' -tr ',num2str(cfg.TR),' -den no'];
                 system(str);
 
-                % unzip
-                system('gunzip -rf denoised_func_data_nonaggr.nii.gz');
+                % Get list of noise ICs
+                noiseICs = dlmread('classified_motion_ICs.txt');
+                noiseTS_ICA = [];
+                for i = 1:length(noiseICs)
+                    noiseTS_ICA(:,i) = dlmread([ICA_outdir,'melodic.ica/report/t',num2str(noiseICs(i)),'.txt']);
+                end
+                % write out
+                dlmwrite('noiseTS_ICA.txt',noiseTS_ICA,'delimiter','\t','precision','%.6f');
 
-                fprintf(1, '\n\t\t !!!! Overriding inputs for ICA-AROMA !!!! \n\n');
+                % load data
+                [hdr,data] = read([cfg.preprodir,cfg.CleanIn]);
+
+                % reshape to 2d
+                dim = size(data);
+                data = reshape(data,[],dim(4));
+
+                % Nuisance regression
+                [data_out,~,~] = JP14_regress_nuisance(data,noiseTS_ICA);
+
                 % redefine clean in
                 CleanInNew = ['ica_',cfg.CleanIn];
+                % write out
+                data_out = reshape(data_out,dim);
+                write(hdr,data_out,CleanInNew)
+
                 cfg.CleanIn = CleanInNew;
                 % redefine wm/csf files
                 cfg.NuisanceIn_wm = CleanInNew;
                 cfg.NuisanceIn_csf = CleanInNew;
 
-                % rename output file
-                movefile('denoised_func_data_nonaggr.nii',[cfg.preprodir,cfg.CleanIn])
+                % move ICA cleaned file
+                movefile(cfg.CleanIn,cfg.preprodir)
 
                 % Set FSL output back to nifti
                 setenv('FSLOUTPUTTYPE','NIFTI');
             elseif exist(ICA_outdir) == 7
                 fprintf(1,'\n\t\t ICA-AROMA has already been done: skipping \n')
+                fprintf(1, '\n\t\t !!!! Overriding inputs for ICA-AROMA !!!! \n\n');
                 cd(ICA_outdir)
 
-                fprintf(1, '\n\t\t !!!! Overriding inputs for ICA-AROMA !!!! \n\n');
                 % redefine clean in
                 CleanInNew = ['ica_',cfg.CleanIn];
                 cfg.CleanIn = CleanInNew;
@@ -273,20 +293,8 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
                 movefile(cfg.CleanIn,cfg.preprodir)
             end
 
-            % Compile noise IC time series into a txt file. This isnt necessary for cleaning, since ICA-AROMA does that for us.
-            % But having the noise IC time series on hand can be useful none the less
-
-            % Get list of noise ICs
-            noiseICs = dlmread('classified_motion_ICs.txt');
-            noiseTS_ICA = [];
-            for i = 1:length(noiseICs)
-                noiseTS_ICA(:,i) = dlmread([ICA_outdir,'melodic.ica/report/t',num2str(noiseICs(i)),'.txt']);
-            end
-
             % Change back to primary outdir
             cd(outdir)
-            % write out
-            dlmwrite('noiseTS_ICA.txt',noiseTS_ICA,'delimiter','\t','precision','%.6f');
         end
 
     % ------------------------------------------------------------------------------
