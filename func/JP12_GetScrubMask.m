@@ -13,7 +13,7 @@ function [ScrubMask, exclude] = JP12_GetScrubMask(fd,dvars,TR,fdThr,dvarsThr,scr
 	% TR 		- TR in seconds
 	% 
 	% fdThr 	- Threshold for detecting FD movements. default = 0.2
-	% dvarsThr 	- Threshold for detecting DVARS changes. default = 20
+	% dvarsThr 	- Threshold for detecting DVARS changes. default = 30
 	%
 	% -------
 	% OUTPUTS
