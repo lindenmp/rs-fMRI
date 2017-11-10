@@ -60,6 +60,12 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
         fprintf(1, '\t\t Detrend EPI: no \n');
     end
 
+    if cfg.meanback == 1
+        fprintf(1, '\t\t\t Add mean back: yes \n');
+    elseif cfg.meanback == 0
+        fprintf(1, '\t\t\t Add mean back: no \n');
+    end
+
     fprintf('\n\t\t ------------------------------ \n\n');
 
     % ------------------------------------------------------------------------------
@@ -597,8 +603,20 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
             dim = size(data);
             data = reshape(data,[],dim(4));
 
+            % get the data mean
+            if cfg.meanback == 1;
+                theMean = mean(data,2);
+                theMean = repmat(theMean,[1,tN]);
+            end
+
             % Detrend with all data
             [data_out,~] = JP14_demean_detrend(data);
+
+            % add the mean back
+            if cfg.meanback == 1;
+                data_out = data_out + theMean;
+            end
+
             data_out = reshape(data_out,dim);
             write(hdr,data_out,DetrendOut)
 
