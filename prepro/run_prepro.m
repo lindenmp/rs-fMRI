@@ -785,7 +785,7 @@ function [] = run_prepro(WhichProject,WhichSessScan,subject,smoothing,discard,sl
         [cfg.tN,cfg.gm,cfg.wm,cfg.csf,cfg.epiBrainMask,cfg.t1BrainMask,cfg.BrainMask,cfg.gmmask,cfg.wmmask,cfg.csfmask,cfg.dvars,cfg.dvarsExtract,cfg.fdThr,cfg.dvarsThr,cfg.exclude,cfg.outEPI] = prepro_base(cfg);
     elseif runBase == 0
         % assumes 6P has been run
-        temp = load([cfg.preprodir,'/6P/cfg.mat']);
+        temp = load([cfg.preprodir,'6P/cfg.mat']);
         cfg.tN = temp.cfg.tN;
         cfg.gm = temp.cfg.gm;
         cfg.wm = temp.cfg.wm;
