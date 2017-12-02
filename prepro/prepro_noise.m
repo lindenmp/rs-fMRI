@@ -3,7 +3,7 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
     %       See below for details
     % 2 - Bandpass filter (includes demeaning)
     % 3 - Spatial smoothing (not in case of ICA-AROMA)
-    % 
+    %
     % Copyright (C) 2017, Linden Parkes <lindenparkes@gmail.com>,
     % ------------------------------------------------------------------------------
     % Choose noise removal
@@ -33,7 +33,7 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
             % 1) 6 motion parameters from realignment
             % 3) the temporal derivatives of the above (calculated as the backwards difference)
             % 4) the squares of the above
-            % totaling 24 noise regressors. (6*2*2) 
+            % totaling 24 noise regressors. (6*2*2)
         % cfg.removeNoise = '24P+8P'
             % Involves regressing out the following:
             % 1) 6 motion parameters from realignment
@@ -43,7 +43,7 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
             % totaling 32 noise regressors. (6*2*2) + (2*2*2)
         % cfg.removeNoise = '24P+8P+4GSR'
             % 24P+8P as well as 4GSR (expanded)
-            % totaling 36 noise regressors. (6*2*2) + (2*2*2) + (1*2*2)           
+            % totaling 36 noise regressors. (6*2*2) + (2*2*2) + (1*2*2)
         % cfg.removeNoise = '24P+8P+SpikeReg'
             % 24P+8P as well as spike regression calculated by thresholding the output from GetFDJenk.m (as per Ciric/Satterthwaite)
             % totaling 24P+8P + N noise regressors (where N varies per subject depending on the number of suprathreshold fd spikes)
@@ -58,7 +58,7 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
             % 24P as well as 4GSR (expanded)
             % totaling 28 noise regressors. (6*2*2) + (1*2*2)
         % ------------------------------------------------------------------------------
-            
+
         % ------------------------------------------------------------------------------
         % The aCompCor methods.
         % ------------------------------------------------------------------------------
@@ -80,7 +80,7 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
             % totaling 34 regressors. (6*2*2) + 5 + 5
         % cfg.removeNoise = '24P+aCC+4GSR'
             % 24P+aCC as well as 4GSR (including temporal derivatives and squares)
-            % totaling 38 noise regressors. (6*2*2) + 5 + 5 + 4        
+            % totaling 38 noise regressors. (6*2*2) + 5 + 5 + 4
         % cfg.removeNoise = '24P+aCC+SpikeReg'
             % 24P+aCC as well as spike regression calculated by thresholding the output from GetFDJenk.m (as per Ciric/Satterthwaite)
             % totaling 24P+aCC + N noise regressors (where N varies per subject depending on the number of suprathreshold fd spikes)
@@ -127,7 +127,7 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
             rmdir(outdir,'s')
             mkdir(outdir)
         end
-       
+
         cd(outdir)
 
     % ------------------------------------------------------------------------------
@@ -240,7 +240,7 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
             if exist(ICA_outdir) == 0
                 fprintf(1, '\n\t\t !!!! Overriding inputs for ICA-AROMA !!!! \n\n');
                 % If it doesn't, run ICA-AROMA
-                
+
                 % set FSL output to nifti_gz because ICA-AROMA requires it!!!!
                 setenv('FSLOUTPUTTYPE','NIFTI_GZ');
 
@@ -323,7 +323,7 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
 
             % White Matter
             str = [cfg.fsldir,'fslmeants -i ',cfg.preprodir,cfg.NuisanceIn_wm,' -o wmTS.txt -m ',cfg.t1dir,cfg.wmmask];
-            system(str); 
+            system(str);
             wmTS = dlmread('wmTS.txt');
 
             % also get the other less eroded wm masks.
@@ -333,20 +333,20 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
                 [hdr,data] = read([cfg.t1dir,cfg.wm{i}]);
                 if any(data(:)) == 1;
                     str = [cfg.fsldir,'fslmeants -i ',cfg.preprodir,cfg.NuisanceIn_wm,' -o wm_e',num2str(i),'_TS.txt -m ',cfg.t1dir,cfg.wm{i}];
-                    system(str); 
+                    system(str);
                 end
-            end                
+            end
 
             % CSF
             str = [cfg.fsldir,'fslmeants -i ',cfg.preprodir,cfg.NuisanceIn_csf,' -o csfTS.txt -m ',cfg.t1dir,cfg.csfmask];
-            system(str); 
+            system(str);
             csfTS = dlmread('csfTS.txt');
 
             for i = 1:length(cfg.csf)
                 [hdr,data] = read([cfg.t1dir,cfg.csf{i}]);
                 if any(data(:)) == 1;
                     str = [cfg.fsldir,'fslmeants -i ',cfg.preprodir,cfg.NuisanceIn_csf,' -o csf_e',num2str(i),'_TS.txt -m ',cfg.t1dir,cfg.csf{i}];
-                    system(str); 
+                    system(str);
                 end
             end
 
@@ -355,7 +355,7 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
             % We only retain a pre-cleaned GM signal so we can examinine wm-gm correlations as a function of wm erosion (Power et al., 2017)
             % Note correlation to WM will likely be 0.1-0.2 higher than in Power et al., because Power uses the ribbon only to get GM (ribbon is better)
             str = [cfg.fsldir,'fslmeants -i ',cfg.preprodir,cfg.CleanIn,' -o gmTS.txt -m ',cfg.t1dir,cfg.gmmask];
-            system(str);             
+            system(str);
 
             clear hdr data
         end
@@ -366,7 +366,7 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
         if runGSR == 1
             % Global
             str = [cfg.fsldir,'fslmeants -i ',cfg.preprodir,cfg.CleanIn,' -o gsTS.txt -m ',cfg.preprodir,cfg.BrainMask];
-            system(str); 
+            system(str);
             gsTS = dlmread('gsTS.txt');
         end
 
@@ -391,7 +391,7 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
             else
                 % Extract nuisance time course
                 str = [cfg.fsldir,'fslmeants -i ',cfg.preprodir,cfg.NuisanceIn_wm,' -o wmTS_aCC.txt -m ',cfg.t1dir,cfg.wmmask,' --showall'];
-                system(str); 
+                system(str);
 
                 % Read in cfg.wm time courses
                 wmTS = dlmread('wmTS_aCC.txt');
@@ -427,7 +427,7 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
             else
                 % Extract nuisance time course
                 str = [cfg.fsldir,'fslmeants -i ',cfg.preprodir,cfg.NuisanceIn_csf,' -o csfTS_aCC.txt -m ',cfg.t1dir,cfg.csfmask,' --showall'];
-                system(str); 
+                system(str);
 
                 % Read in cfg.csf time courses
                 csfTS = dlmread('csfTS_aCC.txt');
@@ -448,7 +448,7 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
             end
             clear temp
         end
-    
+
     % ------------------------------------------------------------------------------
     % 4) Spike regression
     % ------------------------------------------------------------------------------
@@ -463,7 +463,7 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
 
             clear fd
         end
-    
+
     % ------------------------------------------------------------------------------
     % Generate noiseTS
     % ------------------------------------------------------------------------------
@@ -543,7 +543,7 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
         end
 
         % We dont get expansion terms on spike regressors or aCompCor
-        
+
         % concatenate aCompCor
         if runaCC == 1
             fprintf(1,'\t\t Adding aCompCor signals \n');
@@ -577,12 +577,12 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
 
         CleanOut = 'epi_clean.nii';
         data_out = reshape(data_out,dim);
-        write(hdr,data_out,CleanOut)            
-        
+        write(hdr,data_out,CleanOut)
+
         % write out noiseTS incase people want to model nuisance at SPM
         dlmwrite('noiseTS.txt',noiseTS,'delimiter','\t','precision','%.6f');
         dlmwrite('noiseTSz.txt',noiseTSz,'delimiter','\t','precision','%.6f');
-        
+
         clear hdr data data_out
 
     % ------------------------------------------------------------------------------
@@ -590,7 +590,7 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
     % ------------------------------------------------------------------------------
         if cfg.runBandpass == 1
             FiltIn = CleanOut;
-            
+
             % load nifti
             [hdr,data] = read(FiltIn);
 
@@ -636,7 +636,7 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
             % bandpass filter the masked data
             data = rest_IdealFilter(data, cfg.TR, [cfg.HighPass, cfg.LowPass]);
 
-            % put filtered data back with non-brain voxels 
+            % put filtered data back with non-brain voxels
             data_out = zeros(cfg.tN,numVoxels);
             data_out(:,data_mask) = data;
             clear data

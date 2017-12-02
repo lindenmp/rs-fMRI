@@ -93,7 +93,7 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
             case '.gz'
                 cfg.t1name = name;
         end
-        
+
         if exist(cfg.t1name) == 0
             if exist([cfg.t1name,'.gz']) == 2
                 runDecompt1 = 1;
@@ -117,7 +117,7 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
                 case '.gz'
                     cfg.t14norm = name;
             end
-        
+
             if exist(cfg.t14norm) == 0
                 if exist([cfg.t14norm,'.gz']) == 2
                     runDecompt1 = 1;
@@ -145,7 +145,7 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
             case '.gz'
                 cfg.EPI = name;
         end
-        
+
         if exist(cfg.EPI) == 0
             if exist([cfg.EPI,'.gz']) == 2
                 runDecompEPI = 1;
@@ -198,7 +198,7 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
         if isfield(cfg, 't14norm')
             movefile([cfg.datadir,cfg.subject,'/',cfg.t14norm,'*'],cfg.t1dir)
         end
-        
+
         cd(cfg.t1dir);
 
         % First crop out neck
@@ -255,7 +255,7 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
         csf = ['v',csf];
         system([cfg.fsldir,'fslmaths vmask -mul e_native_t1_brain_mask ',csf]);
         delete('vmask.nii')
-        
+
         % erode 2 times
         csfname = csf; clear csf;
         csf{1} = [csfname(1:end-4),'_e1.nii'];
@@ -350,7 +350,7 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
                 DespikeIn = cfg.EPI;
                 DespikeOut = ['d',cfg.EPI];
             end
-            
+
             system([cfg.afnidir,'3dDespike ',DespikeIn]);
 
             % convert to nifti
@@ -451,9 +451,9 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
         % EPI outputs
         normEPI = ['w',RealignOut];
         normmeanEPI = ['w',meanEPI];
-        
+
         % T1 outputs
-        normT1 = ['w',cfg.t1name];    
+        normT1 = ['w',cfg.t1name];
         gm = ['w',gm];
         for i = 1:length(wm); wm{i} = ['w',wm{i}]; end
         for i = 1:length(csf); csf{i} = ['w',csf{i}]; end
@@ -492,12 +492,12 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
     % Mask out non-brain tissue from EPI image, T1, and GM map
     % ------------------------------------------------------------------------------
         fprintf(1,'\n\t\t ----- Apply brain masks ----- \n\n')
-        
+
         cd(cfg.preprodir)
         % EPI
         system([cfg.fsldir,'fslmaths ',normEPI,' -mas ',cfg.preprodir,BrainMask,' b',normEPI]);
         system([cfg.fsldir,'fslmaths ',normmeanEPI,' -mas ',cfg.preprodir,BrainMask,' b',normmeanEPI]);
-        
+
         % T1
         cd(cfg.t1dir)
         system([cfg.fsldir,'fslmaths ', normT1,' -mas ',cfg.preprodir,BrainMask,' b',normT1]);
@@ -510,9 +510,9 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
         % EPI outputs
         normEPI = ['b',normEPI];
         normmeanEPI = ['b',normmeanEPI];
-        
+
         % T1 outputs
-        normT1 = ['b',normT1];    
+        normT1 = ['b',normT1];
         gm = ['b',gm];
 
     % ------------------------------------------------------------------------------
@@ -570,9 +570,9 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
         if cfg.intnorm == 1
             fprintf(1,'\n\t\t ----- EPI intensity normalisation ----- \n\n')
             cd(cfg.preprodir)
-            
+
             IntNormOut = ['i',IntNormIn];
-            
+
             IntensityNormalise(IntNormIn)
 
             % Get dvars
@@ -598,7 +598,7 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
 
             % load
             [hdr,data] = read(DetrendIn);
-            
+
             % reshape to 2d
             dim = size(data);
             data = reshape(data,[],dim(4));
@@ -621,7 +621,7 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
             write(hdr,data_out,DetrendOut)
 
             % ------------------------------------------------------------------------------
-            % Scrubbing (Power et al., 2014. NeuroImage) 
+            % Scrubbing (Power et al., 2014. NeuroImage)
             % ------------------------------------------------------------------------------
             if cfg.intnorm == 1 & cfg.runBandpass == 1
                 % get FD Power
@@ -631,7 +631,7 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
                 % mov = dlmread([cfg.preprodir,mfile(1).name]);
                 fd = GetFDPower(mov);
                 dlmwrite('fdPower.txt',fd)
-                
+
                 % Create Power temporal mask
                 fdThr = 0.2;
                 dvarsThr = 20;
