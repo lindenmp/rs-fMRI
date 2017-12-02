@@ -172,6 +172,15 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
             runICA = 0;
         end
 
+        % motion params
+        if any(strmatch('6P',cfg.removeNoiseSplit,'exact')) == 1 || ...
+            any(strmatch('12P',cfg.removeNoiseSplit,'exact')) == 1 || ...
+            any(strmatch('24P',cfg.removeNoiseSplit,'exact')) == 1
+            runMot = 1;
+        else
+            runMot = 0;
+        end
+
         % Physiological noise
         if any(strmatch('2P',cfg.removeNoiseSplit,'exact')) == 1 || ...
             any(strmatch('4P',cfg.removeNoiseSplit,'exact')) == 1 || ...
@@ -460,8 +469,7 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
     % ------------------------------------------------------------------------------
         fprintf(1,'\n\t\t ----- Generating noiseTS ----- \n\n');
 
-        % If ICA wasn't run, then start noiseTS with movement params from realignment
-        if runICA == 0
+        if runMot == 1
             fprintf(1,'\t\t Adding motion params \n');
 
             % Get expansions for motion
@@ -480,9 +488,14 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
                     noiseTS = mov;
                 end
             end
-        % If it was run, then we dont regress out mov params
-        elseif runICA == 1
+        elseif runMot == 0
             fprintf(1,'\t\t Skipping motion params \n');
+            noiseTS = [];
+        end
+
+        % If it was run, then we dont regress out mov params
+        if runICA == 1
+            fprintf(1,'\t\t ICA-AROMA: no motion params \n');
             noiseTS = [];
         end
 
