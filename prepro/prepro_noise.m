@@ -559,31 +559,38 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
     % ------------------------------------------------------------------------------
     % Nuisance regression
     % ------------------------------------------------------------------------------
-        [hdr,data] = read([cfg.preprodir,cfg.CleanIn]);
+        if any(strmatch('none',cfg.removeNoiseSplit,'exact')) ~= 1
+            [hdr,data] = read([cfg.preprodir,cfg.CleanIn]);
 
-        % reshape to 2d
-        dim = size(data);
-        data = reshape(data,[],dim(4));
+            % reshape to 2d
+            dim = size(data);
+            data = reshape(data,[],dim(4));
 
-        if runJP14Scrub == 1
-            fprintf(1,'\n\t\t ----- Running nuisance regression with scrubbing ----- \n\n');
-            % Read in scrubbing mask
-            scrubmask = logical(dlmread([cfg.preprodir,'JP14_ScrubMask.txt']));
-            [data_out zb noiseTSz] = JP14_regress_nuisance(data,noiseTS,~scrubmask(:,2));
-        elseif runJP14Scrub == 0
-            fprintf(1,'\n\t\t ----- Running nuisance regression without scrubbing ----- \n\n');
-            [data_out zb noiseTSz] = JP14_regress_nuisance(data,noiseTS);
+            if runJP14Scrub == 1
+                fprintf(1,'\n\t\t ----- Running nuisance regression with scrubbing ----- \n\n');
+                % Read in scrubbing mask
+                scrubmask = logical(dlmread([cfg.preprodir,'JP14_ScrubMask.txt']));
+                [data_out zb noiseTSz] = JP14_regress_nuisance(data,noiseTS,~scrubmask(:,2));
+            elseif runJP14Scrub == 0
+                fprintf(1,'\n\t\t ----- Running nuisance regression without scrubbing ----- \n\n');
+                [data_out zb noiseTSz] = JP14_regress_nuisance(data,noiseTS);
+            end
+
+            CleanOut = 'epi_clean.nii';
+            data_out = reshape(data_out,dim);
+            write(hdr,data_out,CleanOut)
+
+            % write out noiseTS incase people want to model nuisance at SPM
+            dlmwrite('noiseTS.txt',noiseTS,'delimiter','\t','precision','%.6f');
+            dlmwrite('noiseTSz.txt',noiseTSz,'delimiter','\t','precision','%.6f');
+
+            clear hdr data data_out
+        elseif any(strmatch('none',cfg.removeNoiseSplit,'exact')) == 1
+            fprintf(1,'\n\t\t ----- Skipping nuisance regression ----- \n\n');
+            copyfile([cfg.preprodir,cfg.CleanIn],outdir)
+            CleanOut = cfg.CleanIn;
+            noiseTSz = [];
         end
-
-        CleanOut = 'epi_clean.nii';
-        data_out = reshape(data_out,dim);
-        write(hdr,data_out,CleanOut)
-
-        % write out noiseTS incase people want to model nuisance at SPM
-        dlmwrite('noiseTS.txt',noiseTS,'delimiter','\t','precision','%.6f');
-        dlmwrite('noiseTSz.txt',noiseTSz,'delimiter','\t','precision','%.6f');
-
-        clear hdr data data_out
 
     % ------------------------------------------------------------------------------
     % Bandpass filter with REST
