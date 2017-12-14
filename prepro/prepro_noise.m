@@ -268,7 +268,7 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
                 data = reshape(data,[],dim(4));
 
                 % Nuisance regression
-                [data_out,~,~] = JP14_regress_nuisance(data,noiseTS_ICA);
+                [data_out,~,~] = JP14_regress_nuisance(data,noiseTS_ICA,cfg.demean);
 
                 % redefine clean in
                 CleanInNew = ['ica_',cfg.CleanIn];
@@ -570,10 +570,10 @@ function [noiseTS,outdir,noiseTSz] = prepro_noise(cfg)
                 fprintf(1,'\n\t\t ----- Running nuisance regression with scrubbing ----- \n\n');
                 % Read in scrubbing mask
                 scrubmask = logical(dlmread([cfg.preprodir,'JP14_ScrubMask.txt']));
-                [data_out zb noiseTSz] = JP14_regress_nuisance(data,noiseTS,~scrubmask(:,2));
+                [data_out zb noiseTSz] = JP14_regress_nuisance(data,noiseTS,cfg.demean,~scrubmask(:,2));
             elseif runJP14Scrub == 0
                 fprintf(1,'\n\t\t ----- Running nuisance regression without scrubbing ----- \n\n');
-                [data_out zb noiseTSz] = JP14_regress_nuisance(data,noiseTS);
+                [data_out zb noiseTSz] = JP14_regress_nuisance(data,noiseTS,cfg.demean);
             end
 
             CleanOut = 'epi_clean.nii';

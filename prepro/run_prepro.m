@@ -1,7 +1,7 @@
 %% run_prepro:
 % Copyright (C) 2017, Linden Parkes <lindenparkes@gmail.com>,
 
-function [] = run_prepro(WhichProject,WhichSessScan,subject,smoothing,discard,slicetime,despike,detr,intnorm,bandpass,meanback)
+function [] = run_prepro(WhichProject,WhichSessScan,subject,smoothing,discard,slicetime,despike,detr,intnorm,bandpass,demean)
     cfg.WhichProject = WhichProject;
     cfg.WhichSessScan = WhichSessScan;
     cfg.subject = subject;
@@ -43,9 +43,9 @@ function [] = run_prepro(WhichProject,WhichSessScan,subject,smoothing,discard,sl
     end
 
     if nargin < 11
-        cfg.meanback = 0;
+        cfg.demean = 1;
     else
-        cfg.meanback = meanback;
+        cfg.demean = demean;
     end
 
     % ------------------------------------------------------------------------------
