@@ -8,11 +8,15 @@
 % 	But it assumes time is the first dimension on the noiseTS matrix.
 % 	it also assumes that 1 = volumes to keep in tmask, not to discard.
 % ------------------------------------------------------------------------------
-function [data_out zb newregs] = JP14_regress_nuisance(data,noiseTS,tmask)
+function [data_out zb newregs] = JP14_regress_nuisance(data,noiseTS,demean,tmask)
 
 	[vox ts] = size(data);
+
+	if nargin < 3
+		demean = 1;
+	end
 	
-	if nargin < 3;
+	if nargin < 4
 		tmask = ones(ts,1);
 	end
 
@@ -24,12 +28,16 @@ function [data_out zb newregs] = JP14_regress_nuisance(data,noiseTS,tmask)
 	% ------------------------------------------------------------------------------
 	% First, create regressors using the censored data
 	zlinreg = noiseTS(tmask,:); % only censored data
-	[zlinreg DMDTB] = JP14_demean_detrend(zlinreg'); % obtain fits for censored data
+	[zlinreg DMDTB] = JP14_demean_detrend(zlinreg',demean); % obtain fits for censored data
 	zlinreg = zlinreg';
 	zlinreg = zscore(zlinreg);
 
 	% Next, use the fit from the above censored regressors to generate regressors that span the uncensored data too
-	linreg = [repmat(1,[ts 1]) linspace(0,1,ts)'];
+	if demean == 1
+		linreg = [repmat(1,[ts 1]) linspace(0,1,ts)'];
+	else
+		linreg = linspace(0,1,ts)';
+	end
 	newregs = DMDTB * linreg'; % predicted all regressors demean/detrend
 	newregs = noiseTS - newregs'; % these are the demeaned detrended regressors
 	newregs = zscore(newregs);
@@ -39,7 +47,7 @@ function [data_out zb newregs] = JP14_regress_nuisance(data,noiseTS,tmask)
 	% ------------------------------------------------------------------------------
 	% demean and detrend the censored data
 	data_c = data(:,tmask);
-	[data_c data_c_beta] = JP14_demean_detrend(data_c);
+	[data_c data_c_beta] = JP14_demean_detrend(data_c,demean);
 
 	% calculate betas on the censored data
 	tempboldcell = num2cell(data_c',1);
