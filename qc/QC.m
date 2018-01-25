@@ -8,10 +8,29 @@
 clear all; close all; clc
 
 % ------------------------------------------------------------------------------
+% Parent dirs
+% ------------------------------------------------------------------------------
+% MASSIVE
+parentdir = '/home/lindenmp/kg98_scratch/Linden/ResProjects/';
+ROIDir = '/projects/kg98/Linden/ROIs/';
+ExtHDD = [parentdir,'rfMRI_denoise/'];
+% where the prepro scripts are
+funcdir = '/home/lindenmp/kg98/Linden/Scripts/rs-fMRI/func/';
+
+% Mac (local)
+% parentdir = '~/Dropbox/Work/ResProjects/';
+% ROIDir = '~/Dropbox/Work/ROIs/';
+% ExtHDD = '/Volumes/USB_D2/ResProjects/rfMRI_denoise/';
+% where the prepro scripts are
+% funcdir = '~/Dropbox/Work/git/rs-fMRI/func/';
+
+addpath(funcdir)
+
+% ------------------------------------------------------------------------------
 % Set string switches
 % ------------------------------------------------------------------------------
-Projects = {'Beijing_Zang','UCLA','OCDPG','NYU_2','COBRE','COBRE_HCTSA','UCLA_HCTSA','NAMIC_HCTSA','ML_SNS'};
-WhichProject = Projects{2};
+Projects = {'Beijing_Zang','UCLA','OCDPG','NYU_2','COBRE','COBRE_HCTSA','UCLA_HCTSA','NAMIC_HCTSA','ML_SNS','OCDPG_DCM','ASPREE-NEURO'};
+WhichProject = Projects{1};
 
 WhichParc = 'Gordon'; % 'Gordon' 'Power'
 
@@ -38,9 +57,14 @@ end
 % ------------------------------------------------------------------------------
 % Set project variables
 % ------------------------------------------------------------------------------
-parentdir = '~/Dropbox/Work/ResProjects/';
-% parentdir = '/home/lindenmp/kg98_scratch/Linden/ResProjects/';
 switch WhichProject
+	case 'OCDPG_DCM'
+		projdir = [parentdir,'rfMRI_DCM/OCDPG/'];
+		sublist = [projdir,'OCDPGe.csv'];
+		datadir = [projdir,'data/'];
+        preprostr = '/func/prepro/';
+
+		TR = 2.5;
 	case 'OCDPG'
 		projdir = [parentdir,'rfMRI_denoise/OCDPG/'];
 		sublist = [projdir,'OCDPGe.csv'];
@@ -108,14 +132,20 @@ switch WhichProject
 		preprostr = '/func/prepro/';
 
 		TR = 2;
+	case 'ASPREE-NEURO'
+		% projdir = [parentdir,'ASPREE-NEURO/'];
+		projdir = '/home/lindenmp/dq13_scratch/Linden/ResProjects/ASPREE-NEURO/';
+		sublist = [projdir,'ASPREE-NEURO.csv'];
+		datadir = [projdir,'data/'];
+		preprostr = '/func/prepro/';
+
+		TR = 0.754;
 end
 
 % ------------------------------------------------------------------------------
 % Set parcellation
 % Note, code is not setup to process multiple parcellations concurrently.
 % ------------------------------------------------------------------------------
-ROIDir = '~/Dropbox/Work/ROIs/';
-% ROIDir = '/projects/kg98/Linden/ROIs/';
 switch WhichParc
 	case 'Gordon'
 		Parc = 1;
@@ -168,7 +198,11 @@ switch WhichProject
 							'ICA-AROMA+2Phys+GSR'};
 	case 'ML_SNS'
 		noiseOptions = {'sICA-AROMA+2P'};
-		noiseOptionsNames = {'ICA-AROMA+2Phys'};			
+		noiseOptionsNames = {'ICA-AROMA+2Phys'};
+	case 'ASPREE-NEURO'
+		noiseOptions = {'ICA-FIX'};
+
+		noiseOptionsNames = {'ICA-FIX'};
 	otherwise
 		noiseOptions = {'6P',...
 						'6P+2P',...
@@ -231,9 +265,6 @@ if numel(unique(metadata.Diagnosis)) > 1
 	% Retain only group 1 (assumed to be HCs) and group 2 (assumed to be patients)
 	% I do this because the OCDPG dataset has some PGs in it that need to be removed
 	metadata(metadata.Diagnosis == 3,:) = [];
-	
-	% Retain only HCs
-	metadata = metadata(metadata.Diagnosis == 1,:);
 end
 
 numGroups = numel(unique(metadata.Diagnosis));
@@ -241,7 +272,14 @@ numGroups = numel(unique(metadata.Diagnosis));
 % ------------------------------------------------------------------------------
 % Exclusion and censoring stuff
 % ------------------------------------------------------------------------------
-[metadata.exclude,metadata.mov,metadata.fdJenk,metadata.fdJenk_m,metadata.fdPower,metadata.fdPower_m,metadata.dvars,metadata.JP12ScrubMask,metadata.JP14ScrubMask] = GetExcludeForSample(datadir,metadata.ParticipantID,TR,preprostr);
+switch WhichProject
+	case 'ASPREE-NEURO'
+		mname = 'rp*par';
+	otherwise
+		mname = 'rp*txt';
+end
+
+[metadata.exclude,metadata.mov,metadata.fdJenk,metadata.fdJenk_m,metadata.fdPower,metadata.fdPower_m,metadata.dvars,metadata.JP12ScrubMask,metadata.JP14ScrubMask] = GetExcludeForSample(datadir,metadata.ParticipantID,TR,preprostr,mname);
 fprintf(1, 'done\n');
 
 % compute number of volumes using the length of fdJenk
@@ -290,6 +328,11 @@ if numGroups > 1
 	xlabel('Group')
 	ylabel('Mean FD')
 end
+
+% ------------------------------------------------------------------------------
+% Retain only HCs for remainder of analysis
+% ------------------------------------------------------------------------------
+metadata = metadata(metadata.Diagnosis == 1,:);
 
 % ------------------------------------------------------------------------------
 % Calculate ICC: FD
@@ -430,8 +473,10 @@ for i = 1:numPrePro
 		fprintf(1, 'Excluded %u subjects \n', sum(metadata_bak.exclude(:,WhichExclude)));
 		[allData(i).cfg,allData(i).FC,allData(i).FCVec,allData(i).VarCovar,allData(i).Var,allData(i).GCOR] = GetFCForSample(datadir,metadata.ParticipantID,preprostr,WhichNoise,cfgFile,Parc,numROIs,numConnections);
 	else
-		% WhichExclude = 1;
-		WhichExclude = 2;
+		% For liberal
+		WhichExclude = 1;
+		% For stringent
+		% WhichExclude = 2;
 		metadata = metadata_bak(~metadata_bak.exclude(:,WhichExclude),:);
 		numSubs = size(metadata,1);
 		fprintf(1, 'Excluded %u subjects \n', sum(metadata_bak.exclude(:,WhichExclude)));
@@ -527,12 +572,10 @@ for i = 1:numPrePro
 	% ------------------------------------------------------------------------------
 	% Get NBS contrasts
 	% ------------------------------------------------------------------------------
-	if ~ismember('NYU_2',WhichProject,'rows')
+	if ismember('OCDPG',WhichProject,'rows') | ismember('UCLA',WhichProject,'rows') | ismember('Beijing_Zang',WhichProject,'rows')
 		fprintf(1, 'Getting NBS contrasts: %s\n',WhichNoise);
 	    WhichStat = 'F';
 	    numContrasts = 2;
-		ExtHDD = '/Volumes/USB_D2/ResProjects/rfMRI_denoise/';
-		% ExtHDD = [parentdir,'rfMRI_denoise/'];
 
 	    switch WhichStat
 	    	case 'F'
@@ -1374,29 +1417,6 @@ if runPlot
 	    'Rotation',TextRotation)
 
 		view(90,90)
-
-		% ------------------------------------------------------------------------------
-		% ICC tstat
-		% ------------------------------------------------------------------------------
-		% Create data
-		data = {[allData(:).ICC_tstat]'};
-		data_std = cell(1,length(data)); [data_std{:}] = deal(zeros(size(data{1})));
-		
-		% reorder by tDOF-loss
-		data{1} = data{1};
-		data_std{1} = data_std{1};
-
-		% Create bar chart
-		extraParams.plotWidth = 10.5;
-		extraParams.plotHeight = 9;
-		extraParams.xTickLabels = xy;
-		extraParams.xLabel = 'Pipeline';
-		extraParams.yLabel = 'ICC t-stat';
-		extraParams.yLimits = [0 230];
-	    extraParams.theColors = theColors;
-    	extraParams.theLines = theLines;
-
-		TheBarChart(data,data_std,true,extraParams);
 	end
 end
 
