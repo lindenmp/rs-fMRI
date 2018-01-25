@@ -75,7 +75,7 @@ function [exclude,mov,fdJenk,fdJenk_m,fdPower,fdPower_m,dvars,JP12ScrubMask,JP14
 
 	    [pathstr,name,ext] = fileparts(mfile.name);
 	    if ismember('.par',ext,'rows')
-	    	% If movement file has .par extension, assume FSL organisation of columns (rot,trans) and reordered to SPM organisation (trans,rot)
+	    	% If movement file has .par extension, assume FSL/AFNI organisation of columns (rot,trans) and reordered to SPM organisation (trans,rot)
 	    	mov{i} = mov{i}(:,[4:6,1:3]);
 	    end
 
@@ -109,14 +109,25 @@ function [exclude,mov,fdJenk,fdJenk_m,fdPower,fdPower_m,dvars,JP12ScrubMask,JP14
 		% Get DVARS
 		% ------------------------------------------------------------------------------
 	    % Get dvars
-	    dvars{i} = dlmread([workdir,'dvars.txt']);
+	    if exist([workdir,'dvars.txt']) == 2
+	    	dvars{i} = dlmread([workdir,'dvars.txt']);
+		end	    	
+
+		% ------------------------------------------------------------------------------
+		% Run exclusion
+		% ------------------------------------------------------------------------------		
+		% Select FD measure to use for exclusion below
+		fd = fdJenk{i};
+		fd_m = fdJenk_m(i);
+		% fd = fdPower{i};
+		% fd_m = fdPower_m(i);
 
 	    % ------------------------------------------------------------------------------
 	    % 1) Initial, gross movement exclusion
 	    % ------------------------------------------------------------------------------
 		% Calculate whether subject has suprathreshold mean movement
 		% If the mean of displacement is greater than 0.55 mm (Sattethwaite), then exclude
-		if fdJenk_m(i) > 0.55
+		if fd_m > 0.55
 			exclude(i,1) = 1;
 		else
 			exclude(i,1) = 0;
@@ -128,7 +139,7 @@ function [exclude,mov,fdJenk,fdJenk_m,fdPower,fdPower_m,dvars,JP12ScrubMask,JP14
 		% 2.1) Exclude on mean rms displacement
 			% Calculate whether subject has suprathreshold mean movement
 			% If the mean of displacement is greater than 0.2 mm (Ciric), then exclude
-			if fdJenk_m(i) > 0.2
+			if fd_m > 0.2
 				x = 1;
 			else
 				x = 0;
@@ -138,14 +149,14 @@ function [exclude,mov,fdJenk,fdJenk_m,fdPower,fdPower_m,dvars,JP12ScrubMask,JP14
 			% Calculate whether subject has >20% suprathreshold spikes
 			fdJenkThrPerc = round(numVols * 0.20);
 			% If the number of volumes that exceed fdJenkThr are greater than %20, then exclude
-			if sum(fdJenk{i} > fdJenkThr) > fdJenkThrPerc
+			if sum(fd > fdJenkThr) > fdJenkThrPerc
 				y = 1;
 			else
 				y = 0;
 			end
 
 		% 2.3) Exclude on large spikes (>5mm)
-			if any(fdJenk{i} > 5)
+			if any(fd > 5)
 				z = 1;
 			else
 				z = 0;
@@ -184,16 +195,20 @@ function [exclude,mov,fdJenk,fdJenk_m,fdPower,fdPower_m,dvars,JP12ScrubMask,JP14
 		% 4) JP12 Scrubbing
 		% ------------------------------------------------------------------------------
 		dvarsThr = 30;
-		% scrubProximal = 'yes';
-		scrubProximal = 'no';
-		[JP12ScrubMask{i}, exclude(i,4)] = JP12_GetScrubMask(fdPower{i},dvars{i},TR,fdPowerThr,dvarsThr,scrubProximal);
+		if exist([workdir,'dvars.txt']) == 2
+			% scrubProximal = 'yes';
+			scrubProximal = 'no';
+			[JP12ScrubMask{i}, exclude(i,4)] = JP12_GetScrubMask(fdPower{i},dvars{i},TR,fdPowerThr,dvarsThr,scrubProximal);
+		end
 
 		% ------------------------------------------------------------------------------
 		% 5) JP14 Scrubbing
 		% ------------------------------------------------------------------------------
 		dvarsThr = 20;
-		[scrubmask_temp, exclude(i,5)] = JP14_GetScrubMask(fdPower{i},dvars{i},TR,fdPowerThr,dvarsThr);
-		JP14ScrubMask{i} = scrubmask_temp(:,2);
+		if exist([workdir,'dvars.txt']) == 2
+			[scrubmask_temp, exclude(i,5)] = JP14_GetScrubMask(fdPower{i},dvars{i},TR,fdPowerThr,dvarsThr);
+			JP14ScrubMask{i} = scrubmask_temp(:,2);
+		end
 
 	    n = numel(msg);
 	    fprintf(repmat('\b',1,n));
