@@ -11,11 +11,11 @@ clear all; close all; clc
 % Parent dirs
 % ------------------------------------------------------------------------------
 % MASSIVE
-parentdir = '/home/lindenmp/kg98_scratch/Linden/ResProjects/';
-ROIDir = '/projects/kg98/Linden/ROIs/';
-ExtHDD = [parentdir,'rfMRI_denoise/'];
+% parentdir = '/home/lindenmp/kg98_scratch/Linden/ResProjects/';
+% ROIDir = '/projects/kg98/Linden/ROIs/';
+% ExtHDD = [parentdir,'rfMRI_denoise/'];
 % where the prepro scripts are
-funcdir = '/home/lindenmp/kg98/Linden/Scripts/rs-fMRI/func/';
+% funcdir = '/home/lindenmp/kg98/Linden/Scripts/rs-fMRI/func/';
 
 % Mac (local)
 % parentdir = '~/Dropbox/Work/ResProjects/';
@@ -24,21 +24,30 @@ funcdir = '/home/lindenmp/kg98/Linden/Scripts/rs-fMRI/func/';
 % where the prepro scripts are
 % funcdir = '~/Dropbox/Work/git/rs-fMRI/func/';
 
+% For those conducting reproducibility checks via figshare download
+parentdir = '~/Desktop/figshare/';
+ROIDir = '~/Desktop/ROIs/';
+ExtHDD = '~/Desktop/figshare/rfMRI_denoise/';
+% where the prepro scripts are
+funcdir = '~/Desktop/rs-fMRI/func/';
+
 addpath(funcdir)
 
 % ------------------------------------------------------------------------------
 % Set string switches
 % ------------------------------------------------------------------------------
-Projects = {'Beijing_Zang','UCLA','OCDPG','NYU_2','COBRE','COBRE_HCTSA','UCLA_HCTSA','NAMIC_HCTSA','ML_SNS','OCDPG_DCM','ASPREE-NEURO'};
+Projects = {'Beijing_Zang','UCLA','OCDPG','NYU_2','COBRE','COBRE_HCTSA','UCLA_HCTSA','NAMIC_HCTSA','ML_SNS','OCDPG_DCM'};
 WhichProject = Projects{1};
 
 WhichParc = 'Gordon'; % 'Gordon' 'Power'
 
 if ismember('OCDPG',WhichProject,'rows') | ismember('UCLA',WhichProject,'rows') | ismember('COBRE',WhichProject,'rows')
-	WhichSplit = 'Diagnostic'; % 'Motion' 'Diagnostic'
-	% WhichSplit = 'Motion'; % 'Motion' 'Diagnostic'
-	% Note, this only effect the NBS parts of the script.
-	% 'Group' variable ALWAYS represents case-control (e.g., 1 = HC, 2 = patients)
+	% WhichSplit = 'Diagnostic'; % 'Motion' 'Diagnostic'
+	WhichSplit = 'Motion'; % 'Motion' 'Diagnostic'
+	% Note, this impacts whether only HCs are retained for the analyses or whether patients are included
+	% If WhichSplit = 'Diagnostic' then the QC-FC plots will be different from what is shown in the manuscript because the patients will be included
+	% whereas in the manuscript these benchmarks are calculated just using the HCs. Hence the default WhichSplit = 'Motion' will reproduce the primary
+	% QC-FC figures accurately
 elseif ismember('Beijing_Zang',WhichProject,'rows')
 	WhichSplit = 'Motion'; % Only motion for Beijing
 end
@@ -46,6 +55,7 @@ end
 % ------------------------------------------------------------------------------
 % Set logical switches
 % ------------------------------------------------------------------------------
+runPrimaryPlot = true;
 runPlot = false;
 runOverlapPlots = false;
 
@@ -132,14 +142,6 @@ switch WhichProject
 		preprostr = '/func/prepro/';
 
 		TR = 2;
-	case 'ASPREE-NEURO'
-		% projdir = [parentdir,'ASPREE-NEURO/'];
-		projdir = '/home/lindenmp/dq13_scratch/Linden/ResProjects/ASPREE-NEURO/';
-		sublist = [projdir,'ASPREE-NEURO.csv'];
-		datadir = [projdir,'data/'];
-		preprostr = '/func/prepro/';
-
-		TR = 0.754;
 end
 
 % ------------------------------------------------------------------------------
@@ -199,10 +201,6 @@ switch WhichProject
 	case 'ML_SNS'
 		noiseOptions = {'sICA-AROMA+2P'};
 		noiseOptionsNames = {'ICA-AROMA+2Phys'};
-	case 'ASPREE-NEURO'
-		noiseOptions = {'ICA-FIX'};
-
-		noiseOptionsNames = {'ICA-FIX'};
 	otherwise
 		noiseOptions = {'6P',...
 						'6P+2P',...
@@ -272,13 +270,7 @@ numGroups = numel(unique(metadata.Diagnosis));
 % ------------------------------------------------------------------------------
 % Exclusion and censoring stuff
 % ------------------------------------------------------------------------------
-switch WhichProject
-	case 'ASPREE-NEURO'
-		mname = 'rp*par';
-	otherwise
-		mname = 'rp*txt';
-end
-
+mname = 'rp*txt';
 [metadata.exclude,metadata.mov,metadata.fdJenk,metadata.fdJenk_m,metadata.fdPower,metadata.fdPower_m,metadata.dvars,metadata.JP12ScrubMask,metadata.JP14ScrubMask] = GetExcludeForSample(datadir,metadata.ParticipantID,TR,preprostr,mname);
 fprintf(1, 'done\n');
 
@@ -332,7 +324,9 @@ end
 % ------------------------------------------------------------------------------
 % Retain only HCs for remainder of analysis
 % ------------------------------------------------------------------------------
-metadata = metadata(metadata.Diagnosis == 1,:);
+if ismember('Motion',WhichSplit,'rows')
+	metadata = metadata(metadata.Diagnosis == 1,:);
+end
 
 % ------------------------------------------------------------------------------
 % Calculate ICC: FD
@@ -1058,9 +1052,9 @@ for i = 1:length(x)
 end
 
 % ------------------------------------------------------------------------------
-% Essential figures
+% Primary QC-FC figures
 % ------------------------------------------------------------------------------
-if runPlot
+if runPrimaryPlot
 	% ------------------------------------------------------------------------------
 	% QC-FC significant proportion
 	% Corresponds to Figure 1 and Figure 4 in case of censoring
@@ -1134,6 +1128,37 @@ if runPlot
 		view(90,90)
 
 	% ------------------------------------------------------------------------------
+	% QC-FC distance dependence
+	% Corresponds to Figure 2 and Figure 4 in case of censoring
+	% ------------------------------------------------------------------------------
+	data = {[allData(:).QCFC_DistDep]'};
+
+	data_std = cell(1,length(data)); [data_std{:}] = deal(zeros(size(data{1})));
+	
+	% Create table
+	T = table(data{1},'RowNames',{allData(:).noiseOptionsNames}','VariableNames',{'QCFC_DistDep'})
+
+	% Create bar chart
+	extraParams.xTickLabels = xy;
+	extraParams.xLabel = '';
+	extraParams.yLabel = 'QC-FC distance dependence (Spearman''s rho)';
+    extraParams.theColors = theColors;
+    extraParams.theLines = theLines;
+	extraParams.yLimits = [-0.5 0.5];
+
+	Fig_QCFC_DistDep = figure('color','w', 'units', 'centimeters', 'pos', [0 0 10.5 9], 'name',['Fig_QCFC_DistDep']); box('on'); movegui(Fig_QCFC_DistDep,'center');
+	sp = subplot(1,1,1);
+	pos = get(sp,'Position');
+	set(gca,'Position',[pos(1)*4.9, pos(2)*1.2, pos(3)*0.425, pos(4)*1]); % [left bottom width height]
+
+	TheBarChart(data,data_std,false,extraParams)
+end
+
+% ------------------------------------------------------------------------------
+% Figures
+% ------------------------------------------------------------------------------
+if runPlot
+	% ------------------------------------------------------------------------------
 	% QC-FC corrected
 	% ------------------------------------------------------------------------------
 	% Create data
@@ -1154,32 +1179,6 @@ if runPlot
 	extraParams.yLimits = [0 110];
 
 	Fig_QCFC_FDR = figure('color','w', 'units', 'centimeters', 'pos', [0 0 10.5 9], 'name',['Fig_QCFC_FDR']); box('on'); movegui(Fig_QCFC_FDR,'center');
-	sp = subplot(1,1,1);
-	pos = get(sp,'Position');
-	set(gca,'Position',[pos(1)*4.9, pos(2)*1.2, pos(3)*0.425, pos(4)*1]); % [left bottom width height]
-
-	TheBarChart(data,data_std,false,extraParams)
-
-	% ------------------------------------------------------------------------------
-	% QC-FC distance dependence
-	% Corresponds to Figure 2 and Figure 4 in case of censoring
-	% ------------------------------------------------------------------------------
-	data = {[allData(:).QCFC_DistDep]'};
-
-	data_std = cell(1,length(data)); [data_std{:}] = deal(zeros(size(data{1})));
-	
-	% Create table
-	T = table(data{1},'RowNames',{allData(:).noiseOptionsNames}','VariableNames',{'QCFC_DistDep'})
-
-	% Create bar chart
-	extraParams.xTickLabels = xy;
-	extraParams.xLabel = '';
-	extraParams.yLabel = 'QC-FC distance dependence (Spearman''s rho)';
-    extraParams.theColors = theColors;
-    extraParams.theLines = theLines;
-	extraParams.yLimits = [-0.5 0.5];
-
-	Fig_QCFC_DistDep = figure('color','w', 'units', 'centimeters', 'pos', [0 0 10.5 9], 'name',['Fig_QCFC_DistDep']); box('on'); movegui(Fig_QCFC_DistDep,'center');
 	sp = subplot(1,1,1);
 	pos = get(sp,'Position');
 	set(gca,'Position',[pos(1)*4.9, pos(2)*1.2, pos(3)*0.425, pos(4)*1]); % [left bottom width height]
