@@ -83,41 +83,30 @@ The following is a brief summary of what the two scripts do
 
 This script submits an array slurm job for processing multiple participants at once on M3.
 
-## qc
+## Reproducibility
 
 The code in the **qc** subdirectory can be used to reproduce the figures in **An evaluation of the efficacy, reliability, and sensitivity of motion correction strategies for resting-state functional MRI.** L. Parkes, B. D. Fulcher, M. Yucel, & A. Fornito. [*NeuroImage*](https://www.sciencedirect.com/science/article/pii/S1053811917310972) (2017).
 
 #### QC.m
 
-This script computes the quality control benchmarks outlined in the above pre-print and produces the corresponding figures.
-To reproduce the figures, the user will need to download the processed data from [Figshare](https://doi.org/10.4225/03/595193482c03e) and edit the directories accordingly.
+This script computes the quality control benchmarks outlined in the above manuscript. Below are step by step instructions to produce the primary plots from Figure 1 (QC-FC) and Figure 2 (QC-FC distance-dependence) using MAC OS X.
 
-Example:
+1. Download the full *rs-fMRI* repository onto your computer (e.g., ~/Desktop/rs-fMRI/)
+2. Download the fully processed data (~30GB) from [Figshare](https://doi.org/10.4225/03/595193482c03e) and unpack onto desktop (~/Desktop/)
+3. Download the Gordon parcels by visiting [here](http://www.nil.wustl.edu/labs/petersen/Resources.html) and downloading the Parcels from [Gordon et al., Cerebral Cortex](https://www.ncbi.nlm.nih.gov/pubmed/25316338). Place **Parcels_MNI_222.nii** (and **Gordon_Centroids.txt** and **CommunityModified.txt** from [Figshare](https://doi.org/10.4225/03/595193482c03e)) into ~/Desktop/ROIs/Gordon/.
+3. Load Matlab (tested on version version 2014a, 2015b, and 2017b) and navigate to the **qc** subdirectory
+```cd ~/Desktop/rs-fMRI/qc```
+4. Run `QC.m`.
 
-Assuming a user has downloaded an unzipped all the contents of the Figshare to their desktop (~/Desktop/), the following snippet should allow the user to reproduce the figures.
+By default, this will produce plots for the Beijing Zang dataset.
+If you want to reproduce the CNP dataset then change line 40 to:
+```WhichProject = Projects{2};```
+This will produce the plots for Figure 1b and Figure 2b (i.e., CNP under lenient exclusion criteria).
+If you want to select stringent criteria then you will need to change ```WhichExclude``` to 2 (see lines 479 and 481).
 
-```matlab
-% ------------------------------------------------------------------------------
-% Set project variables
-% ------------------------------------------------------------------------------
-switch WhichProject
-	case 'UCLA'
-		projdir = '~/Desktop/UCLA/';
-		sublist = [projdir,'UCLA.csv'];
-		datadir = [projdir,'data/'];
-		preprostr = '/rfMRI/prepro/';
-		TR = 2;
-		nbsdir = '~/Desktop/UCLA/NBS_tDOF_spikeReg/';
-	case 'NYU_2'
-		projdir = '~/Desktop/NYU_2/';
-		sublist = [projdir,'NYU_2.csv'];
-		datadir = [projdir,'data/'];
-		preprostr = '/session_1/rest_1/prepro/';
-		TR = 2;
-end
-```
+If you have any questions or run into issues, please let me know by email (linden.parkes@monash.edu).
 
-#### QC_ThePlot.m
+## QC_ThePlot.m
 
 `QC_ThePlot.m` produces a *carpet plot* (see [Power 2016, NeuroImage](https://doi.org/10.1016/j.neuroimage.2016.08.009)) so that the user can perform subject-level quality control.
 This script is also hard coded for use with my own projects but can be edited to run on new data.
@@ -125,7 +114,3 @@ This script is also hard coded for use with my own projects but can be edited to
 ## stats
 
 The **stats** subdirectory contains the code used to compute whole-brain differences in functional connectivity using the Network Based Statistic ([Zalesky et al., 2014. NeuroImage](https://doi.org/10.1016/j.neuroimage.2010.06.041))
-
-## func
-
-The **func** subdirectory contains Matlab functions and shell scripts needed for the repo
