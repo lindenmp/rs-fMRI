@@ -95,19 +95,16 @@ This script computes the quality control benchmarks outlined in the above manusc
 2. Download the fully processed data (approx. 30GB) from [Figshare](https://doi.org/10.4225/03/595193482c03e) and unpack onto desktop (~/Desktop/)
 3. Download the Gordon parcels by visiting [here](http://www.nil.wustl.edu/labs/petersen/Resources.html) and downloading the Parcels from [Gordon et al., Cerebral Cortex](https://www.ncbi.nlm.nih.gov/pubmed/25316338).
 4. Place **Parcels_MNI_222.nii** (and **Gordon_Centroids.txt** and **CommunityModified.txt** from [Figshare](https://doi.org/10.4225/03/595193482c03e)) into ~/Desktop/ROIs/Gordon/.
-5. Load Matlab (tested on version version 2014a, 2015b, and 2017b) and navigate to the **qc** subdirectory
-
-```cd ~/Desktop/rs-fMRI/qc```
-
+5. Load Matlab (tested on version version 2014a, 2015b, and 2017b) and navigate to the **qc** subdirectory - ```cd ~/Desktop/rs-fMRI/qc```
 6. Run `QC.m`.
 
 By default, this will produce plots for the Beijing Zang dataset.
 If you want to reproduce the CNP dataset then change line 40 to:
 ```WhichProject = Projects{2};```
 This will produce the plots for Figure 1b and Figure 2b (i.e., CNP under lenient exclusion criteria).
-If you want to select stringent criteria then you will need to change ```WhichExclude``` to 2 (see lines 479 and 481).
+If you want to select stringent criteria then you will need to change ```WhichExclude``` to ```2``` (see lines 479 and 481).
 
-If you have any questions or run into issues, please let me know by email (linden.parkes@monash.edu).
+If you have any questions or run into issues please let me know by email (linden.parkes@monash.edu).
 
 ## QC_ThePlot.m
 
