@@ -91,11 +91,11 @@ The code in the **qc** subdirectory can be used to reproduce the figures in **An
 
 This script computes the quality control benchmarks outlined in the above manuscript. Below are step by step instructions to produce the primary plots from Figure 1 (QC-FC) and Figure 2 (QC-FC distance-dependence) using MAC OS X.
 
-1. Download the full *rs-fMRI* repository onto your computer (e.g., ~/Desktop/rs-fMRI/)
-2. Download the fully processed data (approx. 30GB) from [Figshare](https://doi.org/10.4225/03/595193482c03e) and unpack onto desktop (~/Desktop/)
+1. Download the full *rs-fMRI* repository onto your computer (e.g., ~/Desktop/rs-fMRI/).
+2. Download the fully processed data (approx. 30GB) from [Figshare](https://doi.org/10.4225/03/595193482c03e) and unpack onto desktop (~/Desktop/).
 3. Download the Gordon parcels by visiting [here](http://www.nil.wustl.edu/labs/petersen/Resources.html) and downloading the Parcels from [Gordon et al., Cerebral Cortex](https://www.ncbi.nlm.nih.gov/pubmed/25316338).
 4. Place **Parcels_MNI_222.nii** (and **Gordon_Centroids.txt** and **CommunityModified.txt** from [Figshare](https://doi.org/10.4225/03/595193482c03e)) into ~/Desktop/ROIs/Gordon/.
-5. Load Matlab (tested on version version 2014a, 2015b, and 2017b) and navigate to the **qc** subdirectory - ```cd ~/Desktop/rs-fMRI/qc```
+5. Load Matlab (tested on version version 2014a, 2015b, and 2017b) and navigate to the **qc** subdirectory of the *rs-fMRI* repository.
 6. Run `QC.m`.
 
 By default, this will produce plots for the Beijing Zang dataset.
