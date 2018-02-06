@@ -1,5 +1,5 @@
 %% GetExcludeForSample: 
-function [exclude,mov,fdJenk,fdJenk_m,fdPower,fdPower_m,dvars,JP12ScrubMask,JP14ScrubMask] = GetExcludeForSample(datadir,ParticipantIDs,TR,str,mname)
+function [exclude,mov,fdJenk,fdJenk_m,fdPower,fdPower_m,dvars,JP12ScrubMask,JP14ScrubMask] = GetExcludeForSample(datadir,ParticipantIDs,TR,str,mname,whichFD)
 	% ------------------------------------------------------------------------------
 	% This script uses the movement parameters generate during SPM8's realignment
 	% to calculate framewise displacement according to two methods, (1) Power and
@@ -37,6 +37,10 @@ function [exclude,mov,fdJenk,fdJenk_m,fdPower,fdPower_m,dvars,JP12ScrubMask,JP14
 
 	if nargin < 5
 		mname = 'rp*txt';
+	end
+
+	if nargin < 6
+		whichFD = 'Jenk';
 	end
 
 	numSubs = length(ParticipantIDs);
@@ -117,10 +121,13 @@ function [exclude,mov,fdJenk,fdJenk_m,fdPower,fdPower_m,dvars,JP12ScrubMask,JP14
 		% Run exclusion
 		% ------------------------------------------------------------------------------		
 		% Select FD measure to use for exclusion below
-		fd = fdJenk{i};
-		fd_m = fdJenk_m(i);
-		% fd = fdPower{i};
-		% fd_m = fdPower_m(i);
+		if ismember('Jenk',whichFD,'rows')
+			fd = fdJenk{i};
+			fd_m = fdJenk_m(i);
+		elseif ismember('Power',whichFD,'rows')
+			fd = fdPower{i};
+			fd_m = fdPower_m(i);
+		end
 
 	    % ------------------------------------------------------------------------------
 	    % 1) Initial, gross movement exclusion

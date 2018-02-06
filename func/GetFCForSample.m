@@ -76,3 +76,4 @@ function [cfg,FC,FC_vec,VarCovar,Var,GCOR] = GetFCForSample(datadir,ParticipantI
 	    % n = numel(msg);
 	    % fprintf(repmat('\b',1,n));
 	end
+	
