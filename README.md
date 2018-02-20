@@ -79,7 +79,7 @@ The following is a brief summary of what the two scripts do
 ```
 
 #### Usage (MASSIVE)
-- `$ ./MASSIVE_Job.sh`
+- `$ sbatch ./MASSIVE_Job.sh`
 
 This script submits an array slurm job for processing multiple participants at once on M3.
 
