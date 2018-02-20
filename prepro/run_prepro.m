@@ -1,5 +1,27 @@
 %% run_prepro:
 % Copyright (C) 2017, Linden Parkes <lindenparkes@gmail.com>,
+% Inputs (essential):
+% WhichProject      - A text string that selects which dataset to process. You will need to add your own below (see cfg.WhichProject)
+%                   if using this code on your own data.
+% WhichSessScan     - A text string that can be used to differentiate different scans in a multi-scan protocol.
+%                   if you only have a single scan then you can use 'Sess1_Scan1'
+% subject           - A text string identifying the subject
+% smoothing         - A text string with three options: 'none', 'before', 'after'
+%                   This sets whether spatial smoothing is done before denosiing ('before'), after denoising ('after'), or not at all ('none')
+%                   Note, the code will overwrite this input and set it to 'before' in cases where ICA-AROMA is used
+% 
+% Inputs (optional)
+% discard           - toggles whether 4 volumes of the EPI are discarded (1) or not (0). Default = 1
+% slicetime         - toggles slice time correction. on (1) off (0). Default = 1
+% despike           - toggles despiking. on (1) off (0). Default = 0
+% detr              - toggles linear detrending. on (1) off (0). Default = 1
+% intnorm           - toggles intensity normalisation. on (1) off (0). Default = 1
+% bandpass          - toggles bandpass filtering. on (1) off (0). Default = 1
+% demean            - toggles demeaning. on (1) off (0). Default = 1
+% 
+% For an example of how to set up a project, see section:
+    % switch cfg.WhichProject
+        % case 'OCDPG'
 
 function [] = run_prepro(WhichProject,WhichSessScan,subject,smoothing,discard,slicetime,despike,detr,intnorm,bandpass,demean)
     cfg.WhichProject = WhichProject;
