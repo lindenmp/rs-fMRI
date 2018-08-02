@@ -643,6 +643,9 @@ function [tN,gm,wm,csf,epiBrainMask,t1BrainMask,BrainMask,gmmask,wmmask,csfmask,
 
         elseif cfg.detr == 0
             DetrendOut = IntNormOut;
+            fdThr = NaN;
+            dvarsThr = NaN;
+            exclude = NaN;
         end
 
         clear hdr data data_out
