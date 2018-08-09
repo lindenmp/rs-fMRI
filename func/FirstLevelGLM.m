@@ -1,7 +1,5 @@
-function [] = FirstLevelGLM(resdir,units,TR,data,N,matfile,mask)
+function [] = FirstLevelGLM(resdir,units,TR,numSlices,refSlice,data,N,matfile,mask)
 
-% FirstLevelGLM(spmdir,timing,TR,data,N,matfile)
-%
 % This script will run 1st level specification and estimation for a
 % seed-based analysis. That is, only 'multiple regressors' are
 % specified--nothing that requires haemodynamic convolution.
@@ -16,6 +14,10 @@ function [] = FirstLevelGLM(resdir,units,TR,data,N,matfile,mask)
 %           'seconds'.
 %
 % TR        - repetition time (TR) of data
+% 
+% numSlices - number of slices per volume. same as that entered into slice time correction
+% 
+% refSlice  - reference slice from slice time correction
 %
 % data      - path and filename of epi 4d file on which the analysis will
 %           be run (e.g., smoothed and normalized epis)
@@ -40,31 +42,53 @@ function [] = FirstLevelGLM(resdir,units,TR,data,N,matfile,mask)
 
 spm('defaults','fmri');
 spm_jobman('initcfg')
-spm_get_defaults('mask.thresh',-Inf)
+% spm_get_defaults('mask.thresh',-Inf)
 
 for i = 1:N
     matlabbatch{1}.spm.stats.fmri_spec.sess.scans{i,1} = [data,',',num2str(i)];
 end
 
+% matlabbatch{1}.spm.stats.fmri_spec.dir = {resdir};
+% matlabbatch{1}.spm.stats.fmri_spec.timing.units = units;
+% matlabbatch{1}.spm.stats.fmri_spec.timing.RT = TR;
+% matlabbatch{1}.spm.stats.fmri_spec.timing.fmri_t = 16;
+% matlabbatch{1}.spm.stats.fmri_spec.timing.fmri_t0 = 1;
+% matlabbatch{1}.spm.stats.fmri_spec.sess.cond = struct('name', {}, 'onset', {}, 'duration', {}, 'tmod', {}, 'pmod', {});
+% matlabbatch{1}.spm.stats.fmri_spec.sess.multi = {''};
+% matlabbatch{1}.spm.stats.fmri_spec.sess.regress = struct('name', {}, 'val', {});
+% matlabbatch{1}.spm.stats.fmri_spec.sess.multi_reg = {matfile};
+% matlabbatch{1}.spm.stats.fmri_spec.sess.hpf = -Inf; % 128; % -Inf;
+% matlabbatch{1}.spm.stats.fmri_spec.fact = struct('name', {}, 'levels', {});
+% matlabbatch{1}.spm.stats.fmri_spec.bases.hrf.derivs = [0 0];
+% matlabbatch{1}.spm.stats.fmri_spec.volt = 1;
+% matlabbatch{1}.spm.stats.fmri_spec.global = 'None';
+% matlabbatch{1}.spm.stats.fmri_spec.mask = {mask};
+% matlabbatch{1}.spm.stats.fmri_spec.cvi = 'none'; % 'AR(1)'; % 'none';
+
+% % run estimation
+% matlabbatch{2}.spm.stats.fmri_est.spmmat = {[resdir,'SPM.mat']};
+% matlabbatch{2}.spm.stats.fmri_est.method.Classical = 1;
+
 matlabbatch{1}.spm.stats.fmri_spec.dir = {resdir};
 matlabbatch{1}.spm.stats.fmri_spec.timing.units = units;
 matlabbatch{1}.spm.stats.fmri_spec.timing.RT = TR;
-matlabbatch{1}.spm.stats.fmri_spec.timing.fmri_t = 16;
-matlabbatch{1}.spm.stats.fmri_spec.timing.fmri_t0 = 1;
-matlabbatch{1}.spm.stats.fmri_spec.sess.cond = struct('name', {}, 'onset', {}, 'duration', {}, 'tmod', {}, 'pmod', {});
+matlabbatch{1}.spm.stats.fmri_spec.timing.fmri_t = numSlices;
+matlabbatch{1}.spm.stats.fmri_spec.timing.fmri_t0 = refSlice;
+matlabbatch{1}.spm.stats.fmri_spec.sess.cond = struct('name', {}, 'onset', {}, 'duration', {}, 'tmod', {}, 'pmod', {}, 'orth', {});
 matlabbatch{1}.spm.stats.fmri_spec.sess.multi = {''};
 matlabbatch{1}.spm.stats.fmri_spec.sess.regress = struct('name', {}, 'val', {});
 matlabbatch{1}.spm.stats.fmri_spec.sess.multi_reg = {matfile};
-matlabbatch{1}.spm.stats.fmri_spec.sess.hpf = -Inf; % 128; % -Inf;
+matlabbatch{1}.spm.stats.fmri_spec.sess.hpf = -Inf;
 matlabbatch{1}.spm.stats.fmri_spec.fact = struct('name', {}, 'levels', {});
 matlabbatch{1}.spm.stats.fmri_spec.bases.hrf.derivs = [0 0];
 matlabbatch{1}.spm.stats.fmri_spec.volt = 1;
 matlabbatch{1}.spm.stats.fmri_spec.global = 'None';
+matlabbatch{1}.spm.stats.fmri_spec.mthresh = -Inf;
 matlabbatch{1}.spm.stats.fmri_spec.mask = {mask};
-matlabbatch{1}.spm.stats.fmri_spec.cvi = 'none'; % 'AR(1)'; % 'none';
+matlabbatch{1}.spm.stats.fmri_spec.cvi = 'none';
 
-% run estimation
 matlabbatch{2}.spm.stats.fmri_est.spmmat = {[resdir,'SPM.mat']};
+matlabbatch{2}.spm.stats.fmri_est.write_residuals = 0;
 matlabbatch{2}.spm.stats.fmri_est.method.Classical = 1;
 
 spm_jobman('run',matlabbatch);
