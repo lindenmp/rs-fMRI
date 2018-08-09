@@ -37,11 +37,11 @@ addpath(funcdir)
 % Set string switches
 % ------------------------------------------------------------------------------
 Projects = {'Beijing_Zang','UCLA','OCDPG','NYU_2','COBRE','COBRE_HCTSA','UCLA_HCTSA','NAMIC_HCTSA','ML_SNS','OCDPG_DCM'};
-WhichProject = Projects{1};
+WhichProject = Projects{end};
 
 WhichParc = 'Gordon'; % 'Gordon' 'Power'
 
-if ismember('OCDPG',WhichProject,'rows') | ismember('UCLA',WhichProject,'rows') | ismember('COBRE',WhichProject,'rows')
+if ismember('OCDPG',WhichProject,'rows') | ismember('UCLA',WhichProject,'rows') | ismember('COBRE',WhichProject,'rows') | ismember('OCDPG_DCM',WhichProject,'rows')
 	% WhichSplit = 'Diagnostic'; % 'Motion' 'Diagnostic'
 	WhichSplit = 'Motion'; % 'Motion' 'Diagnostic'
 	% Note, this impacts whether only HCs are retained for the analyses or whether patients are included
@@ -277,6 +277,16 @@ fprintf(1, 'done\n');
 % compute number of volumes using the length of fdJenk
 % note, this is assumed to be same for all subjects!
 numVols = length(metadata.fdJenk{1});
+
+if ismember('OCDPG_DCM',WhichProject,'rows')
+	% exclude an outlier identified by Jeg during generation of the phenotypes
+    idx = strmatch('sub-100',metadata.ParticipantID);
+    metadata(idx,:) = [];
+
+	% Also exclude sub-084 because of brain mask issues
+	idx = strmatch('sub-084',metadata.ParticipantID);
+	metadata(idx,:) = [];
+end
 
 % compute numsubs
 numSubs = size(metadata,1);
