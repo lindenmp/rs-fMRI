@@ -1805,6 +1805,18 @@ switch whichMap
                         0, 0, 0;
                         1, 1, 0];
         cmapOut = cmapOut(1:numGrads,:);
+    case 'linden'
+        if numGrads > 9, numGrads = 9; end
+        cmapOut = [55, 126, 184;
+            77, 175, 74;
+            228, 26, 28;
+            152, 78, 163;
+            255, 127, 0;
+            153, 0, 76;
+            166, 86, 40;
+            247, 129, 191;
+            153, 153, 153]; % 9 class
+        cmapOut = cmapOut(1:numGrads,:);
     otherwise
         error('Unknown color map specified: ''%s''',whichMap);
 end
