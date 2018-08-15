@@ -292,6 +292,24 @@ end
 numSubs = size(metadata,1);
 
 % ------------------------------------------------------------------------------
+% Create demographic table
+% ------------------------------------------------------------------------------
+Age = zeros(numGroups,1); Age_SD = zeros(numGroups,1); Gender = zeros(numGroups,1); Gender_percent = zeros(numGroups,1); 
+IQ = zeros(numGroups,1); IQ_SD = zeros(numGroups,1); Medicated = zeros(numGroups,1); Medicated_percent = zeros(numGroups,1); 
+fdJenk_m = zeros(numGroups,1); fdJenk_m_SD = zeros(numGroups,1); 
+for i = 1:numGroups
+    logi = metadata.Diagnosis == i;
+    Age(i) = mean(metadata(logi,:).Age); Age_SD(i) = std(metadata(logi,:).Age);
+    Gender(i) = sum(metadata(logi,:).Gender == 1); Gender_percent(i) = Gender(i) / sum(logi);
+    IQ(i) = mean(metadata(logi,:).IQ); IQ_SD(i) = std(metadata(logi,:).IQ);
+    Medicated(i) = sum(metadata(logi,:).Medicated == 1); Medicated_percent(i) = Medicated(i) / sum(logi);
+    fdJenk_m(i) = mean(metadata(logi,:).fdJenk_m); fdJenk_m_SD(i) = std(metadata(logi,:).fdJenk_m);
+end
+
+demo_table = table(Age,Age_SD,Gender,Gender_percent,IQ,IQ_SD,Medicated,Medicated_percent,fdJenk_m,fdJenk_m_SD)
+clear Age* Gender* IQ* Medicated* fdJenk_m* 
+
+% ------------------------------------------------------------------------------
 % Plot Movement params
 % ------------------------------------------------------------------------------
 fd = metadata.fdJenk_m;
