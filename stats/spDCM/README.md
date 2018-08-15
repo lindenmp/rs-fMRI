@@ -5,8 +5,8 @@ Before running this code, `FactorialSPM.m` and `SeedBased_func.m` from the ***st
 
 # Publications
 
-<!-- See the following publications for examples of this code in use: -->
-<!-- - **[name]** L. Parkes, ..... [*journal*](link) (2018). -->
+See the following publications for examples of this code in use:
+- **Transdiagnostic variations in impulsivity and compulsivity in obsessive-compulsive disorder and gambling disorder correlate with effective connectivity in cortical-striatal-thalamic-cortical circuits** Parkes L, Tiego J, Aquino K, Braganza L, Chamberlain SR, Fontenelle L, Harrison BJ, Lorenzetti V, Paton B, Razi A, Fornito A, Yucel M [*bioRxiv*](https://doi.org/10.1101/389320) (2018).
 
 # Data
 
