@@ -40,7 +40,7 @@ For each subject, spherical ROIs are centred on the peak seed-based functional c
 ## First Level DCM
 - `spDCM_FirstLevel.m`
 
-Takes processed EPI data and the ROIs generated above to perform first-level spectral DCM analysis, including specification and full inversion of a sparsely connected parent and generation of nested DCMs, wherein each connection in the parent is systemtically switched off.
+Takes processed EPI data and the ROIs generated above to perform first-level spectral DCM analysis, including specification and full inversion of a sparsely connected parent and generation of nested DCMs, wherein each connection in the parent is systematically switched off.
 
 ## Second Level DCM
 - `spDCM_SecondLevel.m`
