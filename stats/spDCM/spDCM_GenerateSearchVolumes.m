@@ -292,8 +292,7 @@ end
 % Check for overlap in duplicates
 % ------------------------------------------------------------------------------
 % dorsal
-% theMasks = {'ACC_L.nii','ACC_R.nii';'mOFC_L.nii','mOFC_R.nii';'Thal_L.nii','Thal_R.nii'}'; % '
-theMasks = {'ACC_L.nii','ACC_R.nii';'mOFC_L.nii','mOFC_R.nii';'Thal_L.nii','Thal_R.nii';'dlPFC_L.nii','dlPFC_R.nii'}'; % '
+theMasks = {'ACC_L.nii','ACC_R.nii';'mOFC_L.nii','mOFC_R.nii';'Thal_L.nii','Thal_R.nii'}'; % '
 
 % compile into parcellation files
 numMaskPairs = size(theMasks,2);
