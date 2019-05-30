@@ -21,7 +21,7 @@ See the following publications for examples of this code in use:
 
 # Data
 
-Fully processed rs-fMRI time-series data for two of the three datasets (*CNP* and *NYU*) used in the above preprint are available for download from [Figshare](https://doi.org/10.4225/03/595193482c03e).
+Fully processed rs-fMRI time-series data for two of the three datasets (*CNP* and *NYU*) used in our NeuroImage paper are available for download from [Figshare](https://doi.org/10.4225/03/595193482c03e).
 Raw, unprocessed data is also available for [CNP](https://openfmri.org/dataset/ds000030/) and [NYU](http://fcon_1000.projects.nitrc.org/indi/CoRR/html/)
 
 ## prepro
@@ -86,7 +86,7 @@ This script submits an array slurm job for processing multiple participants at o
 
 ## Reproducibility
 
-The code in the **qc** subdirectory can be used to reproduce the figures in **An evaluation of the efficacy, reliability, and sensitivity of motion correction strategies for resting-state functional MRI.** L. Parkes, B. D. Fulcher, M. Yucel, & A. Fornito. [*NeuroImage*](https://www.sciencedirect.com/science/article/pii/S1053811917310972) (2017).
+The code in the **qc** subdirectory can be used to reproduce the figures in **An evaluation of the efficacy, reliability, and sensitivity of motion correction strategies for resting-state functional MRI.** L. Parkes, B. D. Fulcher, M. Yucel, & A. Fornito. [*NeuroImage*](https://www.sciencedirect.com/science/article/pii/S1053811917310972) (2018).
 
 #### QC.m
 
