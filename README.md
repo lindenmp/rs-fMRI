@@ -17,6 +17,7 @@ Linden Parkes, linden.parkes@monash.edu, Brain & Mental Health Laboratory, Monas
 
 See the following publications for examples of this code in use:
 - **An evaluation of the efficacy, reliability, and sensitivity of motion correction strategies for resting-state functional MRI.** L. Parkes, B. D. Fulcher, M. Yucel, & A. Fornito. [*NeuroImage*](https://www.sciencedirect.com/science/article/pii/S1053811917310972) (2017).
+- **Transdiagnostic variations in impulsivity and compulsivity in obsessive-compulsive disorder and gambling disorder correlate with effective connectivity in cortical-striatalthalamic-cortical circuits.** L. Parkes, J. Tiego, K. Aquino, L. Braganza, S. R. Chamberlain, L. Fontenelle, B. J. Harrison, V. Lorenzetti, B. Paton, A. Razi, A. Fornito, & M. Yücel. [*bioRxiv*](https://www.biorxiv.org/content/10.1101/389320v1.abstract) (2018).
 
 # Data
 
@@ -104,7 +105,7 @@ If you want to reproduce the CNP dataset then change line 40 to:
 This will produce the plots for Figure 1b and Figure 2b (i.e., CNP under lenient exclusion criteria).
 If you want to select stringent criteria then you will need to change ```WhichExclude``` to ```2``` (see lines 479 and 481).
 
-If you have any questions or run into issues please let me know by email (linden.parkes@monash.edu).
+If you have any questions or run into issues please let me know by email (lindenmp@seas.upenn.edu).
 
 ## QC_ThePlot.m
 
